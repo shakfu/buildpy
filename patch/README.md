@@ -1,0 +1,1 @@
+This folder should contain optional patches for specialized builds.

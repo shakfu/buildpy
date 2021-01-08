@@ -6,7 +6,6 @@ It downloads python from python.org and builds it according to 'static', 'shared
 
 It should be straightforward for windows builds as well ultimately.
 
-
 ## Usage
 
 ```
@@ -46,7 +45,6 @@ optional arguments:
   -z, --ziplib    zip python library
 ```
 
-
 ## What it does
 
 1. Downloads the required archives into `build/downloads` 
@@ -56,8 +54,7 @@ optional arguments:
 3. Installs the library to `build/lib`
 
 
-
-```
+```bash
 $ tree -L 3
 .
 ├── LICENSE
@@ -84,8 +81,3 @@ $ tree -L 3
 ```
 
 It also has a patch folder for optional patches to create specialized builds (minimal builds for example).
-
-
-
-
-

@@ -2,7 +2,11 @@
 
 A python3 script to build python3 from source (currently for macos)
 
-It downloads python from python.org and builds it according to 'static', 'shared', and 'framework' variations for macos.
+## Features
+
+- Downloads the python source from python.org and builds it according to 'static', 'shared', and 'framework' variations for macos.
+
+- Provides an option to patch the python source to specialize build
 
 It should be straightforward for windows builds as well ultimately.
 

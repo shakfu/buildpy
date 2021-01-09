@@ -450,7 +450,7 @@ class PythonBuilder(OSXBuilder):
             return
         if not setup_local:
             setup_local = self.setup_local
-        self.copyfile(self.project.patch / setup_local,
+        self.copyfile(self.project.patch / self.ver / setup_local,
                       self.src_path / 'Modules' / 'Setup.local')
 
     def apply_patch(self, patch=None):
@@ -458,7 +458,7 @@ class PythonBuilder(OSXBuilder):
             return
         if not patch:
             patch = self.patch
-        self.cmd(f'patch -p1 < {self.project.patch}/{patch}')
+        self.cmd(f'patch -p1 < {self.project.patch}/{self.ver}/{patch}')
 
     def install(self):
         self.reset()
@@ -612,7 +612,7 @@ class PythonBuilder(OSXBuilder):
 
     def pre_process(self):
         self.chdir(self.src_path)
-        #self.write_setup_local()
+        self.write_setup_local()
         #self.apply_patch()
         self.chdir(self.project.root)
 
@@ -624,7 +624,7 @@ class PythonBuilder(OSXBuilder):
 
 
 class StaticPythonBuilder(PythonBuilder):
-    setup_local = 'setup-static-min2.local'
+    setup_local = 'setup-static-min3.local'
     patch = 'makesetup.patch'
 
     @property

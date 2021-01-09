@@ -1,4 +1,0 @@
-UNSUPPORTED ON MAC OS X [apple doesn't like static compilation]
-
-see: https://docs.python.org/3/extending/embedding.html
-

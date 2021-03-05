@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """pybuild -- build python3 from source (currently for macos)
 
-    usage: pybuild.py [-h] [-v] {framework,shared,static} ...
+    usage: pybuild.py [-h] [-v] {all,framework,shared,static} ...
 
     pybuild: builds python from src
 
@@ -14,6 +14,7 @@
 
       {framework,shared,static}
                             additional help
+        all                 build all python variations
         framework           build framework python
         shared              build shared python
         static              build static python
@@ -329,7 +330,7 @@ class Builder(ABC):
 
 
 class OSXBuilder(Builder):
-    mac_dep_target = '10.13'
+    mac_dep_target = '10.14'
 
     @property
     def dylib(self):
@@ -893,23 +894,28 @@ class Application(Commander):
         elif args.ziplib:
             b.ziplib()
         else:
-            return
+            pass
 
     @common_options
     def do_static(self, args):
         "build static python"
-        return self.dispatch(StaticPythonBuilder, args)
+        self.dispatch(StaticPythonBuilder, args)
 
     @common_options
     def do_shared(self, args):
         "build shared python"
-        return self.dispatch(SharedPythonBuilder, args)
+        self.dispatch(SharedPythonBuilder, args)
 
     @common_options
     def do_framework(self, args):
         "build framework python"
-        return self.dispatch(FrameworkPythonBuilder, args)
+        self.dispatch(FrameworkPythonBuilder, args)
 
+    @common_options
+    def do_all(self, args):
+        "build all python variations"
+        for klass in [FrameworkPythonBuilder, SharedPythonBuilder, StaticPythonBuilder]:
+            self.dispatch(klass, args)
 
 if __name__ == '__main__':
     app = Application()

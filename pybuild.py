@@ -21,6 +21,7 @@
 
 """
 
+
 import argparse
 import logging
 import os
@@ -38,11 +39,7 @@ from pathlib import Path
 IGNORE_ERRORS = False
 
 DEBUG = True
-if DEBUG:
-    LOG_LEVEL = logging.DEBUG
-else:
-    LOG_LEVEL = logging.INFO
-
+LOG_LEVEL = logging.DEBUG if DEBUG else logging.INFO
 LOG_FORMAT = '%(relativeCreated)-4d %(levelname)-5s: %(name)-10s %(message)s'
 logging.basicConfig(level=LOG_LEVEL, format=LOG_FORMAT, stream=sys.stdout)
 
@@ -235,8 +232,7 @@ class Builder(ABC):
     def __iter__(self):
         for dependency in self.depends_on:
             yield dependency
-            for subdependency in iter(dependency):
-                yield subdependency
+            yield from iter(dependency)
 
     @property
     def ver(self):
@@ -292,10 +288,7 @@ class Builder(ABC):
         return self.prefix / 'bin'
 
     def libs_static_exist(self):
-        for lib in self.libs_static:
-            if not (self.prefix_lib / lib).exists():
-                return False
-        return True
+        return all((self.prefix_lib / lib).exists() for lib in self.libs_static)
 
     def cmd(self, shellcmd, *args, **kwargs):
         os.system(shellcmd.format(*args, **kwargs))
@@ -893,8 +886,6 @@ class Application(Commander):
             b.clean()
         elif args.ziplib:
             b.ziplib()
-        else:
-            pass
 
     @common_options
     def do_static(self, args):

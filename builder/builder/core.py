@@ -632,7 +632,7 @@ class Bzip2Builder(ConfiguredBuilder):
                 f"""MACOSX_DEPLOYMENT_TARGET={self.project.mac_dep_target} \
                     make install PREFIX={quote(self.prefix)}"""
             )
-            self.cmd.chdir(self.project.pydir)
+            self.cmd.chdir(self.project.root)
         else:
             self.log.info("product built already")
 
@@ -654,7 +654,7 @@ class OpensslBuilder(ConfiguredBuilder):
                 f"""MACOSX_DEPLOYMENT_TARGET='{self.project.mac_dep_target}' \
                     make install_sw"""
             )
-            self.cmd.chdir(self.project.pydir)
+            self.cmd.chdir(self.project.root)
         else:
             self.log.info("product built already")
 
@@ -679,7 +679,7 @@ class XzBuilder(ConfiguredBuilder):
                 f"""MACOSX_DEPLOYMENT_TARGET='{self.project.mac_dep_target}' \
                     make && make install"""
             )
-            self.cmd.chdir(self.project.pydir)
+            self.cmd.chdir(self.project.root)
         else:
             self.log.info("product built already")
 
@@ -1014,7 +1014,7 @@ class PythonSrcBuilder(PythonBuilder):
             self.apply_patch(patch="configure_11_4to5.patch", to_file="configure")
         else:
             self.apply_patch(patch="configure.patch", to_file="configure")
-        self.cmd.chdir(self.project.pydir)
+        self.cmd.chdir(self.project.root)
 
     def post_process(self):
         """post-build operations"""
@@ -1102,7 +1102,7 @@ class FrameworkPythonBuilder(PythonSrcBuilder):
         )
 
         self.cmd("make altinstall")
-        self.cmd.chdir(self.project.pydir)
+        self.cmd.chdir(self.project.root)
 
     # PYTHONBUG: Python.framework/Versions/3.X/Resources/Python.app
     #            is linked to executable in the frameowork
@@ -1142,7 +1142,7 @@ class SharedPythonBuilder(PythonSrcBuilder):
         )
 
         self.cmd("make altinstall")
-        self.cmd.chdir(self.project.pydir)
+        self.cmd.chdir(self.project.root)
 
 
 class StaticPythonBuilder(PythonSrcBuilder):
@@ -1172,7 +1172,7 @@ class StaticPythonBuilder(PythonSrcBuilder):
         )
 
         self.cmd("make altinstall")
-        self.cmd.chdir(self.project.pydir)
+        self.cmd.chdir(self.project.root)
 
     def remove_extensions(self):
         """remove extensions: not implemented"""
@@ -1189,7 +1189,7 @@ class BeewarePythonBuilder(StaticPythonBuilder):
         self.write_setup_local()
         self.apply_patch(patch="beeware.patch")  # FIXME: not available
         self.apply_patch(patch="configure.patch", to_file="configure")
-        self.cmd.chdir(self.project.pydir)
+        self.cmd.chdir(self.project.root)
 
     def remove_extensions(self):
         """remove extensions"""
@@ -1456,7 +1456,7 @@ class SharedPythonForPkgBuilder(SharedPythonBuilder):
         self.cmd.chdir(self.src_path)
         self.write_setup_local()
         self.apply_patch(patch="configure.patch", to_file="configure")
-        self.cmd.chdir(self.project.pydir)
+        self.cmd.chdir(self.project.root)
 
     def remove_packages(self):
         """remove list of non-critical packages"""
@@ -1500,7 +1500,7 @@ class FrameworkPythonForPkgBuilder(FrameworkPythonBuilder):
         self.cmd.chdir(self.src_path)
         self.write_setup_local()
         self.apply_patch(patch="configure.patch", to_file="configure")
-        self.cmd.chdir(self.project.pydir)
+        self.cmd.chdir(self.project.root)
 
     def remove_packages(self):
         """remove list of non-critical packages"""
@@ -1607,7 +1607,7 @@ class TinySharedPythonBuilder(SharedPythonForExtBuilder):
     #     )
 
     #     self.cmd("make altinstall")
-    #     self.cmd.chdir(self.project.pydir)
+    #     self.cmd.chdir(self.project.root)
 
 
 class TinyStaticPythonBuilder(StaticPythonBuilder):
@@ -1679,7 +1679,7 @@ class TinyStaticPythonBuilder(StaticPythonBuilder):
         )
 
         self.cmd("make altinstall")
-        self.cmd.chdir(self.project.pydir)
+        self.cmd.chdir(self.project.root)
 
 
 

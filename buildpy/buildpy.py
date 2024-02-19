@@ -291,7 +291,7 @@ class AbstractBuilder(ShellCmd):
     version: str
     url_template: str
     libs_static: list[str]
-    depends_on: list[type[Builder]]
+    depends_on: list[type['Builder']]
 
     def __init__(
         self, version: Optional[str] = None, project: Optional[Project] = None

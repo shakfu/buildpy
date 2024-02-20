@@ -1,6 +1,6 @@
 # pybuild - python builds python
 
-3 ways of building python using python (refactorying/consolidation-in-progress). 
+3 ways of building python using python (refactorying/consolidation-in-progress).
 
 Ideally should end up with 1 or maybe even 2 ways.
 
@@ -10,11 +10,9 @@ Ideally should end up with 1 or maybe even 2 ways.
 
 - buildpy
 
-
 ## builder
 
 Heavyweight, full featured, building, packaging solution, extracted from [py-js](https://github.com/shakfu/py-js)
-
 
 Either use `make` interface:
 
@@ -46,7 +44,6 @@ subcommands:
     python       download and build python from src
 ```
 
-
 ## pybuild
 
 Lighter weight python builder as a single module or minimal package, with just the build functionality extracted from `builder`.
@@ -74,7 +71,6 @@ subcommands:
     static              build static python
 ```
 
-
 ## buildpy
 
 Intended to be the lightest weight single-script python builder with the simplest interface:
@@ -97,6 +93,3 @@ options:
   --mac-dep-target MAC_DEP_TARGET
                         mac dep target
 ```
-
-
-

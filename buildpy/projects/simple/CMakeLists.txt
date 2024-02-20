@@ -1,22 +1,24 @@
 cmake_minimum_required(VERSION 3.16)
 project(demo_project)
 
+set(Python_ROOT_DIR build/install)
+
 find_package(Python 3.8 COMPONENTS Interpreter Development.Module REQUIRED)
+
+if (NOT Python_FOUND)
+    message(FATAL_ERROR "python not found")
+endif()
 
 if (NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build." FORCE)
     set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
 endif()
 
-#add_subdirectory(pybind11)
-# Detect the installed nanobind package and import it into CMake
+message(STATUS "Python_INCLUDE_DIRS: " ${Python_INCLUDE_DIRS})
+message(STATUS "Python_LINK_OPTIONS: " ${Python_LINK_OPTIONS})
+message(STATUS "Python_LIBRARY_DIRS: " ${Python_LIBRARY_DIRS})
+message(STATUS "Python_LIBRARIES: " ${Python_LIBRARIES})
 
-execute_process(
-    COMMAND "${Python_EXECUTABLE}" -m pybind11 --cmakedir
-    OUTPUT_STRIP_TRAILING_WHITESPACE OUTPUT_VARIABLE PB_DIR
-)
-list(APPEND CMAKE_PREFIX_PATH "${PB_DIR}")
-find_package(pybind11 CONFIG REQUIRED)
 
 add_executable(demo
     src/main.cpp
@@ -24,15 +26,19 @@ add_executable(demo
 
 target_include_directories(demo
     PUBLIC
-    python/include
+    ${Python_INCLUDE_DIRS}
+)
+
+target_link_options(demo
+    PUBLIC
+    ${Python_LINK_OPTIONS}
 )
 
 target_link_directories(demo
     PUBLIC
-    python/lib
+    ${Python_LIBRARY_DIRS}
 )
 
 target_link_libraries(demo 
-    pybind11::embed
-    -lpython3.11
+    ${Python_LIBRARIES}
 )

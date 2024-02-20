@@ -527,9 +527,9 @@ class PythonBuilder(Builder):
         "--with-system-libmpdec",
         # "--disable-profiling",
         # "--enable-ipv6",
-        "--enable-optimizations",
-        "--with-lto",
-        "--without-doc-strings",
+        # "--enable-optimizations",
+        # "--with-lto",
+        # "--without-doc-strings",
         # "--without-readline",
         # "--with-readline=editline",
         # "--with-lto=thin",
@@ -634,25 +634,39 @@ class PythonBuilder(Builder):
         for f in bins:
             self.remove(self.prefix / "bin" / f)
 
+        python3_config = self.prefix / "bin" / "python3-config"
         self.move(
             self.prefix / "bin" / f"{self.name_ver}-config",
-            self.prefix / "bin" / "python3-config",
+            python3_config,
         )
 
-        self.move(self.prefix / "bin" / self.name_ver, self.prefix / "bin" / "python3")
+        # fix reference
+        python3_config.write_text(
+            python3_config.read_text().replace(
+                self.name_ver,
+                "python3"
+            )
+        )
+
+        self.move(
+            self.prefix / "bin" / self.name_ver, 
+            self.prefix / "bin" / "python3"
+        )
 
     def ziplib(self):
         """zip python site-packages"""
+        cleaned = self.project.build / "cleaned"
         self.move(
-            self.project.build / "cleaned" / "lib-dynload",
+            cleaned / "lib-dynload",
             self.project.build / "lib-dynload",
         )
         self.move(
-            self.project.build / "cleaned" / "os.py", self.project.build / "os.py"
+            cleaned / "os.py", self.project.build / "os.py"
         )
 
         zip_path = self.prefix / "lib" / f"python{self.ver_nodot}"
-        shutil.make_archive(str(zip_path), "zip", str(self.project.build / "cleaned"))
+        shutil.make_archive(str(zip_path), "zip", str(cleaned))
+        self.remove(cleaned)
 
         src = self.prefix / "lib" / self.name_ver
         site_packages = src / "site-packages"
@@ -672,8 +686,8 @@ class PythonBuilder(Builder):
         """override by subclass if needed"""
 
     def process(self):
-        for dep in self.depends_on:
-            dep.process()
+        for dependency_class in self.depends_on:
+            dependency_class().process()
         self.pre_process()
         self.setup()
         self.configure()
@@ -711,7 +725,8 @@ class PythonDebugBuilder(PythonBuilder):
     def post_process(self):
         memray = self.project.downloads / "memray"
         self.git_clone(
-            "https://github.com/bloomberg/memray.git", cwd=self.project.downloads
+            "https://github.com/bloomberg/memray.git",
+            cwd=self.project.downloads
         )
         self.cmd(f"{self.python} setup.py build", cwd=memray)
         self.cmd(f"{self.python} setup.py install", cwd=memray)

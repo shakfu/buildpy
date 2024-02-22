@@ -45,7 +45,7 @@ _contextvars _contextvarsmodule.c
 _csv _csv.c
 # _ctypes _ctypes/_ctypes.c _ctypes/callbacks.c _ctypes/callproc.c _ctypes/stgdict.c _ctypes/cfield.c -ldl -lffi -DHAVE_FFI_PREP_CIF_VAR -DHAVE_FFI_PREP_CLOSURE_LOC -DHAVE_FFI_CLOSURE_ALLOC
 _datetime _datetimemodule.c
-_decimal _decimal/_decimal.c _decimal/libmpdec/basearith.c _decimal/libmpdec/constants.c _decimal/libmpdec/context.c _decimal/libmpdec/convolute.c _decimal/libmpdec/crt.c _decimal/libmpdec/difradix2.c _decimal/libmpdec/fnt.c _decimal/libmpdec/fourstep.c _decimal/libmpdec/io.c _decimal/libmpdec/memory.c _decimal/libmpdec/mpdecimal.c _decimal/libmpdec/numbertheory.c _decimal/libmpdec/sixstep.c _decimal/libmpdec/transpose.c -I$(srcdir)/Modules/_decimal/libmpdec -DCONFIG_64=1 -DANSI=1 -DHAVE_UINT128_T=1
+# _decimal _decimal/_decimal.c _decimal/libmpdec/basearith.c _decimal/libmpdec/constants.c _decimal/libmpdec/context.c _decimal/libmpdec/convolute.c _decimal/libmpdec/crt.c _decimal/libmpdec/difradix2.c _decimal/libmpdec/fnt.c _decimal/libmpdec/fourstep.c _decimal/libmpdec/io.c _decimal/libmpdec/memory.c _decimal/libmpdec/mpdecimal.c _decimal/libmpdec/numbertheory.c _decimal/libmpdec/sixstep.c _decimal/libmpdec/transpose.c -I$(srcdir)/Modules/_decimal/libmpdec -DCONFIG_64=1 -DANSI=1 -DHAVE_UINT128_T=1
 _elementtree _elementtree.c
 # _hashlib _hashopenssl.c -I$(OPENSSL)/include -L$(OPENSSL)/lib $(OPENSSL)/lib/libcrypto.a
 _heapq _heapqmodule.c
@@ -67,6 +67,7 @@ _sha256 sha256module.c
 _sha3 _sha3/sha3module.c
 _sha512 sha512module.c
 _socket socketmodule.c
+_sqlite3 _sqlite/blob.c _sqlite/connection.c _sqlite/cursor.c _sqlite/microprotocols.c _sqlite/module.c _sqlite/prepare_protocol.c _sqlite/row.c _sqlite/statement.c _sqlite/util.c
 # _ssl _ssl.c -I$(OPENSSL)/include -L$(OPENSSL)/lib $(OPENSSL)/lib/libcrypto.a $(OPENSSL)/lib/libssl.a
 _statistics _statisticsmodule.c
 _struct _struct.c
@@ -88,9 +89,6 @@ zlib zlibmodule.c -lz
 
 *disabled*
 
-
-# _blake2
-_bz2
 _codecs_cn
 _codecs_hk
 _codecs_iso2022
@@ -102,16 +100,13 @@ _ctypes
 _curses
 _curses_panel
 _dbm
-# _decimal
+_decimal
 _hashlib
 _ssl
-# _scproxy
-_sqlite3
 _tkinter
 _xxsubinterpreters
 audioop
 nis
-# readline
 resource
 spwd
 syslog

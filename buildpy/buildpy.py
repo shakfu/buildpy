@@ -625,7 +625,7 @@ class PythonBuilder(Builder):
         elif _type == 'shared':
             self.config_options.append("--enable-shared")
         elif _type == "framework":
-            self.config_options.append("--enable-framework")
+            self.config_options.append(f"--enable-framework={self.prefix}")
         else:
             self.fail(f"{_type} not recognized build type")
 
@@ -645,8 +645,7 @@ class PythonBuilder(Builder):
         self.cmd("make", cwd=self.src_path)
 
     def install(self):
-        self.cmd("make install", cwd=self.src_path)
-
+        self.cmd(f"make install", cwd=self.src_path)
 
     def clean(self):
         src = self.prefix / "lib" / self.name_ver
@@ -671,25 +670,6 @@ class PythonBuilder(Builder):
         ]
         for f in bins:
             self.remove(self.prefix / "bin" / f)
-
-        # python3_config = self.prefix / "bin" / "python3-config"
-        # self.move(
-        #     self.prefix / "bin" / f"{self.name_ver}-config",
-        #     python3_config,
-        # )
-
-        # # fix reference
-        # python3_config.write_text(
-        #     python3_config.read_text().replace(
-        #         self.name_ver,
-        #         "python3"
-        #     )
-        # )
-
-        # self.move(
-        #     self.prefix / "bin" / self.name_ver, 
-        #     self.prefix / "bin" / "python3"
-        # )
 
     def ziplib(self):
         """zip python site-packages"""
@@ -784,7 +764,7 @@ if __name__ == "__main__":
 
     opt("--debug", "-d", help="build debug python", action="store_true")
     opt("--version", "-v", default="3.11.7", help="python version")
-    opt("--config", "-c", default="patch/shared.local", help="build configuration")
+    opt("--config", "-c", default="patch/static.max", help="build configuration")
     opt("--reset", "-r", help="reset build", action="store_true")
     opt("--optimize", "-o", help="optimize build", action="store_true")
     opt("--mac-dep-target", default="13.6", help="mac dep target")

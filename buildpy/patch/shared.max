@@ -67,6 +67,7 @@ _sha256 sha256module.c
 _sha3 _sha3/sha3module.c
 _sha512 sha512module.c
 _socket socketmodule.c
+_sqlite3 _sqlite/blob.c _sqlite/connection.c _sqlite/cursor.c _sqlite/microprotocols.c _sqlite/module.c _sqlite/prepare_protocol.c _sqlite/row.c _sqlite/statement.c _sqlite/util.c
 # _ssl _ssl.c -I$(OPENSSL)/include -L$(OPENSSL)/lib $(OPENSSL)/lib/libcrypto.a $(OPENSSL)/lib/libssl.a
 _statistics _statisticsmodule.c
 _struct _struct.c
@@ -88,9 +89,6 @@ zlib zlibmodule.c -lz
 
 *disabled*
 
-
-# _blake2
-_bz2
 _codecs_cn
 _codecs_hk
 _codecs_iso2022
@@ -105,13 +103,10 @@ _dbm
 # _decimal
 # _hashlib
 # _ssl
-# _scproxy
-_sqlite3
 _tkinter
 _xxsubinterpreters
 audioop
 nis
-# readline
 resource
 spwd
 syslog

@@ -6,93 +6,47 @@ HEADER = [
     "TESTPATH=",
     "COREPYTHONPATH=$(DESTPATH)$(SITEPATH)$(TESTPATH)",
     "PYTHONPATH=$(COREPYTHONPATH)",
-
-    "OPENSSL=$(srcdir)/../../lib/openssl",
-    "OPENSSL_INCLUDES=-I$(OPENSSL)/include",
-    "OPENSSL_LDFLAGS=-L$(OPENSSL)/lib",
-    "BZIP2=$(srcdir)/../../lib/bzip2",
-    "BZIP2_INCLUDES=-I$(BZIP2)/include",
-    "BZIP2_LDFLAGS=-L$(BZIP2)/lib",
-    "LZMA=$(srcdir)/../../lib/xz",
-    "LZMA_INCLUDES=-I$(LZMA)/include",
-    "LZMA_LDFLAGS=-L$(LZMA)/lib",
-
-    "\n# core extensions\n"
+    "OPENSSL=$(srcdir)/../../install/openssl",
+    "BZIP2=$(srcdir)/../../install/bzip2",
+    "LZMA=$(srcdir)/../../install/xz",
 ]
 
 EXTENSIONS = {
     "_abc": ["_abc.c"],
     "_asyncio": ["_asynciomodule.c"],
     "_bisect": ["_bisectmodule.c"],
-    "_bz2": [
-        "_bz2module.c",
-        "$(BZIP2_INCLUDES)",
-        "$(BZIP2_LDFLAGS)",
-        "$(BZIP2)/lib/libbz2.a",
-    ],
+    "_blake2": ["_blake2/blake2module.c", "_blake2/blake2b_impl.c", "_blake2/blake2s_impl.c"],
+    "_bz2": ["_bz2module.c", "-I$(BZIP2)/include", "-L$(BZIP2)/lib", "$(BZIP2)/lib/libbz2.a"],
     "_codecs": ["_codecsmodule.c"],
+    "_codecs_cn": ["cjkcodecs/_codecs_cn.c"], 
+    "_codecs_hk": ["cjkcodecs/_codecs_hk.c"], 
+    "_codecs_iso2022": ["cjkcodecs/_codecs_iso2022.c"], 
+    "_codecs_jp": ["cjkcodecs/_codecs_jp.c"],
+    "_codecs_kr": ["cjkcodecs/_codecs_kr.c"],
+    "_codecs_tw": ["cjkcodecs/_codecs_tw.c"],
     "_collections": ["_collectionsmodule.c"],
     "_contextvars": ["_contextvarsmodule.c"],
     "_csv": ["_csv.c"],
+    "_ctypes": ["_ctypes/_ctypes.c", "_ctypes/callbacks.c", "_ctypes/callproc.c", "_ctypes/stgdict.c", "_ctypes/cfield.c", "-ldl", "-lffi", "-DHAVE_FFI_PREP_CIF_VAR", "-DHAVE_FFI_PREP_CLOSURE_LOC", "-DHAVE_FFI_CLOSURE_ALLOC"],
+    "_curses": ["-lncurses", "-lncursesw", "-ltermcap", "_cursesmodule.c"],
+    "_curses_panel": ["-lpanel", "-lncurses", "_curses_panel.c"],
     "_datetime": ["_datetimemodule.c"],
-    "_decimal": [
-        "_decimal/_decimal.c",
-        "_decimal/libmpdec/basearith.c",
-        "_decimal/libmpdec/constants.c",
-        "_decimal/libmpdec/context.c",
-        "_decimal/libmpdec/convolute.c",
-        "_decimal/libmpdec/crt.c",
-        "_decimal/libmpdec/difradix2.c",
-        "_decimal/libmpdec/fnt.c",
-        "_decimal/libmpdec/fourstep.c",
-        "_decimal/libmpdec/io.c",
-        "_decimal/libmpdec/memory.c",
-        "_decimal/libmpdec/mpdecimal.c",
-        "_decimal/libmpdec/numbertheory.c",
-        "_decimal/libmpdec/sixstep.c",
-        "_decimal/libmpdec/transpose.c",
-        "-I$(srcdir)/Modules/_decimal/libmpdec",
-        "-DCONFIG_64=1",
-        "-DANSI=1",
-        "-DHAVE_UINT128_T=1",
-    ],
+    "_dbm": ["_dbmmodule.c", "-lgdbm_compat", "-DUSE_GDBM_COMPAT"],
+    # "_decimal": ["_decimal/_decimal.c"],
+    "_decimal": ["_decimal/_decimal.c", "_decimal/libmpdec/basearith.c", "_decimal/libmpdec/constants.c", "_decimal/libmpdec/context.c", "_decimal/libmpdec/convolute.c", "_decimal/libmpdec/crt.c", "_decimal/libmpdec/difradix2.c", "_decimal/libmpdec/fnt.c", "_decimal/libmpdec/fourstep.c", "_decimal/libmpdec/io.c", "_decimal/libmpdec/memory.c", "_decimal/libmpdec/mpdecimal.c", "_decimal/libmpdec/numbertheory.c", "_decimal/libmpdec/sixstep.c", "_decimal/libmpdec/transpose.c", "-I$(srcdir)/Modules/_decimal/libmpdec", "-DCONFIG_64=1", "-DANSI=1", "-DHAVE_UINT128_T=1"],
     "_elementtree": ["_elementtree.c"],
-    "_functools": [
-        "-DPy_BUILD_CORE_BUILTIN",
-        "-I$(srcdir)/Include/internal",
-        "_functoolsmodule.c",
-    ],
-    "_hashlib": [
-        "_hashopenssl.c",
-        "$(OPENSSL_INCLUDES)",
-        "$(OPENSSL_LDFLAGS)",
-        "$(OPENSSL)/lib/libcrypto.a",
-    ],
+    "_functools": ["-DPy_BUILD_CORE_BUILTIN", "-I$(srcdir)/Include/internal", "_functoolsmodule.c"],
+    "_gdbm": ["_gdbmmodule.c", "-lgdbm"],
+    "_hashlib": ["_hashopenssl.c", "-I$(OPENSSL)/include", "-L$(OPENSSL)/lib", "$(OPENSSL)/lib/libcrypto.a"],
     "_heapq": ["_heapqmodule.c"],
-    "_io": [
-        "_io/_iomodule.c",
-        "_io/iobase.c",
-        "_io/fileio.c",
-        "_io/bytesio.c",
-        "_io/bufferedio.c",
-        "_io/textio.c",
-        "_io/stringio.c",
-    ],
+    "_io": ["_io/_iomodule.c", "_io/iobase.c", "_io/fileio.c", "_io/bytesio.c", "_io/bufferedio.c", "_io/textio.c", "_io/stringio.c"],
     "_json": ["_json.c"],
     "_locale": ["-DPy_BUILD_CORE_BUILTIN", "_localemodule.c"],
     "_lsprof": ["_lsprof.c", "rotatingtree.c"],
-    "_lzma": [
-        "_lzmamodule.c",
-        "$(LZMA_INCLUDES)",
-        "$(LZMA_LDFLAGS)",
-        "$(LZMA)/lib/liblzma.a",
-    ],
+    "_lzma": ["_lzmamodule.c", "-I$(LZMA)/include", "-L$(LZMA)/lib", "$(LZMA)/lib/liblzma.a"],
     "_md5": ["md5module.c"],
     "_multibytecodec": ["cjkcodecs/multibytecodec.c"],
-    "_multiprocessing": [
-        "_multiprocessing/multiprocessing.c",
-        "_multiprocessing/semaphore.c",
-    ],
+    "_multiprocessing": ["_multiprocessing/multiprocessing.c", "_multiprocessing/semaphore.c"],
     "_opcode": ["_opcode.c"],
     "_operator": ["_operator.c"],
     "_pickle": ["_pickle.c"],
@@ -100,37 +54,25 @@ EXTENSIONS = {
     "_posixsubprocess": ["_posixsubprocess.c"],
     "_queue": ["_queuemodule.c"],
     "_random": ["_randommodule.c"],
+    "_scproxy": ["_scproxy.c"],
     "_sha1": ["sha1module.c"],
     "_sha256": ["sha256module.c"],
     "_sha3": ["_sha3/sha3module.c"],
     "_sha512": ["sha512module.c"],
-    "_signal": [
-        "-DPy_BUILD_CORE_BUILTIN",
-        "-I$(srcdir)/Include/internal",
-        "signalmodule.c",
-    ],
+    "_signal": ["-DPy_BUILD_CORE_BUILTIN", "-I$(srcdir)/Include/internal", "signalmodule.c"],
     "_socket": ["socketmodule.c"],
     "_sre": ["_sre/sre.c", "-DPy_BUILD_CORE_BUILTIN"],
-    "_ssl": [
-        "_ssl.c",
-        "$(OPENSSL_INCLUDES)",
-        "$(OPENSSL_LDFLAGS)",
-        "$(OPENSSL)/lib/libcrypto.a",
-        "$(OPENSSL)/lib/libssl.a",
-    ],
+    "_ssl": ["_ssl.c", "-I$(OPENSSL)/include", "-L$(OPENSSL)/lib", "$(OPENSSL)/lib/libcrypto.a", "$(OPENSSL)/lib/libssl.a"],
     "_stat": ["_stat.c"],
     "_statistics": ["_statisticsmodule.c"],
     "_struct": ["_struct.c"],
     "_symtable": ["symtablemodule.c"],
-    "_thread": [
-        "-DPy_BUILD_CORE_BUILTIN",
-        "-I$(srcdir)/Include/internal",
-        "_threadmodule.c",
-    ],
+    "_thread": ["-DPy_BUILD_CORE_BUILTIN", "-I$(srcdir)/Include/internal", "_threadmodule.c"],
     "_tracemalloc": ["_tracemalloc.c"],
     "_typing": ["_typingmodule.c"],
     "_uuid": ["_uuidmodule.c"],
     "_weakref": ["_weakref.c"],
+    "_zoneinfo": ["_zoneinfo.c"],
     "array": ["arraymodule.c"],
     "atexit": ["atexitmodule.c"],
     "binascii": ["binascii.c"],
@@ -142,23 +84,16 @@ EXTENSIONS = {
     "itertools": ["itertoolsmodule.c"],
     "math": ["mathmodule.c"],
     "mmap": ["mmapmodule.c"],
-    "posix": [
-        "-DPy_BUILD_CORE_BUILTIN",
-        "-I$(srcdir)/Include/internal",
-        "posixmodule.c",
-    ],
+    "posix": ["-DPy_BUILD_CORE_BUILTIN", "-I$(srcdir)/Include/internal", "posixmodule.c"],
     "pwd": ["pwdmodule.c"],
-    "pyexpat": [
-        "expat/xmlparse.c",
-        "expat/xmlrole.c",
-        "expat/xmltok.c",
-        "pyexpat.c",
-        "-I$(srcdir)/Modules/expat",
-        "-DHAVE_EXPAT_CONFIG_H",
-        "-DUSE_PYEXPAT_CAPI",
-        "-DXML_DEV_URANDOM",
-    ],
+    # "pyexpat": ["pyexpat.c"],
+    "pyexpat": ["expat/xmlparse.c", "expat/xmlrole.c", "expat/xmltok.c", "pyexpat.c", "-I$(srcdir)/Modules/expat", "-DHAVE_EXPAT_CONFIG_H", "-DUSE_PYEXPAT_CAPI", "-DXML_DEV_URANDOM"],
+    "readline": ["readline.c", "-lreadline", "-ltermcap"],
+    "resource": ["resource.c"],
     "select": ["selectmodule.c"],
+    "spwd": ["spwdmodule.c"],
+    "syslog": ["syslogmodule.c"],
+    "termios": ["termios.c"],
     "time": ["-DPy_BUILD_CORE_BUILTIN", "-I$(srcdir)/Include/internal", "timemodule.c"],
     "unicodedata": ["unicodedata.c"],
     "zlib": ["zlibmodule.c", "-lz"],
@@ -189,7 +124,7 @@ CORE = [
 ]
 
 static_local = dict(
-    name='static.local',
+    name="static.local",
     static=[
         "_asyncio",
         "_bisect",
@@ -223,6 +158,7 @@ static_local = dict(
         "_struct",
         "_typing",
         "_uuid",
+        "_zoneinfo",
         "array",
         "binascii",
         "cmath",
@@ -252,11 +188,12 @@ static_local = dict(
         "_sqlite3",
         "_tkinter",
         "_xxsubinterpreters",
-        "_zoneinfo",
+        # "_zoneinfo",
         "audioop",
         "nis",
         "readline",
         "resource",
+        "spwd",
         "syslog",
         "termios",
         "xxlimited",
@@ -267,13 +204,13 @@ static_local = dict(
 class Config:
     def __init__(self, cfg: dict):
         self.cfg = cfg
-        self.out = HEADER.copy()
+        self.out = ["# -*- makefile -*-"] + HEADER.copy() + ["\n# core\n"]
 
     def add_section(self, name):
         if name in self.cfg:
             self.out.append(f"\n*{name}*\n")
             for i in self.cfg[name]:
-                if name == 'disabled':
+                if name == "disabled":
                     line = [i]
                 else:
                     ext = EXTENSIONS[i]
@@ -285,12 +222,12 @@ class Config:
             ext = EXTENSIONS[i]
             line = [i] + ext
             self.out.append(" ".join(line))
-        for section in ['shared', 'static', 'disabled']:
+        for section in ["shared", "static", "disabled"]:
             self.add_section(section)
 
-        with open(self.cfg['name'], 'w') as f:
+        with open(self.cfg["name"], "w") as f:
             f.write("\n".join(self.out))
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     cfg = Config(static_local)
     cfg.write()

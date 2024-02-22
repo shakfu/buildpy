@@ -8,6 +8,7 @@ import stat
 import subprocess
 import sys
 import tarfile
+import datetime
 from pathlib import Path
 from typing import Optional, Union
 from urllib.request import urlretrieve
@@ -24,13 +25,14 @@ PYTHON = sys.executable
 PLATFORM = platform.system()
 ARCH = platform.machine()
 PY_VER_MINOR = sys.version_info.minor
-MACOSX_DEPLOYMENT_TARGET = os.getenv("MACOSX_DEPLOYMENT_TARGET", "12.6")
-os.environ["MACOSX_DEPLOYMENT_TARGET"] = MACOSX_DEPLOYMENT_TARGET
+if PLATFORM == "Darwin":
+    MACOSX_DEPLOYMENT_TARGET = os.getenv("MACOSX_DEPLOYMENT_TARGET", "12.6")
+    os.environ["MACOSX_DEPLOYMENT_TARGET"] = MACOSX_DEPLOYMENT_TARGET
 
 DEBUG = True
 
 # ----------------------------------------------------------------------------
-# setup
+# utility classes
 
 
 class CustomFormatter(logging.Formatter):
@@ -44,8 +46,8 @@ class CustomFormatter(logging.Formatter):
     red = "\x1b[31;20m"
     bold_red = "\x1b[31;1m"
     reset = "\x1b[0m"
-    # fmt = "%(asctime)s - {}%(levelname)-8s{} - %(name)s.%(funcName)s - %(message)s"
-    fmt = "%(asctime)s - {}%(levelname)s{} - %(name)s.%(funcName)s - %(message)s"
+    # fmt = "%(delta)s - {}%(levelname)s{} - %(name)s.%(funcName)s - %(message)s"
+    fmt = f"{white}%(delta)s{reset} - {{}}%(levelname)s{{}} - {white}%(name)s.%(funcName)s{reset} - %(message)s"
 
     FORMATS = {
         logging.DEBUG: fmt.format(grey, reset),
@@ -57,7 +59,9 @@ class CustomFormatter(logging.Formatter):
 
     def format(self, record):
         log_fmt = self.FORMATS.get(record.levelno)
-        formatter = logging.Formatter(log_fmt, datefmt="%H:%M:%S")
+        duration = datetime.datetime.utcfromtimestamp(record.relativeCreated / 1000)
+        record.delta = duration.strftime("%H:%M:%S")
+        formatter = logging.Formatter(log_fmt)
         return formatter.format(record)
 
 
@@ -92,7 +96,7 @@ class ShellCmd:
             with tarfile.open(archive) as f:
                 f.extractall(tofolder)
         # elif zipfile.is_zipfile(archive):
-        #     with zipfile.open(archive) as f:
+        #     with zipfile.ZipFile(archive) as f:
         #         f.extractall(tofolder)
         else:
             raise TypeError("cannot extract from this file.")
@@ -253,6 +257,12 @@ class ShellCmd:
         self.log.info(_cmd)
         self.cmd(_cmd)
 
+# ----------------------------------------------------------------------------
+# config class
+
+
+# ----------------------------------------------------------------------------
+# main classes
 
 class Project:
     """Utility class to hold project directory structure"""
@@ -418,10 +428,10 @@ class AbstractBuilder(ShellCmd):
 
     @property
     def prefix(self):
-        return self.project.install
+        return self.project.install / self.name.lower()
 
     def libs_static_exist(self):
-        return all((self.project.lib / lib).exists() for lib in self.libs_static)
+        return all((self.prefix / 'lib' / lib).exists() for lib in self.libs_static)
 
     def pre_process(self):
         """override by subclass if needed"""
@@ -520,28 +530,29 @@ class PythonBuilder(Builder):
     url_template = "https://www.python.org/ftp/python/{ver}/Python-{ver}.tar.xz"
 
     config_options: list[str] = [
-        "--enable-shared",
-        "--disable-test-modules",
-        "--without-static-libpython",
-        "--with-ensurepip=no",
-        "--with-system-libmpdec",
+
         # "--disable-profiling",
-        # "--enable-ipv6",
-        # "--enable-optimizations",
-        # "--with-lto",
-        # "--without-doc-strings",
-        # "--without-readline",
-        # "--with-readline=editline",
-        # "--with-lto=thin",
-        # "--with-system-libmpdec",
-        # "--with-system-expat",
-        # "--with-system-ffi",
-        # "--with-openssl=DIR",
-        # "--with-openssl-rpath=auto",
-        # "--enable-universalsdk",
-        # "--enable-universalsdk=SDKDIR",
+        "--disable-test-modules",
         # "--enable-framework",
         # "--enable-framework=INSTALLDIR",
+        # "--enable-ipv6",
+        # "--enable-optimizations",
+        # "--enable-shared",
+        # "--enable-universalsdk",
+        # "--enable-universalsdk=SDKDIR",
+        # "--with-lto",
+        # "--with-lto=thin",
+        # "--with-openssl-rpath=auto",
+        # "--with-openssl=DIR",
+        # "--with-readline=editline",
+        # "--with-system-expat",
+        # "--with-system-ffi",
+        # "--with-system-libmpdec",
+        # "--without-builtin-hashlib-hashes",
+        # "--without-doc-strings",
+        "--without-ensurepip",
+        # "--without-readline",
+        "--without-static-libpython",
     ]
 
     required_packages: list[str] = []
@@ -581,25 +592,51 @@ class PythonBuilder(Builder):
         self,
         version: str = "3.11.7",
         project: Optional[Project] = None,
-        depends_on: Optional[list["Builder"]] = None,
-        config: str = "patch/static.local",
+        config: Pathlike = "patch/static.local",
+        optimize: bool = False,
+        pkgs: Optional[list[str]] = None,
     ):
 
         super().__init__(version, project)
-        self.config = config
-        self.python = self.project.install / "bin" / "python3"
-        self.pip = self.project.install / "bin" / "pip3"
+        self.config = Path(config)
+        self.optimize = optimize
+        self.pkgs = pkgs or [] 
         self.log = logging.getLogger(self.__class__.__name__)
 
-    # @property
-    # def prefix(self):
-    #     return self.project.install
+    @property
+    def python(self):
+        return self.prefix / "bin" / "python3"
+
+    @property
+    def pip(self):
+        return self.prefix / "bin" / "pip3"
 
     def pre_process(self):
         """override by subclass if needed"""
 
     def configure(self):
         """configure build"""
+        if not self.config.exists():
+            self.fail("configureation does not exist")
+
+        _type, _size = self.config.name.split('.')
+        if _type == 'static':
+            self.config_options.remove("--without-static-libpython")
+        elif _type == 'shared':
+            self.config_options.append("--enable-shared")
+        elif _type == "framework":
+            self.config_options.append("--enable-framework")
+        else:
+            self.fail(f"{_type} not recognized build type")
+
+        if self.optimize:
+            self.config_options.append("--enable-optimizations")
+
+        if self.pkgs or self.required_packages:
+            self.config_options.remove("--without-ensurepip")
+            self.ignore_patterns.remove("ensurepip")
+            self.pkgs.extend(self.required_packages)
+
         self.copy(self.config, self.src_path / "Modules" / "Setup.local")
         config_opts = " ".join(self.config_options)
         self.cmd(f"./configure --prefix={self.prefix} {config_opts}", cwd=self.src_path)
@@ -609,6 +646,7 @@ class PythonBuilder(Builder):
 
     def install(self):
         self.cmd("make install", cwd=self.src_path)
+
 
     def clean(self):
         src = self.prefix / "lib" / self.name_ver
@@ -634,24 +672,24 @@ class PythonBuilder(Builder):
         for f in bins:
             self.remove(self.prefix / "bin" / f)
 
-        python3_config = self.prefix / "bin" / "python3-config"
-        self.move(
-            self.prefix / "bin" / f"{self.name_ver}-config",
-            python3_config,
-        )
+        # python3_config = self.prefix / "bin" / "python3-config"
+        # self.move(
+        #     self.prefix / "bin" / f"{self.name_ver}-config",
+        #     python3_config,
+        # )
 
-        # fix reference
-        python3_config.write_text(
-            python3_config.read_text().replace(
-                self.name_ver,
-                "python3"
-            )
-        )
+        # # fix reference
+        # python3_config.write_text(
+        #     python3_config.read_text().replace(
+        #         self.name_ver,
+        #         "python3"
+        #     )
+        # )
 
-        self.move(
-            self.prefix / "bin" / self.name_ver, 
-            self.prefix / "bin" / "python3"
-        )
+        # self.move(
+        #     self.prefix / "bin" / self.name_ver, 
+        #     self.prefix / "bin" / "python3"
+        # )
 
     def ziplib(self):
         """zip python site-packages"""
@@ -679,8 +717,8 @@ class PythonBuilder(Builder):
 
     def install_pkgs(self):
         required_pkgs = " ".join(self.required_packages)
-        self.cmd(f"{self.pip} install --upgrade pip", cwd=self.project.cwd)
-        self.cmd(f"{self.pip} install {required_pkgs}", cwd=self.project.cwd)
+        self.cmd(f"{self.python} -m ensurepip")
+        self.cmd(f"{self.pip} install {required_pkgs}")
 
     def post_process(self):
         """override by subclass if needed"""
@@ -695,7 +733,8 @@ class PythonBuilder(Builder):
         self.install()
         self.clean()
         self.ziplib()
-        # self.install_pkgs()
+        if self.pkgs:
+            self.install_pkgs()
         self.post_process()
 
 
@@ -745,17 +784,27 @@ if __name__ == "__main__":
 
     opt("--debug", "-d", help="build debug python", action="store_true")
     opt("--version", "-v", default="3.11.7", help="python version")
-    opt("--config", "-c", default="patch/tinydb.local", help="build configuration")
+    opt("--config", "-c", default="patch/shared.local", help="build configuration")
     opt("--reset", "-r", help="reset build", action="store_true")
+    opt("--optimize", "-o", help="optimize build", action="store_true")
     opt("--mac-dep-target", default="13.6", help="mac dep target")
+    opt("--pkgs", "-p", type=str, nargs='+')
 
     args = parser.parse_args()
     if args.debug:
         dbuilder = PythonDebugBuilder(version=args.version)
         dbuilder.process()
     else:
-        builder = PythonBuilder(version=args.version, config=args.config)
+        builder = PythonBuilder(
+            version=args.version, 
+            config=args.config, 
+            optimize=args.optimize,
+            pkgs=args.pkgs,
+        )
         if args.reset:
             builder.remove("build")
-            builder.remove("python")
         builder.process()
+
+
+
+

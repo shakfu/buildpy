@@ -43,7 +43,6 @@ _bz2 _bz2module.c -I$(BZIP2)/include -L$(BZIP2)/lib $(BZIP2)/lib/libbz2.a
 _contextvars _contextvarsmodule.c
 _csv _csv.c
 _datetime _datetimemodule.c
-_decimal _decimal/_decimal.c -DCONFIG_64=1 -DPy_BUILD_CORE_BUILTIN
 _elementtree _elementtree.c
 _hashlib _hashopenssl.c -I$(OPENSSL)/include -L$(OPENSSL)/lib $(OPENSSL)/lib/libcrypto.a
 _heapq _heapqmodule.c
@@ -98,6 +97,7 @@ _ctypes
 _curses
 _curses_panel
 _dbm
+_decimal
 _tkinter
 _xxsubinterpreters
 audioop

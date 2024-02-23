@@ -59,7 +59,8 @@ class CustomFormatter(logging.Formatter):
 
     def format(self, record):
         log_fmt = self.FORMATS.get(record.levelno)
-        duration = datetime.datetime.utcfromtimestamp(record.relativeCreated / 1000)
+        duration = datetime.datetime.fromtimestamp(record.relativeCreated / 1000, datetime.UTC)
+        #duration = datetime.datetime.utcfromtimestamp(record.relativeCreated / 1000)
         record.delta = duration.strftime("%H:%M:%S")
         formatter = logging.Formatter(log_fmt)
         return formatter.format(record)
@@ -764,7 +765,7 @@ if __name__ == "__main__":
 
     opt("--debug", "-d", help="build debug python", action="store_true")
     opt("--version", "-v", default="3.11.7", help="python version")
-    opt("--config", "-c", default="patch/static.max", help="build configuration")
+    opt("--config", "-c", default="patch/static.local", help="build configuration")
     opt("--reset", "-r", help="reset build", action="store_true")
     opt("--optimize", "-o", help="optimize build", action="store_true")
     opt("--mac-dep-target", default="13.6", help="mac dep target")

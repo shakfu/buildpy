@@ -1,44 +1,56 @@
-cmake_minimum_required(VERSION 3.16)
-project(demo_project)
 
-set(Python_ROOT_DIR build/install)
 
-find_package(Python 3.8 COMPONENTS Interpreter Development.Module REQUIRED)
+set(PYTHON_PREFIX ${CMAKE_SOURCE_DIR}/build/install/python)
+set(SSL_PREFIX ${CMAKE_SOURCE_DIR}/build/install/openssl)
+set(XZ_PREFIX ${CMAKE_SOURCE_DIR}/build/install/xz)
+set(BZ2_PREFIX ${CMAKE_SOURCE_DIR}/build/install/bzip2)
 
-if (NOT Python_FOUND)
-    message(FATAL_ERROR "python not found")
-endif()
-
-if (NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
-    set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build." FORCE)
-    set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
-endif()
-
-message(STATUS "Python_INCLUDE_DIRS: " ${Python_INCLUDE_DIRS})
-message(STATUS "Python_LINK_OPTIONS: " ${Python_LINK_OPTIONS})
-message(STATUS "Python_LIBRARY_DIRS: " ${Python_LIBRARY_DIRS})
-message(STATUS "Python_LIBRARIES: " ${Python_LIBRARIES})
-
+set(PROJECT_SRC ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_executable(demo
-    src/main.cpp
+    ${PROJECT_SRC}/main.cpp
 )
 
 target_include_directories(demo
     PUBLIC
-    ${Python_INCLUDE_DIRS}
+    ${PYTHON_PREFIX}/include/python3.11
 )
 
-target_link_options(demo
+target_compile_options(demo
     PUBLIC
-    ${Python_LINK_OPTIONS}
+    -fno-strict-overflow
+    -Wsign-compare
+    -Wunreachable-code
+    -fno-common
+    -dynamic
+    -DNDEBUG
+    -g
+    -O3
+    -Wall
+    "-isysroot/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk"
 )
+
+# target_link_options(demo
+#     PUBLIC
+# )
 
 target_link_directories(demo
     PUBLIC
-    ${Python_LIBRARY_DIRS}
+    ${PYTHON_PREFIX}/lib
 )
 
-target_link_libraries(demo 
-    ${Python_LIBRARIES}
+target_link_libraries(demo
+    -ldl
+    "-framework CoreFoundation"
+    "-framework SystemConfiguration"
+    ${PYTHON_PREFIX}/lib/libpython3.11.a
+    ${SSL_PREFIX}/lib/libssl.a
+    ${SSL_PREFIX}/lib/libcrypto.a
+    ${BZ2_PREFIX}/lib/libbz2.a
+    ${XZ_PREFIX}/lib/liblzma.a
+    -lz
+    -lsqlite3
+    # -lmpdec
+    -lreadline
 )
+

@@ -61,6 +61,7 @@ EXTENSIONS = {
     "_sha512": ["sha512module.c"],
     "_signal": ["-DPy_BUILD_CORE_BUILTIN", "-I$(srcdir)/Include/internal", "signalmodule.c"],
     "_socket": ["socketmodule.c"],
+    "_sqlite3": ["_sqlite/blob.c", "_sqlite/connection.c", "_sqlite/cursor.c", "_sqlite/microprotocols.c", "_sqlite/module.c", "_sqlite/prepare_protocol.c", "_sqlite/row.c", "_sqlite/statement.c", "_sqlite/util.c"],
     "_sre": ["_sre/sre.c", "-DPy_BUILD_CORE_BUILTIN"],
     "_ssl": ["_ssl.c", "-I$(OPENSSL)/include", "-L$(OPENSSL)/lib", "$(OPENSSL)/lib/libcrypto.a", "$(OPENSSL)/lib/libssl.a"],
     "_stat": ["_stat.c"],
@@ -99,6 +100,8 @@ EXTENSIONS = {
     "zlib": ["zlibmodule.c", "-lz"],
 }
 
+
+
 CORE = [
     "_abc",
     "_codecs",
@@ -125,14 +128,16 @@ CORE = [
 
 static_local = dict(
     name="static.local",
+    shared = [],
     static=[
         "_asyncio",
         "_bisect",
+        # "_blake2",
         "_bz2",
         "_contextvars",
         "_csv",
         "_datetime",
-        "_decimal",
+        # "_decimal",
         "_elementtree",
         "_hashlib",
         "_heapq",
@@ -148,11 +153,13 @@ static_local = dict(
         "_posixsubprocess",
         "_queue",
         "_random",
+        "_scproxy",
         "_sha1",
         "_sha256",
         "_sha3",
         "_sha512",
         "_socket",
+        "_sqlite3",
         "_ssl",
         "_statistics",
         "_struct",
@@ -167,6 +174,7 @@ static_local = dict(
         "math",
         "mmap",
         "pyexpat",
+        "readline",
         "select",
         "unicodedata",
         "zlib",
@@ -183,15 +191,12 @@ static_local = dict(
         "_ctypes",
         "_curses",
         "_curses_panel",
+        "_decimal",
         "_dbm",
-        "_scproxy",
-        "_sqlite3",
         "_tkinter",
         "_xxsubinterpreters",
-        # "_zoneinfo",
         "audioop",
         "nis",
-        "readline",
         "resource",
         "spwd",
         "syslog",
@@ -207,7 +212,7 @@ class Config:
         self.out = ["# -*- makefile -*-"] + HEADER.copy() + ["\n# core\n"]
 
     def add_section(self, name):
-        if name in self.cfg:
+        if self.cfg[name]:
             self.out.append(f"\n*{name}*\n")
             for i in self.cfg[name]:
                 if name == "disabled":

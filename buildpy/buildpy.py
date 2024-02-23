@@ -2,6 +2,7 @@
 
 import logging
 import os
+import copy
 import platform
 import shutil
 import stat
@@ -32,6 +33,397 @@ if PLATFORM == "Darwin":
 DEBUG = True
 
 # ----------------------------------------------------------------------------
+# config classes
+
+BASE_CONFIG = dict(
+    header=[
+        "DESTLIB=$(LIBDEST)",
+        "MACHDESTLIB=$(BINLIBDEST)",
+        "DESTPATH=",
+        "SITEPATH=",
+        "TESTPATH=",
+        "COREPYTHONPATH=$(DESTPATH)$(SITEPATH)$(TESTPATH)",
+        "PYTHONPATH=$(COREPYTHONPATH)",
+        "OPENSSL=$(srcdir)/../../install/openssl",
+        "BZIP2=$(srcdir)/../../install/bzip2",
+        "LZMA=$(srcdir)/../../install/xz",
+    ],
+    extensions={
+        "_abc": ["_abc.c"],
+        "_asyncio": ["_asynciomodule.c"],
+        "_bisect": ["_bisectmodule.c"],
+        "_blake2": [
+            "_blake2/blake2module.c",
+            "_blake2/blake2b_impl.c",
+            "_blake2/blake2s_impl.c",
+        ],
+        "_bz2": [
+            "_bz2module.c",
+            "-I$(BZIP2)/include",
+            "-L$(BZIP2)/lib",
+            "$(BZIP2)/lib/libbz2.a",
+        ],
+        "_codecs": ["_codecsmodule.c"],
+        "_codecs_cn": ["cjkcodecs/_codecs_cn.c"],
+        "_codecs_hk": ["cjkcodecs/_codecs_hk.c"],
+        "_codecs_iso2022": ["cjkcodecs/_codecs_iso2022.c"],
+        "_codecs_jp": ["cjkcodecs/_codecs_jp.c"],
+        "_codecs_kr": ["cjkcodecs/_codecs_kr.c"],
+        "_codecs_tw": ["cjkcodecs/_codecs_tw.c"],
+        "_collections": ["_collectionsmodule.c"],
+        "_contextvars": ["_contextvarsmodule.c"],
+        "_csv": ["_csv.c"],
+        "_ctypes": [
+            "_ctypes/_ctypes.c",
+            "_ctypes/callbacks.c",
+            "_ctypes/callproc.c",
+            "_ctypes/stgdict.c",
+            "_ctypes/cfield.c",
+            "-ldl",
+            "-lffi",
+            "-DHAVE_FFI_PREP_CIF_VAR",
+            "-DHAVE_FFI_PREP_CLOSURE_LOC",
+            "-DHAVE_FFI_CLOSURE_ALLOC",
+        ],
+        "_curses": ["-lncurses", "-lncursesw", "-ltermcap", "_cursesmodule.c"],
+        "_curses_panel": ["-lpanel", "-lncurses", "_curses_panel.c"],
+        "_datetime": ["_datetimemodule.c"],
+        "_dbm": ["_dbmmodule.c", "-lgdbm_compat", "-DUSE_GDBM_COMPAT"],
+        "_decimal": ["_decimal/_decimal.c", "-DCONFIG_64=1"],
+        "_elementtree": ["_elementtree.c"],
+        "_functools": [
+            "-DPy_BUILD_CORE_BUILTIN",
+            "-I$(srcdir)/Include/internal",
+            "_functoolsmodule.c",
+        ],
+        "_gdbm": ["_gdbmmodule.c", "-lgdbm"],
+        "_hashlib": [
+            "_hashopenssl.c",
+            "-I$(OPENSSL)/include",
+            "-L$(OPENSSL)/lib",
+            "$(OPENSSL)/lib/libcrypto.a",
+        ],
+        "_heapq": ["_heapqmodule.c"],
+        "_io": [
+            "_io/_iomodule.c",
+            "_io/iobase.c",
+            "_io/fileio.c",
+            "_io/bytesio.c",
+            "_io/bufferedio.c",
+            "_io/textio.c",
+            "_io/stringio.c",
+        ],
+        "_json": ["_json.c"],
+        "_locale": ["-DPy_BUILD_CORE_BUILTIN", "_localemodule.c"],
+        "_lsprof": ["_lsprof.c", "rotatingtree.c"],
+        "_lzma": [
+            "_lzmamodule.c",
+            "-I$(LZMA)/include",
+            "-L$(LZMA)/lib",
+            "$(LZMA)/lib/liblzma.a",
+        ],
+        "_md5": ["md5module.c"],
+        "_multibytecodec": ["cjkcodecs/multibytecodec.c"],
+        "_multiprocessing": [
+            "_multiprocessing/multiprocessing.c",
+            "_multiprocessing/semaphore.c",
+        ],
+        "_opcode": ["_opcode.c"],
+        "_operator": ["_operator.c"],
+        "_pickle": ["_pickle.c"],
+        "_posixshmem": ["_multiprocessing/posixshmem.c"],
+        "_posixsubprocess": ["_posixsubprocess.c"],
+        "_queue": ["_queuemodule.c"],
+        "_random": ["_randommodule.c"],
+        "_scproxy": ["_scproxy.c"],
+        "_sha1": ["sha1module.c"],
+        "_sha256": ["sha256module.c"],
+        "_sha3": ["_sha3/sha3module.c"],
+        "_sha512": ["sha512module.c"],
+        "_signal": [
+            "-DPy_BUILD_CORE_BUILTIN",
+            "-I$(srcdir)/Include/internal",
+            "signalmodule.c",
+        ],
+        "_socket": ["socketmodule.c"],
+        "_sqlite3": [
+            "_sqlite/blob.c",
+            "_sqlite/connection.c",
+            "_sqlite/cursor.c",
+            "_sqlite/microprotocols.c",
+            "_sqlite/module.c",
+            "_sqlite/prepare_protocol.c",
+            "_sqlite/row.c",
+            "_sqlite/statement.c",
+            "_sqlite/util.c",
+        ],
+        "_sre": ["_sre/sre.c", "-DPy_BUILD_CORE_BUILTIN"],
+        "_ssl": [
+            "_ssl.c",
+            "-I$(OPENSSL)/include",
+            "-L$(OPENSSL)/lib",
+            "$(OPENSSL)/lib/libcrypto.a",
+            "$(OPENSSL)/lib/libssl.a",
+        ],
+        "_stat": ["_stat.c"],
+        "_statistics": ["_statisticsmodule.c"],
+        "_struct": ["_struct.c"],
+        "_symtable": ["symtablemodule.c"],
+        "_thread": [
+            "-DPy_BUILD_CORE_BUILTIN",
+            "-I$(srcdir)/Include/internal",
+            "_threadmodule.c",
+        ],
+        "_tracemalloc": ["_tracemalloc.c"],
+        "_typing": ["_typingmodule.c"],
+        "_uuid": ["_uuidmodule.c"],
+        "_weakref": ["_weakref.c"],
+        "_zoneinfo": ["_zoneinfo.c"],
+        "array": ["arraymodule.c"],
+        "atexit": ["atexitmodule.c"],
+        "binascii": ["binascii.c"],
+        "cmath": ["cmathmodule.c"],
+        "errno": ["errnomodule.c"],
+        "faulthandler": ["faulthandler.c"],
+        "fcntl": ["fcntlmodule.c"],
+        "grp": ["grpmodule.c"],
+        "itertools": ["itertoolsmodule.c"],
+        "math": ["mathmodule.c"],
+        "mmap": ["mmapmodule.c"],
+        "posix": [
+            "-DPy_BUILD_CORE_BUILTIN",
+            "-I$(srcdir)/Include/internal",
+            "posixmodule.c",
+        ],
+        "pwd": ["pwdmodule.c"],
+        "pyexpat": [
+            "expat/xmlparse.c",
+            "expat/xmlrole.c",
+            "expat/xmltok.c",
+            "pyexpat.c",
+            "-I$(srcdir)/Modules/expat",
+            "-DHAVE_EXPAT_CONFIG_H",
+            "-DUSE_PYEXPAT_CAPI",
+            "-DXML_DEV_URANDOM",
+        ],
+        "readline": ["readline.c", "-lreadline", "-ltermcap"],
+        "resource": ["resource.c"],
+        "select": ["selectmodule.c"],
+        "spwd": ["spwdmodule.c"],
+        "syslog": ["syslogmodule.c"],
+        "termios": ["termios.c"],
+        "time": [
+            "-DPy_BUILD_CORE_BUILTIN",
+            "-I$(srcdir)/Include/internal",
+            "timemodule.c",
+        ],
+        "unicodedata": ["unicodedata.c"],
+        "zlib": ["zlibmodule.c", "-lz"],
+    },
+    core=[
+        "_abc",
+        "_codecs",
+        "_collections",
+        "_functools",
+        "_io",
+        "_locale",
+        "_operator",
+        "_signal",
+        "_sre",
+        "_stat",
+        "_symtable",
+        "_thread",
+        "_tracemalloc",
+        "_weakref",
+        "atexit",
+        "errno",
+        "faulthandler",
+        "itertools",
+        "posix",
+        "pwd",
+        "time",
+    ],
+    shared=[],
+    static=[
+        "_asyncio",
+        "_bisect",
+        "_blake2",
+        "_bz2",
+        "_contextvars",
+        "_csv",
+        "_datetime",
+        "_decimal",
+        "_elementtree",
+        "_hashlib",
+        "_heapq",
+        "_json",
+        "_lsprof",
+        "_lzma",
+        "_md5",
+        "_multibytecodec",
+        "_multiprocessing",
+        "_opcode",
+        "_pickle",
+        "_posixshmem",
+        "_posixsubprocess",
+        "_queue",
+        "_random",
+        "_scproxy",
+        "_sha1",
+        "_sha256",
+        "_sha3",
+        "_sha512",
+        "_socket",
+        "_sqlite3",
+        "_ssl",
+        "_statistics",
+        "_struct",
+        "_typing",
+        "_uuid",
+        "_zoneinfo",
+        "array",
+        "binascii",
+        "cmath",
+        "fcntl",
+        "grp",
+        "math",
+        "mmap",
+        "pyexpat",
+        "readline",
+        "select",
+        "unicodedata",
+        "zlib",
+    ],
+    disabled=[
+        "_codecs_cn",
+        "_codecs_hk",
+        "_codecs_iso2022",
+        "_codecs_jp",
+        "_codecs_kr",
+        "_codecs_tw",
+        "_crypt",
+        "_ctypes",
+        "_curses",
+        "_curses_panel",
+        # "_decimal",
+        "_dbm",
+        "_tkinter",
+        "_xxsubinterpreters",
+        "audioop",
+        "nis",
+        "resource",
+        "spwd",
+        "syslog",
+        "termios",
+        "xxlimited",
+        "xxlimited_35",
+    ],
+)
+
+
+class Config:
+    version: str
+
+    def __init__(self, cfg: dict):
+        self.cfg = self.patch(cfg.copy())
+        self.out = ["# -*- makefile -*-"] + self.cfg["header"] + ["\n# core\n"]
+
+    def __repr__(self):
+        return f"<{self.__class__.__name__} '{self.version}'>"
+
+    def patch(self, cfg: dict) -> dict:
+        return cfg
+
+    def disable_static(self, *names):
+        for name in names:
+            self.cfg["static"].remove(name)
+            self.cfg["disabled"].append(name)
+
+    def disable_shared(self, *names):
+        for name in names:
+            self.cfg["shared"].remove(name)
+            self.cfg["disabled"].append(name)
+
+    def add_section(self, name):
+        if self.cfg[name]:
+            self.out.append(f"\n*{name}*\n")
+            for i in sorted(self.cfg[name]):
+                if name == "disabled":
+                    line = [i]
+                else:
+                    ext = self.cfg["extensions"][i]
+                    line = [i] + ext
+                self.out.append(" ".join(line))
+
+    def write(self, method: str, to: Pathlike):
+        getattr(self, method)()
+        for i in self.cfg['core']:
+            ext = self.cfg['extensions'][i]
+            line = [i] + ext
+            self.out.append(" ".join(line))
+        for section in ["shared", "static", "disabled"]:
+            self.add_section(section)
+
+        with open(to, "w") as f:
+            f.write("\n".join(self.out))
+
+    def clone(self):
+        return copy.copy(self)
+
+
+class PythonConfig_311(Config):
+    version: str = "3.11.7"
+
+    def static_max(self):
+        pass
+
+    def static_mid(self):
+        self.disable_static("_decimal")
+
+
+class PythonConfig_312(PythonConfig_311):
+    version = "3.12.2"
+
+    def patch(self, cfg: dict):
+        cfg["extensions"].update(
+            {
+                "_md5": [
+                    "md5module.c",
+                    "-I$(srcdir)/Modules/_hacl/include",
+                    "_hacl/Hacl_Hash_MD5.c",
+                    "-D_BSD_SOURCE",
+                    "-D_DEFAULT_SOURCE",
+                ],
+                "_sha1": [
+                    "sha1module.c",
+                    "-I$(srcdir)/Modules/_hacl/include",
+                    "_hacl/Hacl_Hash_SHA1.c",
+                    "-D_BSD_SOURCE",
+                    "-D_DEFAULT_SOURCE",
+                ],
+                "_sha2": [
+                    "sha2module.c",
+                    "-I$(srcdir)/Modules/_hacl/include",
+                    "Modules/_hacl/libHacl_Hash_SHA2.a",
+                ],
+                "_sha3": [
+                    "sha3module.c",
+                    "-I$(srcdir)/Modules/_hacl/include",
+                    "_hacl/Hacl_Hash_SHA3.c",
+                    "-D_BSD_SOURCE",
+                    "-D_DEFAULT_SOURCE",
+                ],
+            }
+        )
+        del cfg["extensions"]["_sha256"]
+        del cfg["extensions"]["_sha512"]
+        cfg["static"].append("_sha2")
+        cfg["static"].remove("_sha256")
+        cfg["static"].remove("_sha512")
+        return cfg
+
+
+# ----------------------------------------------------------------------------
 # utility classes
 
 
@@ -59,8 +451,10 @@ class CustomFormatter(logging.Formatter):
 
     def format(self, record):
         log_fmt = self.FORMATS.get(record.levelno)
-        duration = datetime.datetime.fromtimestamp(record.relativeCreated / 1000, datetime.UTC)
-        #duration = datetime.datetime.utcfromtimestamp(record.relativeCreated / 1000)
+        duration = datetime.datetime.fromtimestamp(
+            record.relativeCreated / 1000, datetime.UTC
+        )
+        # duration = datetime.datetime.utcfromtimestamp(record.relativeCreated / 1000)
         record.delta = duration.strftime("%H:%M:%S")
         formatter = logging.Formatter(log_fmt)
         return formatter.format(record)
@@ -258,12 +652,14 @@ class ShellCmd:
         self.log.info(_cmd)
         self.cmd(_cmd)
 
+
 # ----------------------------------------------------------------------------
 # config class
 
 
 # ----------------------------------------------------------------------------
 # main classes
+
 
 class Project:
     """Utility class to hold project directory structure"""
@@ -302,7 +698,7 @@ class AbstractBuilder(ShellCmd):
     version: str
     url_template: str
     libs_static: list[str]
-    depends_on: list[type['Builder']]
+    depends_on: list[type["Builder"]]
 
     def __init__(
         self, version: Optional[str] = None, project: Optional[Project] = None
@@ -432,7 +828,7 @@ class AbstractBuilder(ShellCmd):
         return self.project.install / self.name.lower()
 
     def libs_static_exist(self):
-        return all((self.prefix / 'lib' / lib).exists() for lib in self.libs_static)
+        return all((self.prefix / "lib" / lib).exists() for lib in self.libs_static)
 
     def pre_process(self):
         """override by subclass if needed"""
@@ -531,7 +927,6 @@ class PythonBuilder(Builder):
     url_template = "https://www.python.org/ftp/python/{ver}/Python-{ver}.tar.xz"
 
     config_options: list[str] = [
-
         # "--disable-profiling",
         "--disable-test-modules",
         # "--enable-framework",
@@ -599,9 +994,9 @@ class PythonBuilder(Builder):
     ):
 
         super().__init__(version, project)
-        self.config = Path(config)
+        self.config = config
         self.optimize = optimize
-        self.pkgs = pkgs or [] 
+        self.pkgs = pkgs or []
         self.log = logging.getLogger(self.__class__.__name__)
 
     @property
@@ -617,13 +1012,15 @@ class PythonBuilder(Builder):
 
     def configure(self):
         """configure build"""
-        if not self.config.exists():
-            self.fail("configureation does not exist")
+        config = {
+            '3.11': PythonConfig_311,
+            '3.12': PythonConfig_312,
+        }[self.ver](BASE_CONFIG)
 
-        _type, _size = self.config.name.split('.')
-        if _type == 'static':
+        _type, _size = self.config.split("_")
+        if _type == "static":
             self.config_options.remove("--without-static-libpython")
-        elif _type == 'shared':
+        elif _type == "shared":
             self.config_options.append("--enable-shared")
         elif _type == "framework":
             self.config_options.append(f"--enable-framework={self.prefix}")
@@ -638,7 +1035,7 @@ class PythonBuilder(Builder):
             self.ignore_patterns.remove("ensurepip")
             self.pkgs.extend(self.required_packages)
 
-        self.copy(self.config, self.src_path / "Modules" / "Setup.local")
+        config.write(self.config, to=self.src_path / "Modules" / "Setup.local")
         config_opts = " ".join(self.config_options)
         self.cmd(f"./configure --prefix={self.prefix} {config_opts}", cwd=self.src_path)
 
@@ -646,7 +1043,7 @@ class PythonBuilder(Builder):
         self.cmd("make", cwd=self.src_path)
 
     def install(self):
-        self.cmd(f"make install", cwd=self.src_path)
+        self.cmd("make install", cwd=self.src_path)
 
     def clean(self):
         src = self.prefix / "lib" / self.name_ver
@@ -679,9 +1076,7 @@ class PythonBuilder(Builder):
             cleaned / "lib-dynload",
             self.project.build / "lib-dynload",
         )
-        self.move(
-            cleaned / "os.py", self.project.build / "os.py"
-        )
+        self.move(cleaned / "os.py", self.project.build / "os.py")
 
         zip_path = self.prefix / "lib" / f"python{self.ver_nodot}"
         shutil.make_archive(str(zip_path), "zip", str(cleaned))
@@ -745,8 +1140,7 @@ class PythonDebugBuilder(PythonBuilder):
     def post_process(self):
         memray = self.project.downloads / "memray"
         self.git_clone(
-            "https://github.com/bloomberg/memray.git",
-            cwd=self.project.downloads
+            "https://github.com/bloomberg/memray.git", cwd=self.project.downloads
         )
         self.cmd(f"{self.python} setup.py build", cwd=memray)
         self.cmd(f"{self.python} setup.py install", cwd=memray)
@@ -765,11 +1159,10 @@ if __name__ == "__main__":
 
     opt("--debug", "-d", help="build debug python", action="store_true")
     opt("--version", "-v", default="3.12.2", help="python version")
-    opt("--config", "-c", default="patch/static.local", help="build configuration")
+    opt("--config", "-c", default="static_max", help="build configuration", metavar="NAME")
     opt("--reset", "-r", help="reset build", action="store_true")
     opt("--optimize", "-o", help="optimize build", action="store_true")
-    opt("--mac-dep-target", default="13.6", help="mac dep target")
-    opt("--pkgs", "-p", type=str, nargs='+')
+    opt("--pkgs", "-p", type=str, nargs="+", metavar="PKG")
 
     args = parser.parse_args()
     if args.debug:
@@ -777,15 +1170,11 @@ if __name__ == "__main__":
         dbuilder.process()
     else:
         builder = PythonBuilder(
-            version=args.version, 
-            config=args.config, 
+            version=args.version,
+            config=args.config,
             optimize=args.optimize,
             pkgs=args.pkgs,
         )
         if args.reset:
             builder.remove("build")
         builder.process()
-
-
-
-

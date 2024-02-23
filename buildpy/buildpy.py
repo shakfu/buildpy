@@ -764,7 +764,7 @@ if __name__ == "__main__":
     opt = parser.add_argument
 
     opt("--debug", "-d", help="build debug python", action="store_true")
-    opt("--version", "-v", default="3.11.7", help="python version")
+    opt("--version", "-v", default="3.12.2", help="python version")
     opt("--config", "-c", default="patch/static.local", help="build configuration")
     opt("--reset", "-r", help="reset build", action="store_true")
     opt("--optimize", "-o", help="optimize build", action="store_true")

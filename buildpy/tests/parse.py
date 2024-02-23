@@ -56,4 +56,4 @@ if __name__ == '__main__':
     opt("target", help="target file to parse")
 
     args = parser.parse_args()
-    parse_target(args.target)
+    parse_simple(args.target)

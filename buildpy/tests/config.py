@@ -44,9 +44,7 @@ class Config:
         return copy.copy(self)
 
 
-class PythonConfig_311:
-    version: str = '3.11'
-    base_cfg: Config = Config(cfg=dict(
+BASE_CONFIG = Config(cfg=dict(
         header = [
             "DESTLIB=$(LIBDEST)",
             "MACHDESTLIB=$(BINLIBDEST)",
@@ -251,6 +249,16 @@ class PythonConfig_311:
         ],
     ))
 
+class PythonConfig_311:
+    version: str = '3.11.7'
+    base_cfg: Config = BASE_CONFIG
+
+    def __init__(self):
+        self.base_cfg = self.patch(self.base_cfg)
+
+    def patch(self, base_cfg):
+        return base_cfg
+
     def static_max(self):
         cfg = self.base_cfg.clone()
         cfg.write("static.local")
@@ -265,7 +273,28 @@ class PythonConfig_311:
     def __repr__(self):
         return f"<{self.__class__.__name__} '{self.version}'>"
 
+
+class PythonConfig_312(PythonConfig_311):
+    version = "3.12.2"
+    base_cfg = BASE_CONFIG
+
+    def patch(self, base_cfg):
+        base_cfg.cfg['extensions'].update({
+            '_md5':  ['md5module.c', '-I$(srcdir)/Modules/_hacl/include', '_hacl/Hacl_Hash_MD5.c', '-D_BSD_SOURCE', '-D_DEFAULT_SOURCE'], 
+            '_sha1': ['sha1module.c', '-I$(srcdir)/Modules/_hacl/include', '_hacl/Hacl_Hash_SHA1.c', '-D_BSD_SOURCE', '-D_DEFAULT_SOURCE'], 
+            '_sha2': ['sha2module.c', '-I$(srcdir)/Modules/_hacl/include', 'Modules/_hacl/libHacl_Hash_SHA2.a'], 
+            '_sha3': ['sha3module.c', '-I$(srcdir)/Modules/_hacl/include', '_hacl/Hacl_Hash_SHA3.c', '-D_BSD_SOURCE', '-D_DEFAULT_SOURCE'],
+        })
+        del base_cfg.cfg['extensions']['_sha256']
+        del base_cfg.cfg['extensions']['_sha512']
+        base_cfg.cfg['static'].append('_sha2')
+        base_cfg.cfg['static'].remove('_sha256')
+        base_cfg.cfg['static'].remove('_sha512')
+        return base_cfg
+
+
+
 if __name__ == "__main__":
-    cfg = PythonConfig_311()
+    cfg = PythonConfig_312()
     cfg.static_mid()
 

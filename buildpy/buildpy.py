@@ -305,7 +305,6 @@ BASE_CONFIG = dict(
         "_ctypes",
         "_curses",
         "_curses_panel",
-        # "_decimal",
         "_dbm",
         "_tkinter",
         "_xxsubinterpreters",
@@ -344,6 +343,16 @@ class Config:
             self.cfg["shared"].remove(name)
             self.cfg["disabled"].append(name)
 
+    def move_static_to_shared(self, *names):
+        for name in names:
+            self.cfg["static"].remove(name)
+            self.cfg["shared"].append(name)
+
+    def move_shared_to_static(self, *names):
+        for name in names:
+            self.cfg["shared"].remove(name)
+            self.cfg["static"].append(name)
+
     def add_section(self, name):
         if self.cfg[name]:
             self.out.append(f"\n*{name}*\n")
@@ -357,14 +366,15 @@ class Config:
 
     def write(self, method: str, to: Pathlike):
         getattr(self, method)()
-        for i in self.cfg['core']:
-            ext = self.cfg['extensions'][i]
+        for i in self.cfg["core"]:
+            ext = self.cfg["extensions"][i]
             line = [i] + ext
             self.out.append(" ".join(line))
         for section in ["shared", "static", "disabled"]:
             self.add_section(section)
 
         with open(to, "w") as f:
+            self.out.append("# end \n")
             f.write("\n".join(self.out))
 
     def clone(self):
@@ -379,6 +389,25 @@ class PythonConfig_311(Config):
 
     def static_mid(self):
         self.disable_static("_decimal")
+
+    def static_tiny(self):
+        self.disable_static(
+            "_bz2", "_decimal", "_csv", "_json", "_lzma", 
+            "_scproxy", "_sqlite3", "_ssl", "pyexpat", "readline",
+        )
+
+    def static_bootstrap(self):
+        for i in self.cfg['static']:
+            self.cfg['disabled'].append(i)
+        self.cfg['static'] = self.cfg['core'].copy()
+        self.cfg['core'] = []
+
+    def shared_max(self):
+        self.cfg["disabled"].remove("_ctypes")
+        self.move_static_to_shared("_decimal", "_ssl", "_hashlib")
+
+    def shared_mid(self):
+        self.disable_static("_decimal", "_ssl", "_hashlib")
 
 
 class PythonConfig_312(PythonConfig_311):
@@ -884,7 +913,8 @@ class OpensslBuilder(Builder):
     def build(self):
         if not self.libs_static_exist():
             self.cmd(
-                f"./config no-shared no-tests --prefix={self.prefix}", cwd=self.src_path
+                f"./config no-shared no-tests --prefix={self.prefix}",
+                cwd=self.src_path
             )
             self.cmd("make install_sw", cwd=self.src_path)
 
@@ -1013,9 +1043,11 @@ class PythonBuilder(Builder):
     def configure(self):
         """configure build"""
         config = {
-            '3.11': PythonConfig_311,
-            '3.12': PythonConfig_312,
-        }[self.ver](BASE_CONFIG)
+            "3.11": PythonConfig_311,
+            "3.12": PythonConfig_312,
+        }[
+            self.ver
+        ](BASE_CONFIG)
 
         _type, _size = self.config.split("_")
         if _type == "static":
@@ -1037,7 +1069,8 @@ class PythonBuilder(Builder):
 
         config.write(self.config, to=self.src_path / "Modules" / "Setup.local")
         config_opts = " ".join(self.config_options)
-        self.cmd(f"./configure --prefix={self.prefix} {config_opts}", cwd=self.src_path)
+        self.cmd(f"./configure --prefix={self.prefix} {config_opts}", 
+            cwd=self.src_path)
 
     def build(self):
         self.cmd("make", cwd=self.src_path)
@@ -1131,19 +1164,8 @@ class PythonDebugBuilder(PythonBuilder):
         # "--with-undefined-behavior-sanitizer",
     ]
 
-    required_packages = [
-        "pkgconfig",
-        "cython",
-        "pytest",
-    ]
+    required_packages = []
 
-    def post_process(self):
-        memray = self.project.downloads / "memray"
-        self.git_clone(
-            "https://github.com/bloomberg/memray.git", cwd=self.project.downloads
-        )
-        self.cmd(f"{self.python} setup.py build", cwd=memray)
-        self.cmd(f"{self.python} setup.py install", cwd=memray)
 
 
 if __name__ == "__main__":
@@ -1153,13 +1175,12 @@ if __name__ == "__main__":
         prog="buildpy.py",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description="A python builder",
-        # epilog="epilog here",
     )
     opt = parser.add_argument
 
     opt("--debug", "-d", help="build debug python", action="store_true")
     opt("--version", "-v", default="3.12.2", help="python version")
-    opt("--config", "-c", default="static_max", help="build configuration", metavar="NAME")
+    opt("--config", "-c", default="static_mid", help="build configuration", metavar="NAME")
     opt("--reset", "-r", help="reset build", action="store_true")
     opt("--optimize", "-o", help="optimize build", action="store_true")
     opt("--pkgs", "-p", type=str, nargs="+", metavar="PKG")

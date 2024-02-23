@@ -1,12 +1,30 @@
 # buildpy - single-file python builder
 
+Currently supporting only building python 3.11 or 3.12
+
 ## Usage
 
 ```bash
+% python3 buildpy.py --help
+usage: buildpy.py [-h] [--debug] [--version VERSION] [--config NAME] [--reset]
+                  [--optimize] [--pkgs PKG [PKG ...]]
 
-make
+A python builder
 
+options:
+  -h, --help            show this help message and exit
+  --debug, -d           build debug python
+  --version VERSION, -v VERSION
+                        python version
+  --config NAME, -c NAME
+                        build configuration
+  --reset, -r           reset build
+  --optimize, -o        optimize build
+  --pkgs PKG [PKG ...], -p PKG [PKG ...]
 ```
+
+or just `make` to build the default configuration.
+
 
 ## Gotchas
 

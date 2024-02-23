@@ -1,3 +1,5 @@
+import os
+
 HEADER = [
     "DESTLIB=$(LIBDEST)",
     "MACHDESTLIB=$(BINLIBDEST)",
@@ -32,8 +34,8 @@ EXTENSIONS = {
     "_curses_panel": ["-lpanel", "-lncurses", "_curses_panel.c"],
     "_datetime": ["_datetimemodule.c"],
     "_dbm": ["_dbmmodule.c", "-lgdbm_compat", "-DUSE_GDBM_COMPAT"],
-    # "_decimal": ["_decimal/_decimal.c"],
-    "_decimal": ["_decimal/_decimal.c", "_decimal/libmpdec/basearith.c", "_decimal/libmpdec/constants.c", "_decimal/libmpdec/context.c", "_decimal/libmpdec/convolute.c", "_decimal/libmpdec/crt.c", "_decimal/libmpdec/difradix2.c", "_decimal/libmpdec/fnt.c", "_decimal/libmpdec/fourstep.c", "_decimal/libmpdec/io.c", "_decimal/libmpdec/memory.c", "_decimal/libmpdec/mpdecimal.c", "_decimal/libmpdec/numbertheory.c", "_decimal/libmpdec/sixstep.c", "_decimal/libmpdec/transpose.c", "-I$(srcdir)/Modules/_decimal/libmpdec", "-DCONFIG_64=1", "-DANSI=1", "-DHAVE_UINT128_T=1"],
+    "_decimal": ["_decimal/_decimal.c", "-DCONFIG_64=1"],
+    # "_decimal": ["_decimal/_decimal.c", "$(srcdir)/Modules/_decimal/libmpdec/libmpdec.a", "-I$(srcdir)/Modules/_decimal/libmpdec", "-DCONFIG_64=1", "-DANSI=1", "-DHAVE_UINT128_T=1"],
     "_elementtree": ["_elementtree.c"],
     "_functools": ["-DPy_BUILD_CORE_BUILTIN", "-I$(srcdir)/Include/internal", "_functoolsmodule.c"],
     "_gdbm": ["_gdbmmodule.c", "-lgdbm"],
@@ -87,7 +89,6 @@ EXTENSIONS = {
     "mmap": ["mmapmodule.c"],
     "posix": ["-DPy_BUILD_CORE_BUILTIN", "-I$(srcdir)/Include/internal", "posixmodule.c"],
     "pwd": ["pwdmodule.c"],
-    # "pyexpat": ["pyexpat.c"],
     "pyexpat": ["expat/xmlparse.c", "expat/xmlrole.c", "expat/xmltok.c", "pyexpat.c", "-I$(srcdir)/Modules/expat", "-DHAVE_EXPAT_CONFIG_H", "-DUSE_PYEXPAT_CAPI", "-DXML_DEV_URANDOM"],
     "readline": ["readline.c", "-lreadline", "-ltermcap"],
     "resource": ["resource.c"],
@@ -132,12 +133,12 @@ static_local = dict(
     static=[
         "_asyncio",
         "_bisect",
-        # "_blake2",
+        "_blake2",
         "_bz2",
         "_contextvars",
         "_csv",
         "_datetime",
-        # "_decimal",
+        "_decimal",
         "_elementtree",
         "_hashlib",
         "_heapq",
@@ -180,7 +181,6 @@ static_local = dict(
         "zlib",
     ],
     disabled=[
-        "_blake2",
         "_codecs_cn",
         "_codecs_hk",
         "_codecs_iso2022",
@@ -191,7 +191,7 @@ static_local = dict(
         "_ctypes",
         "_curses",
         "_curses_panel",
-        "_decimal",
+        # "_decimal",
         "_dbm",
         "_tkinter",
         "_xxsubinterpreters",
@@ -230,7 +230,8 @@ class Config:
         for section in ["shared", "static", "disabled"]:
             self.add_section(section)
 
-        with open(self.cfg["name"], "w") as f:
+        target = os.path.join('patch', self.cfg["name"])
+        with open(target, "w") as f:
             f.write("\n".join(self.out))
 
 if __name__ == "__main__":

@@ -8,6 +8,11 @@ make
 
 ```
 
+## Gotchas
+
+- if `libb2` is installed on your system, `_blake2` will be linked to it creating a local dependency (need test for this)
+
+
 
 ## Configurations
 

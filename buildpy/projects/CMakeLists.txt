@@ -1,13 +1,34 @@
 
-set(PYTHON_PREFIX ${CMAKE_SOURCE_DIR}/build/install/python)
-set(SSL_PREFIX ${CMAKE_SOURCE_DIR}/build/install/openssl)
-set(XZ_PREFIX ${CMAKE_SOURCE_DIR}/build/install/xz)
-set(BZ2_PREFIX ${CMAKE_SOURCE_DIR}/build/install/bzip2)
+# set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+# set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
-execute_process(
-    COMMAND "${PYTHON_PREFIX}/bin/python3" -c "import sysconfig; print(sysconfig.get_python_version())"
-    OUTPUT_STRIP_TRAILING_WHITESPACE OUTPUT_VARIABLE PYTHON_VER
-)
+# assume python-static exists
+if (EXISTS ${CMAKE_SOURCE_DIR}/build/install/python-static)
+    set(PYTHON_PREFIX ${CMAKE_SOURCE_DIR}/build/install/python-static)
 
-add_subdirectory(simple)
-add_subdirectory(pybind)
+    execute_process(
+        COMMAND "${PYTHON_PREFIX}/bin/python3" -c "import sysconfig; print(sysconfig.get_python_version())"
+        OUTPUT_STRIP_TRAILING_WHITESPACE OUTPUT_VARIABLE PYTHON_VER
+    )
+
+    if (DEFINED PYTHON_VER)
+        add_subdirectory(simple_static)
+        add_subdirectory(pybind_static)
+    endif()
+endif()
+
+# assume python-shared exists
+if (EXISTS ${CMAKE_SOURCE_DIR}/build/install/python-shared)
+    set(PYTHON_PREFIX ${CMAKE_SOURCE_DIR}/build/install/python-shared)
+
+    execute_process(
+        COMMAND "${PYTHON_PREFIX}/bin/python3" -c "import sysconfig; print(sysconfig.get_python_version())"
+        OUTPUT_STRIP_TRAILING_WHITESPACE OUTPUT_VARIABLE PYTHON_VER
+    )
+
+    if (DEFINED PYTHON_VER)
+        add_subdirectory(simple_shared)
+        add_subdirectory(pybind_shared)
+    endif()
+endif()

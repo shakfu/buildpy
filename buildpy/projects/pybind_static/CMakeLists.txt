@@ -3,6 +3,11 @@
 
 set(PROJECT_SRC ${CMAKE_CURRENT_SOURCE_DIR})
 
+set(PYTHON_PREFIX ${CMAKE_SOURCE_DIR}/build/install/python-static)
+set(SSL_PREFIX ${CMAKE_SOURCE_DIR}/build/install/openssl)
+set(XZ_PREFIX ${CMAKE_SOURCE_DIR}/build/install/xz)
+set(BZ2_PREFIX ${CMAKE_SOURCE_DIR}/build/install/bzip2)
+
 find_package(Python 3.8 COMPONENTS Interpreter Development.Module REQUIRED)
 
 if (NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
@@ -20,21 +25,21 @@ execute_process(
 list(APPEND CMAKE_PREFIX_PATH "${PB_DIR}")
 find_package(pybind11 CONFIG REQUIRED)
 
-add_executable(demo2
+add_executable(pybind_static
     ${PROJECT_SRC}/main.cpp
 )
 
-target_include_directories(demo2
+target_include_directories(pybind_static
     PUBLIC
     ${PYTHON_PREFIX}/include/python${PYTHON_VER}
 )
 
-target_link_directories(demo2
+target_link_directories(pybind_static
     PUBLIC
     ${PYTHON_PREFIX}/lib
 )
 
-target_link_libraries(demo2 
+target_link_libraries(pybind_static 
     pybind11::embed
     -ldl
     "-framework CoreFoundation"

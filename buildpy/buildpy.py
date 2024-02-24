@@ -3,10 +3,8 @@
 
 features:
 
-- Single script downloads python, builds static and shared linked variants from source
-
-- Different build configurations possible
-
+- Single script which downloads, builds python from source
+- Different build configurations (static, dynamic) possible
 - Trims python builds and zips site-packages by default.
 
 """
@@ -25,6 +23,8 @@ from fnmatch import fnmatch
 from pathlib import Path
 from typing import Optional, Union, Callable
 from urllib.request import urlretrieve
+
+__version__ = "0.0.1"
 
 # ----------------------------------------------------------------------------
 # type aliases
@@ -417,7 +417,7 @@ class PythonConfig311(Config):
     def static_tiny(self):
         """static build variant tiny-size"""
         self.disable_static(
-            "_bz2", "_decimal", "_csv", "_json", "_lzma", 
+            "_bz2", "_decimal", "_csv", "_json", "_lzma",
             "_scproxy", "_sqlite3", "_ssl", "pyexpat", "readline",
         )
 
@@ -465,7 +465,7 @@ class PythonConfig312(PythonConfig311):
                     "-I$(srcdir)/Modules/_hacl/include",
                     "_hacl/Hacl_Hash_SHA2.c",
                     "-D_BSD_SOURCE",
-                    "-D_DEFAULT_SOURCE",                   
+                    "-D_DEFAULT_SOURCE",
                     # "Modules/_hacl/libHacl_Hash_SHA2.a",
                 ],
                 "_sha3": [
@@ -864,6 +864,7 @@ class AbstractBuilder(ShellCmd):
     @property
     def executable_name(self):
         """executable name of buld target"""
+        name = self.name
         if PLATFORM == "Windows":
             name = f"{self.name}.exe"
         return name
@@ -1095,7 +1096,7 @@ class PythonBuilder(Builder):
         self,
         version: str = "3.11.7",
         project: Optional[Project] = None,
-        config: Pathlike = "patch/static.local",
+        config: str = "static_local",
         optimize: bool = False,
         pkgs: Optional[list[str]] = None,
     ):
@@ -1112,6 +1113,20 @@ class PythonBuilder(Builder):
             "3.11": PythonConfig311,
             "3.12": PythonConfig312,
         }[self.ver](BASE_CONFIG)
+
+    @property
+    def build_type(self):
+        return self.config.split('_')[0]
+
+    @property
+    def size_type(self):
+        return self.config.split('_')[1]
+
+    @property
+    def prefix(self):
+        """python builder prefix path"""
+        name = self.name.lower() + '-' + self.build_type
+        return self.project.install / name
 
     @property
     def python(self):
@@ -1154,7 +1169,7 @@ class PythonBuilder(Builder):
             cwd=self.src_path)
 
     def build(self):
-        """main build process"""        
+        """main build process"""
         self.cmd("make", cwd=self.src_path)
 
     def install(self):
@@ -1209,7 +1224,7 @@ class PythonBuilder(Builder):
         """override by subclass if needed"""
 
     def process(self):
-        """main builder process"""        
+        """main builder process"""
         for dependency_class in self.depends_on:
             dependency_class().process()
         self.pre_process()
@@ -1257,7 +1272,7 @@ if __name__ == "__main__":
 
     opt("--debug", "-d", help="build debug python", action="store_true")
     opt("--version", "-v", default="3.12.2", help="python version")
-    opt("--config", "-c", default="static_mid", help="build configuration", metavar="NAME")
+    opt("--config", "-c", default="shared_mid", help="build configuration", metavar="NAME")
     opt("--reset", "-r", help="reset build", action="store_true")
     opt("--optimize", "-o", help="optimize build", action="store_true")
     opt("--pkgs", "-p", type=str, nargs="+", metavar="PKG")
@@ -1286,3 +1301,4 @@ if __name__ == "__main__":
         if args.reset:
             builder.remove("build")
         builder.process()
+

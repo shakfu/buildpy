@@ -10,14 +10,17 @@ import subprocess
 import sys
 import tarfile
 import datetime
+from fnmatch import fnmatch
 from pathlib import Path
-from typing import Optional, Union
+from typing import Optional, Union, Callable
 from urllib.request import urlretrieve
 
 # ----------------------------------------------------------------------------
 # type aliases
 
 Pathlike = Union[str, Path]
+MatchFn = Callable[[Path], bool]
+ActionFn = Callable[[Path], None]
 
 # ----------------------------------------------------------------------------
 # constants
@@ -433,7 +436,10 @@ class PythonConfig_312(PythonConfig_311):
                 "_sha2": [
                     "sha2module.c",
                     "-I$(srcdir)/Modules/_hacl/include",
-                    "Modules/_hacl/libHacl_Hash_SHA2.a",
+                    "_hacl/Hacl_Hash_SHA2.c",
+                    "-D_BSD_SOURCE",
+                    "-D_DEFAULT_SOURCE",                   
+                    # "Modules/_hacl/libHacl_Hash_SHA2.a",
                 ],
                 "_sha3": [
                     "sha3module.c",
@@ -614,6 +620,35 @@ class ShellCmd:
             except FileNotFoundError:
                 if not silent:
                     self.log.warning("file not found: %s", path)
+
+    def walk(self, root: Pathlike, match_func: MatchFn, action_func: ActionFn, skip_patterns: list[str]):
+        for root, dirs, filenames in os.walk(root):
+            root = Path(root)
+            if skip_patterns:
+                for skip_pat in skip_patterns:
+                    if skip_pat in dirs:
+                        dirs.remove(skip_pat)
+            for _dir in dirs:
+                current = root / _dir
+                if match_func(current):
+                    action_func(current)
+
+            for _file in filenames:
+                current = root / _file
+                if match_func(current):
+                    action_func(current)
+
+    def glob_remove(self, root: Pathlike, patterns: list[str], skip_dirs: list[str]):
+
+        def match(entry: Path) -> bool:
+            # return any(fnmatch(entry, p) for p in patterns)
+            return any(fnmatch(entry.name, p) for p in patterns)
+
+        def remove(entry: Path):
+            self.remove(entry)
+
+        self.walk(root, 
+            match_func=match, action_func=remove, skip_patterns=skip_dirs)
 
     def pip_install(
         self,
@@ -984,9 +1019,9 @@ class PythonBuilder(Builder):
 
     required_packages: list[str] = []
 
-    ignore_patterns: list[str] = [
+    remove_patterns: list[str] = [
         "*.exe",
-        "*.pyc",
+        # "*.pyc",
         "*config-3*",
         "*tcl*",
         "*tdbc*",
@@ -1081,46 +1116,38 @@ class PythonBuilder(Builder):
         self.cmd("make install", cwd=self.src_path)
 
     def clean(self):
-        src = self.prefix / "lib" / self.name_ver
-        dst = self.project.build / "cleaned"
 
-        shutil.copytree(
-            src,
-            dst,
-            symlinks=False,
-            ignore=shutil.ignore_patterns(*self.ignore_patterns),
-            ignore_dangling_symlinks=True,
-            dirs_exist_ok=True,
-        )
-        ver = self.ver
+        self.glob_remove(self.prefix / "lib" / self.name_ver, 
+            self.remove_patterns, skip_dirs=[".git"])
+
         bins = [
             "2to3",
             "idle3",
-            f"idle{ver}",
+            f"idle{self.ver}",
             "pydoc3",
-            f"pydoc{ver}",
-            f"2to3-{ver}",
+            f"pydoc{self.ver}",
+            f"2to3-{self.ver}",
         ]
         for f in bins:
             self.remove(self.prefix / "bin" / f)
 
     def ziplib(self):
         """zip python site-packages"""
-        cleaned = self.project.build / "cleaned"
-        self.move(
-            cleaned / "lib-dynload",
-            self.project.build / "lib-dynload",
-        )
-        self.move(cleaned / "os.py", self.project.build / "os.py")
-
-        zip_path = self.prefix / "lib" / f"python{self.ver_nodot}"
-        shutil.make_archive(str(zip_path), "zip", str(cleaned))
-        self.remove(cleaned)
 
         src = self.prefix / "lib" / self.name_ver
+
+        self.move(
+            src / "lib-dynload",
+            self.project.build / "lib-dynload",
+        )
+        self.move(src / "os.py", self.project.build / "os.py")
+
+        zip_path = self.prefix / "lib" / f"python{self.ver_nodot}"
+        shutil.make_archive(str(zip_path), "zip", str(src))
+        self.remove(src)
+
         site_packages = src / "site-packages"
         self.remove(self.prefix / "lib" / "pkgconfig")
-        self.remove(src)
         src.mkdir()
         site_packages.mkdir()
         self.move(self.project.build / "lib-dynload", src / "lib-dynload")

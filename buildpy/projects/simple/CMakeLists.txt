@@ -1,10 +1,4 @@
 
-
-set(PYTHON_PREFIX ${CMAKE_SOURCE_DIR}/build/install/python)
-set(SSL_PREFIX ${CMAKE_SOURCE_DIR}/build/install/openssl)
-set(XZ_PREFIX ${CMAKE_SOURCE_DIR}/build/install/xz)
-set(BZ2_PREFIX ${CMAKE_SOURCE_DIR}/build/install/bzip2)
-
 set(PROJECT_SRC ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_executable(demo
@@ -13,7 +7,7 @@ add_executable(demo
 
 target_include_directories(demo
     PUBLIC
-    ${PYTHON_PREFIX}/include/python3.11
+    ${PYTHON_PREFIX}/include/python${PYTHON_VER}
 )
 
 target_compile_options(demo
@@ -43,7 +37,7 @@ target_link_libraries(demo
     -ldl
     "-framework CoreFoundation"
     "-framework SystemConfiguration"
-    ${PYTHON_PREFIX}/lib/libpython3.11.a
+    ${PYTHON_PREFIX}/lib/libpython${PYTHON_VER}.a
     ${SSL_PREFIX}/lib/libssl.a
     ${SSL_PREFIX}/lib/libcrypto.a
     ${BZ2_PREFIX}/lib/libbz2.a

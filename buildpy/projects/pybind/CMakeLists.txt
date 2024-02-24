@@ -2,10 +2,6 @@
 # set(Python_ROOT_DIR build/install)
 
 set(PROJECT_SRC ${CMAKE_CURRENT_SOURCE_DIR})
-set(PYTHON_PREFIX ${CMAKE_SOURCE_DIR}/build/install/python)
-set(SSL_PREFIX ${CMAKE_SOURCE_DIR}/build/install/openssl)
-set(XZ_PREFIX ${CMAKE_SOURCE_DIR}/build/install/xz)
-set(BZ2_PREFIX ${CMAKE_SOURCE_DIR}/build/install/bzip2)
 
 find_package(Python 3.8 COMPONENTS Interpreter Development.Module REQUIRED)
 
@@ -30,7 +26,7 @@ add_executable(demo2
 
 target_include_directories(demo2
     PUBLIC
-    ${PYTHON_PREFIX}/include/python3.11
+    ${PYTHON_PREFIX}/include/python${PYTHON_VER}
 )
 
 target_link_directories(demo2
@@ -43,7 +39,7 @@ target_link_libraries(demo2
     -ldl
     "-framework CoreFoundation"
     "-framework SystemConfiguration"
-    ${PYTHON_PREFIX}/lib/libpython3.11.a
+    ${PYTHON_PREFIX}/lib/libpython${PYTHON_VER}.a
     ${SSL_PREFIX}/lib/libssl.a
     ${SSL_PREFIX}/lib/libcrypto.a
     ${BZ2_PREFIX}/lib/libbz2.a

@@ -1,14 +1,16 @@
 # pybuild - python builds python
 
-3 ways of building python using python (refactoring/consolidation-in-progress).
+3 ways of building python from source using python: 
 
-Ideally should end up with 1 or maybe even 2 ways.
+1. `builder`: original package, extracted from another large project.. the kitchen-sink approach 
 
-- builder
+2. `pybuild`: lightweight package, subset of (1)
 
-- pybuild
+3. `buildpy`: lightweight single script/module, a rewrite given experience of (1) and (2) with improved methods
 
-- buildpy
+Ideally one should end up with 1 or maybe even 2 ways. 
+
+(refactoring/consolidation-in-progress)
 
 ## builder
 

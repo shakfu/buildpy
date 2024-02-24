@@ -1,4 +1,15 @@
 #!/usr/bin/env python3
+"""buildpy.py - builds python from source
+
+features:
+
+- Single script downloads python, builds static and shared linked variants from source
+
+- Different build configurations possible
+
+- Trims python builds and zips site-packages by default.
+
+"""
 
 import logging
 import os
@@ -324,99 +335,115 @@ BASE_CONFIG = dict(
 
 
 class Config:
+    """Abstract configuration class"""
     version: str
 
-    def __init__(self, cfg: dict):
-        self.cfg = self.patch(cfg.copy())
+    def __init__(self, config: dict):
+        self.cfg = self.patch(config.copy())
         self.out = ["# -*- makefile -*-"] + self.cfg["header"] + ["\n# core\n"]
 
     def __repr__(self):
         return f"<{self.__class__.__name__} '{self.version}'>"
 
     def patch(self, cfg: dict) -> dict:
+        """patch and return config dict"""
         return cfg
 
     def disable_static(self, *names):
+        """move static entries to disabled"""
         for name in names:
             self.cfg["static"].remove(name)
             self.cfg["disabled"].append(name)
 
     def disable_shared(self, *names):
+        """move shared entries to disabled"""
         for name in names:
             self.cfg["shared"].remove(name)
             self.cfg["disabled"].append(name)
 
     def move_static_to_shared(self, *names):
+        """move static entries to shared"""
         for name in names:
             self.cfg["static"].remove(name)
             self.cfg["shared"].append(name)
 
     def move_shared_to_static(self, *names):
+        """move shared entries to static"""
         for name in names:
             self.cfg["shared"].remove(name)
             self.cfg["static"].append(name)
 
-    def add_section(self, name):
-        if self.cfg[name]:
-            self.out.append(f"\n*{name}*\n")
-            for i in sorted(self.cfg[name]):
-                if name == "disabled":
-                    line = [i]
-                else:
-                    ext = self.cfg["extensions"][i]
-                    line = [i] + ext
-                self.out.append(" ".join(line))
-
     def write(self, method: str, to: Pathlike):
+        """write configuration method to a file"""
+        def _add_section(name):
+            if self.cfg[name]:
+                self.out.append(f"\n*{name}*\n")
+                for i in sorted(self.cfg[name]):
+                    if name == "disabled":
+                        line = [i]
+                    else:
+                        ext = self.cfg["extensions"][i]
+                        line = [i] + ext
+                    self.out.append(" ".join(line))
+
         getattr(self, method)()
         for i in self.cfg["core"]:
             ext = self.cfg["extensions"][i]
             line = [i] + ext
             self.out.append(" ".join(line))
         for section in ["shared", "static", "disabled"]:
-            self.add_section(section)
+            _add_section(section)
 
         with open(to, "w") as f:
             self.out.append("# end \n")
             f.write("\n".join(self.out))
 
     def clone(self):
+        """clone and return builder instance"""
         return copy.copy(self)
 
 
-class PythonConfig_311(Config):
+class PythonConfig311(Config):
+    """configuration class to build python 3.11"""
     version: str = "3.11.7"
 
     def static_max(self):
-        pass
+        """static build variant max-size"""
 
     def static_mid(self):
+        """static build variant mid-size"""
         self.disable_static("_decimal")
 
     def static_tiny(self):
+        """static build variant tiny-size"""
         self.disable_static(
             "_bz2", "_decimal", "_csv", "_json", "_lzma", 
             "_scproxy", "_sqlite3", "_ssl", "pyexpat", "readline",
         )
 
     def static_bootstrap(self):
+        """static build variant bootstrap-size"""
         for i in self.cfg['static']:
             self.cfg['disabled'].append(i)
         self.cfg['static'] = self.cfg['core'].copy()
         self.cfg['core'] = []
 
     def shared_max(self):
+        """shared build variant max-size"""
         self.cfg["disabled"].remove("_ctypes")
         self.move_static_to_shared("_decimal", "_ssl", "_hashlib")
 
     def shared_mid(self):
+        """shared build variant mid-size"""
         self.disable_static("_decimal", "_ssl", "_hashlib")
 
 
-class PythonConfig_312(PythonConfig_311):
+class PythonConfig312(PythonConfig311):
+    """configuration class to build python 3.12"""
     version = "3.12.2"
 
     def patch(self, cfg: dict):
+        """patch and return config dict"""
         cfg["extensions"].update(
             {
                 "_md5": [
@@ -486,6 +513,7 @@ class CustomFormatter(logging.Formatter):
     }
 
     def format(self, record):
+        """custom logger formatting method"""
         log_fmt = self.FORMATS.get(record.levelno)
         duration = datetime.datetime.fromtimestamp(
             record.relativeCreated / 1000, datetime.UTC
@@ -532,10 +560,9 @@ class ShellCmd:
         else:
             raise TypeError("cannot extract from this file.")
 
-    def fail(self, msg: Optional[str] = None, *args):
-        """exits the program with an optional error msg."""
-        if msg:
-            self.log.critical(msg, *args)
+    def fail(self, msg, *args):
+        """exits the program with an error msg."""
+        self.log.critical(msg, *args)
         sys.exit(1)
 
     def git_clone(
@@ -621,24 +648,27 @@ class ShellCmd:
                 if not silent:
                     self.log.warning("file not found: %s", path)
 
-    def walk(self, root: Pathlike, match_func: MatchFn, action_func: ActionFn, skip_patterns: list[str]):
-        for root, dirs, filenames in os.walk(root):
-            root = Path(root)
+    def walk(self, root: Pathlike, match_func: MatchFn,
+             action_func: ActionFn, skip_patterns: list[str]):
+        """general recursive walk from root path with match and action functions"""
+        for root_, dirs, filenames in os.walk(root):
+            _root = Path(root_)
             if skip_patterns:
                 for skip_pat in skip_patterns:
                     if skip_pat in dirs:
                         dirs.remove(skip_pat)
             for _dir in dirs:
-                current = root / _dir
+                current = _root / _dir
                 if match_func(current):
                     action_func(current)
 
             for _file in filenames:
-                current = root / _file
+                current = _root / _file
                 if match_func(current):
                     action_func(current)
 
     def glob_remove(self, root: Pathlike, patterns: list[str], skip_dirs: list[str]):
+        """applies recursive glob remove using a list of patterns"""
 
         def match(entry: Path) -> bool:
             # return any(fnmatch(entry, p) for p in patterns)
@@ -647,7 +677,7 @@ class ShellCmd:
         def remove(entry: Path):
             self.remove(entry)
 
-        self.walk(root, 
+        self.walk(root,
             match_func=match, action_func=remove, skip_patterns=skip_dirs)
 
     def pip_install(
@@ -750,6 +780,7 @@ class Project:
         self.wheels = self.cwd / "wheels"
 
     def setup(self):
+        """create main project directories"""
         self.build.mkdir(exist_ok=True)
         self.downloads.mkdir(exist_ok=True)
         self.install.mkdir(exist_ok=True)
@@ -780,79 +811,76 @@ class AbstractBuilder(ShellCmd):
             yield dependency
             yield from iter(dependency)
 
-    def setup_project(self):
-        folders = [
-            self.project.build,
-            self.project.downloads,
-        ]
-        for folder in folders:
-            if not folder.exists():
-                self.makedirs(folder)
-
     @property
     def ver(self):
+        """short python version: 3.11"""
         return ".".join(self.version.split(".")[:2])
 
     @property
     def ver_major(self):
+        """major compoent of semantic version: 3 in 3.11.7"""
         return self.version.split(".")[0]
 
     @property
     def ver_minor(self):
+        """minor compoent of semantic version: 11 in 3.11.7"""
         return self.version.split(".")[1]
 
     @property
     def ver_patch(self):
+        """patch compoent of semantic version: 7 in 3.11.7"""
         return self.version.split(".")[2]
 
     @property
     def ver_nodot(self):
+        """concat major and minor version components: 311 in 3.11.7"""
         return self.ver.replace(".", "")
 
     @property
     def name_version(self):
+        """return name-<fullversion>: e.g. Python-3.11.7"""
         return f"{self.name}-{self.version}"
 
     @property
     def name_ver(self):
+        """return name.lower-<ver>: e.g. python3.11"""
         return f"{self.name.lower()}{self.ver}"
 
     @property
     def url(self):
+        """return download url with version interpolated"""
         return self.url_template.format(ver=self.version)
 
     @property
-    def name_archive(self):
-        return f"{self.name_version}.tgz"
-
-    @property
-    def download_path(self):
-        return self.project.downloads / self.name_archive
-
-    @property
     def src_path(self):
+        """return extracted source folder of build target"""
         return self.project.src / self.name_version
 
     @property
     def build_dir(self):
+        """return 'build' folder src dir of build target"""
         return self.src_path / "build"
 
     @property
     def executable_name(self):
+        """executable name of buld target"""
         if PLATFORM == "Windows":
             name = f"{self.name}.exe"
         return name
 
     @property
     def executable(self):
+        """executable path of buld target"""
         return self.project.bin / self.executable_name
 
     @property
     def libname(self):
+        """library name suffix"""
         return f"lib{self.name}"
 
     @property
     def staticlib_name(self):
+        """static libname"""
         suffix = ".a"
         if PLATFORM == "Windows":
             suffix = ".lib"
@@ -860,39 +888,46 @@ class AbstractBuilder(ShellCmd):
 
     @property
     def dylib_name(self):
+        """dynamic link libname"""
         if PLATFORM == "Darwin":
             return f"{self.libname}.dylib"
         if PLATFORM == "Linux":
             return f"{self.libname}.so"
         if PLATFORM == "Windows":
-            return f"{self.NAME}.dll"
-        raise self.fail("platform not supported")
+            return f"{self.libname}.dll"
+        return self.fail("platform not supported")
 
     @property
     def dylib_linkname(self):
+        """symlink to dylib"""
         if PLATFORM == "Darwin":
             return f"{self.libname}.dylib"
         if PLATFORM == "Linux":
             return f"{self.libname}.so"
-        raise self.fail("platform not supported")
+        return self.fail("platform not supported")
 
     @property
     def dylib(self):
+        """dylib path"""
         return self.project.lib / self.dylib_name
 
     @property
     def dylib_link(self):
+        """dylib link path"""
         return self.project.lib / self.dylib_linkname
 
     @property
     def staticlib(self):
+        """staticlib path"""
         return self.project.lib_static / self.staticlib_name
 
     @property
     def prefix(self):
+        """builder prefix path"""
         return self.project.install / self.name.lower()
 
     def libs_static_exist(self):
+        """check if all built stati libs already exist"""
         return all((self.prefix / "lib" / lib).exists() for lib in self.libs_static)
 
     def pre_process(self):
@@ -940,6 +975,7 @@ class Builder(AbstractBuilder):
             assert self.src_path.exists(), f"could not extract from {archive}"
 
 class OpensslBuilder(Builder):
+    """ssl builder class"""
     name = "openssl"
     version = "1.1.1w"
     url_template = "https://www.openssl.org/source/old/1.1.1/openssl-{ver}.tar.gz"
@@ -947,6 +983,7 @@ class OpensslBuilder(Builder):
     libs_static = ["libssl.a", "libcrypto.a"]
 
     def build(self):
+        """main build method"""
         if not self.libs_static_exist():
             self.cmd(
                 f"./config no-shared no-tests --prefix={self.prefix}",
@@ -956,6 +993,7 @@ class OpensslBuilder(Builder):
 
 
 class Bzip2Builder(Builder):
+    """bz2 builder class"""
     name = "bzip2"
     version = "1.0.8"
     url_template = "https://sourceware.org/pub/bzip2/bzip2-{ver}.tar.gz"
@@ -963,11 +1001,13 @@ class Bzip2Builder(Builder):
     libs_static = ["libbz2.a"]
 
     def build(self):
+        """main build method"""
         if not self.libs_static_exist():
             self.cmd(f"make install PREFIX={self.prefix}", cwd=self.src_path)
 
 
 class XzBuilder(Builder):
+    """lzma builder class"""
     name = "xz"
     version = "5.2.5"
     url_template = "http://tukaani.org/xz/xz-{ver}.tar.gz"
@@ -975,6 +1015,7 @@ class XzBuilder(Builder):
     libs_static = ["liblzma.a"]
 
     def build(self):
+        """main build method"""
         if not self.libs_static_exist():
             self.cmd(
                 f"./configure --disable-shared --enable-static --prefix={self.prefix}",
@@ -1066,17 +1107,20 @@ class PythonBuilder(Builder):
         self.log = logging.getLogger(self.__class__.__name__)
 
     def get_config(self):
+        """get configuration class for required python version"""
         return {
-            "3.11": PythonConfig_311,
-            "3.12": PythonConfig_312,
+            "3.11": PythonConfig311,
+            "3.12": PythonConfig312,
         }[self.ver](BASE_CONFIG)
 
     @property
     def python(self):
+        """path to python3 executable"""
         return self.prefix / "bin" / "python3"
 
     @property
     def pip(self):
+        """path to pip3 executable"""
         return self.prefix / "bin" / "pip3"
 
     def pre_process(self):
@@ -1101,23 +1145,25 @@ class PythonBuilder(Builder):
 
         if self.pkgs or self.required_packages:
             self.config_options.remove("--without-ensurepip")
-            self.ignore_patterns.remove("ensurepip")
+            self.remove_patterns.remove("ensurepip")
             self.pkgs.extend(self.required_packages)
 
         config.write(self.config, to=self.src_path / "Modules" / "Setup.local")
         config_opts = " ".join(self.config_options)
-        self.cmd(f"./configure --prefix={self.prefix} {config_opts}", 
+        self.cmd(f"./configure --prefix={self.prefix} {config_opts}",
             cwd=self.src_path)
 
     def build(self):
+        """main build process"""        
         self.cmd("make", cwd=self.src_path)
 
     def install(self):
+        """install to prefix"""
         self.cmd("make install", cwd=self.src_path)
 
     def clean(self):
-
-        self.glob_remove(self.prefix / "lib" / self.name_ver, 
+        """clean installed build"""
+        self.glob_remove(self.prefix / "lib" / self.name_ver,
             self.remove_patterns, skip_dirs=[".git"])
 
         bins = [
@@ -1154,6 +1200,7 @@ class PythonBuilder(Builder):
         self.move(self.project.build / "os.py", src / "os.py")
 
     def install_pkgs(self):
+        """install python packages"""
         required_pkgs = " ".join(self.required_packages)
         self.cmd(f"{self.python} -m ensurepip")
         self.cmd(f"{self.pip} install {required_pkgs}")
@@ -1162,6 +1209,7 @@ class PythonBuilder(Builder):
         """override by subclass if needed"""
 
     def process(self):
+        """main builder process"""        
         for dependency_class in self.depends_on:
             dependency_class().process()
         self.pre_process()
@@ -1227,9 +1275,12 @@ if __name__ == "__main__":
             pkgs=args.pkgs,
         )
         if args.write:
-            name = args.config.replace('_', '.')
             cfg = builder.get_config()
-            cfg.write(args.config, to=os.path.join("patch", name))
+            patch_dir = Path.cwd() / 'patch'
+            if not patch_dir.exists():
+                patch_dir.mkdir()
+            cfg_file = patch_dir / args.config.replace('_', '.')
+            cfg.write(args.config, to=cfg_file)
             sys.exit()
 
         if args.reset:

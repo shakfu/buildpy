@@ -58,7 +58,7 @@ common_options = option_group(
 
 
 class Application(Commander):
-    """builder: builds python and py-js max externals from source or other methods."""
+    """builder: builds python from source."""
 
     name = "builder"
     epilog = ""

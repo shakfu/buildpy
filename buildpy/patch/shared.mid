@@ -6,9 +6,9 @@ SITEPATH=
 TESTPATH=
 COREPYTHONPATH=$(DESTPATH)$(SITEPATH)$(TESTPATH)
 PYTHONPATH=$(COREPYTHONPATH)
-OPENSSL=$(srcdir)/../../lib/openssl
-BZIP2=$(srcdir)/../../lib/bzip2
-LZMA=$(srcdir)/../../lib/xz
+OPENSSL=$(srcdir)/../../install/openssl
+BZIP2=$(srcdir)/../../install/bzip2
+LZMA=$(srcdir)/../../install/xz
 
 # core
 
@@ -99,7 +99,6 @@ _hashlib
 _ssl
 _tkinter
 _xxsubinterpreters
-_xxinterpchannels
 audioop
 nis
 resource

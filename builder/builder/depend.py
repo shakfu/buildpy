@@ -19,7 +19,8 @@ Pathlike = Union[str, Path]
 
 PATTERNS_TO_FIX = [
     "/usr/local",
-    "/opt/local" "/Library/Frameworks/Python.framework",
+    "/opt/local", 
+    "/Library/Frameworks/Python.framework",
     "/tmp/",
     "/Users/",
 ]

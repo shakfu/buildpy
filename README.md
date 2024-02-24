@@ -1,6 +1,6 @@
 # pybuild - python builds python
 
-3 ways of building python using python (refactorying/consolidation-in-progress).
+3 ways of building python using python (refactoring/consolidation-in-progress).
 
 Ideally should end up with 1 or maybe even 2 ways.
 
@@ -12,7 +12,9 @@ Ideally should end up with 1 or maybe even 2 ways.
 
 ## builder
 
-Heavyweight, full featured, building, packaging solution, extracted from [py-js](https://github.com/shakfu/py-js)
+Heavyweight, full featured, building, codesigning, packaging solution, extracted from [py-js](https://github.com/shakfu/py-js)
+
+Needs quite a bit of cleanup and refactoring to make it a general tool.
 
 Either use `make` interface:
 
@@ -26,9 +28,9 @@ or the package's argparse interface:
 
 ```bash
 % python3 -m builder
-usage: __main__.py [-h] [-v]  ...
+usage: python3 -m builder [-h] [-v]  ...
 
-builder: builds python and py-js max externals from source or other methods.
+builder: builds python from source.
 
 options:
   -h, --help     show this help message and exit
@@ -77,8 +79,8 @@ Intended to be the lightest weight single-script python builder with the simples
 
 ```bash
 % ./buildpy.py --help
-usage: buildpy.py [-h] [--debug] [--version VERSION] [--config CONFIG]
-                  [--reset] [--mac-dep-target MAC_DEP_TARGET]
+usage: buildpy.py [-h] [--debug] [--version VERSION] [--config NAME] [--reset]
+                  [--optimize] [--pkgs PKG [PKG ...]] [--write]
 
 A python builder
 
@@ -87,9 +89,10 @@ options:
   --debug, -d           build debug python
   --version VERSION, -v VERSION
                         python version
-  --config CONFIG, -c CONFIG
+  --config NAME, -c NAME
                         build configuration
   --reset, -r           reset build
-  --mac-dep-target MAC_DEP_TARGET
-                        mac dep target
+  --optimize, -o        optimize build
+  --pkgs PKG [PKG ...], -p PKG [PKG ...]
+  --write, -w           write configuration
 ```

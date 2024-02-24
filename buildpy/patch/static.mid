@@ -6,9 +6,9 @@ SITEPATH=
 TESTPATH=
 COREPYTHONPATH=$(DESTPATH)$(SITEPATH)$(TESTPATH)
 PYTHONPATH=$(COREPYTHONPATH)
-OPENSSL=$(srcdir)/../../lib/openssl
-BZIP2=$(srcdir)/../../lib/bzip2
-LZMA=$(srcdir)/../../lib/xz
+OPENSSL=$(srcdir)/../../install/openssl
+BZIP2=$(srcdir)/../../install/bzip2
+LZMA=$(srcdir)/../../install/xz
 
 # core
 
@@ -44,6 +44,7 @@ _contextvars _contextvarsmodule.c
 _csv _csv.c
 _datetime _datetimemodule.c
 _elementtree _elementtree.c
+_hashlib _hashopenssl.c -I$(OPENSSL)/include -L$(OPENSSL)/lib $(OPENSSL)/lib/libcrypto.a
 _heapq _heapqmodule.c
 _json _json.c
 _lsprof _lsprof.c rotatingtree.c
@@ -63,6 +64,7 @@ _sha2 sha2module.c -I$(srcdir)/Modules/_hacl/include Modules/_hacl/libHacl_Hash_
 _sha3 sha3module.c -I$(srcdir)/Modules/_hacl/include _hacl/Hacl_Hash_SHA3.c -D_BSD_SOURCE -D_DEFAULT_SOURCE
 _socket socketmodule.c
 _sqlite3 _sqlite/blob.c _sqlite/connection.c _sqlite/cursor.c _sqlite/microprotocols.c _sqlite/module.c _sqlite/prepare_protocol.c _sqlite/row.c _sqlite/statement.c _sqlite/util.c
+_ssl _ssl.c -I$(OPENSSL)/include -L$(OPENSSL)/lib $(OPENSSL)/lib/libcrypto.a $(OPENSSL)/lib/libssl.a
 _statistics _statisticsmodule.c
 _struct _struct.c
 _typing _typingmodule.c
@@ -95,11 +97,8 @@ _curses
 _curses_panel
 _dbm
 _decimal
-_hashlib
-_ssl
 _tkinter
 _xxsubinterpreters
-_xxinterpchannels
 audioop
 nis
 resource

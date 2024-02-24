@@ -449,6 +449,7 @@ class PythonConfig_312(PythonConfig_311):
         cfg["static"].append("_sha2")
         cfg["static"].remove("_sha256")
         cfg["static"].remove("_sha512")
+        cfg["disabled"].append("_xxinterpchannels")
         return cfg
 
 
@@ -899,9 +900,9 @@ class Builder(AbstractBuilder):
         self.project.setup()
         archive = self.download(self.url, tofolder=self.project.downloads)
         self.log.info("downloaded %s", archive)
-        self.extract(archive, tofolder=self.project.src)
-        assert self.src_path.exists(), f"could not extract from {archive}"
-
+        if not self.prefix.exists():
+            self.extract(archive, tofolder=self.project.src)
+            assert self.src_path.exists(), f"could not extract from {archive}"
 
 class OpensslBuilder(Builder):
     name = "openssl"
@@ -1029,6 +1030,12 @@ class PythonBuilder(Builder):
         self.pkgs = pkgs or []
         self.log = logging.getLogger(self.__class__.__name__)
 
+    def get_config(self):
+        return {
+            "3.11": PythonConfig_311,
+            "3.12": PythonConfig_312,
+        }[self.ver](BASE_CONFIG)
+
     @property
     def python(self):
         return self.prefix / "bin" / "python3"
@@ -1042,12 +1049,7 @@ class PythonBuilder(Builder):
 
     def configure(self):
         """configure build"""
-        config = {
-            "3.11": PythonConfig_311,
-            "3.12": PythonConfig_312,
-        }[
-            self.ver
-        ](BASE_CONFIG)
+        config = self.get_config()
 
         _type, _size = self.config.split("_")
         if _type == "static":
@@ -1184,6 +1186,7 @@ if __name__ == "__main__":
     opt("--reset", "-r", help="reset build", action="store_true")
     opt("--optimize", "-o", help="optimize build", action="store_true")
     opt("--pkgs", "-p", type=str, nargs="+", metavar="PKG")
+    opt("--write", "-w", help="write configuration", action="store_true")
 
     args = parser.parse_args()
     if args.debug:
@@ -1196,6 +1199,12 @@ if __name__ == "__main__":
             optimize=args.optimize,
             pkgs=args.pkgs,
         )
+        if args.write:
+            name = args.config.replace('_', '.')
+            cfg = builder.get_config()
+            cfg.write(args.config, to=os.path.join("patch", name))
+            sys.exit()
+
         if args.reset:
             builder.remove("build")
         builder.process()

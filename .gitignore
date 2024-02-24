@@ -57,6 +57,7 @@ coverage.xml
 *.py,cover
 .hypothesis/
 .pytest_cache/
+log.txt
 
 # Translations
 *.mo
@@ -126,6 +127,11 @@ venv.bak/
 
 # mkdocs documentation
 /site
+
+# misc cache
+.ruff_cache/
+.pylint_cache/
+.pytest_cache/
 
 # mypy
 .mypy_cache/

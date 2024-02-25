@@ -9,19 +9,18 @@ features:
 
 """
 
+import datetime
 import logging
 import os
-import copy
 import platform
 import shutil
 import stat
 import subprocess
 import sys
 import tarfile
-import datetime
 from fnmatch import fnmatch
 from pathlib import Path
-from typing import Optional, Union, Callable
+from typing import Callable, Optional, Union
 from urllib.request import urlretrieve
 
 __version__ = "0.0.1"
@@ -47,10 +46,54 @@ DEFAULT_PY_VERSION = "3.11.7"
 DEBUG = True
 
 # ----------------------------------------------------------------------------
+# logging config
+
+class CustomFormatter(logging.Formatter):
+    """custom logging formatting class"""
+
+    white = "\x1b[97;20m"
+    grey = "\x1b[38;20m"
+    green = "\x1b[32;20m"
+    cyan = "\x1b[36;20m"
+    yellow = "\x1b[33;20m"
+    red = "\x1b[31;20m"
+    bold_red = "\x1b[31;1m"
+    reset = "\x1b[0m"
+    # fmt = "%(delta)s - {}%(levelname)s{} - %(name)s.%(funcName)s - %(message)s"
+    fmt = f"{white}%(delta)s{reset} - {{}}%(levelname)s{{}} - {white}%(name)s.%(funcName)s{reset} - {grey}%(message)s{reset}"
+
+    FORMATS = {
+        logging.DEBUG: fmt.format(grey, reset),
+        logging.INFO: fmt.format(green, reset),
+        logging.WARNING: fmt.format(yellow, reset),
+        logging.ERROR: fmt.format(red, reset),
+        logging.CRITICAL: fmt.format(bold_red, reset),
+    }
+
+    def format(self, record):
+        """custom logger formatting method"""
+        log_fmt = self.FORMATS.get(record.levelno)
+        if PY_VER_MINOR > 10:
+            duration = datetime.datetime.fromtimestamp(
+                record.relativeCreated / 1000, datetime.UTC
+            )
+        else:
+            duration = datetime.datetime.utcfromtimestamp(record.relativeCreated / 1000)
+        record.delta = duration.strftime("%H:%M:%S")
+        formatter = logging.Formatter(log_fmt)
+        return formatter.format(record)
+
+
+handler = logging.StreamHandler()
+handler.setFormatter(CustomFormatter())
+logging.basicConfig(level=logging.DEBUG if DEBUG else logging.INFO, handlers=[handler])
+
+
+# ----------------------------------------------------------------------------
 # config classes
 
-BASE_CONFIG = dict(
-    header=[
+BASE_CONFIG = {
+    "header": [
         "DESTLIB=$(LIBDEST)",
         "MACHDESTLIB=$(BINLIBDEST)",
         "DESTPATH=",
@@ -62,7 +105,7 @@ BASE_CONFIG = dict(
         "BZIP2=$(srcdir)/../../install/bzip2",
         "LZMA=$(srcdir)/../../install/xz",
     ],
-    extensions={
+    "extensions": {
         "_abc": ["_abc.c"],
         "_asyncio": ["_asynciomodule.c"],
         "_bisect": ["_bisectmodule.c"],
@@ -235,7 +278,7 @@ BASE_CONFIG = dict(
         "unicodedata": ["unicodedata.c"],
         "zlib": ["zlibmodule.c", "-lz"],
     },
-    core=[
+    "core": [
         "_abc",
         "_codecs",
         "_collections",
@@ -258,8 +301,8 @@ BASE_CONFIG = dict(
         "pwd",
         "time",
     ],
-    shared=[],
-    static=[
+    "shared": [],
+    "static": [
         "_asyncio",
         "_bisect",
         "_blake2",
@@ -308,7 +351,7 @@ BASE_CONFIG = dict(
         "unicodedata",
         "zlib",
     ],
-    disabled=[
+    "disabled": [
         "_codecs_cn",
         "_codecs_hk",
         "_codecs_iso2022",
@@ -333,17 +376,19 @@ BASE_CONFIG = dict(
         "xxlimited",
         "xxlimited_35",
     ],
-)
+}
 
 
 class Config:
     """Abstract configuration class"""
+
     version: str
 
     def __init__(self, cfg: dict):
         self.cfg = cfg.copy()
-        self.out = ["# -*- makefile -*-"] + self.cfg["header"] + ["\n# core\n"]
         self.patch()
+        self.out = ["# -*- makefile -*-"] + self.cfg["header"] + ["\n# core\n"]
+        self.log = logging.getLogger(self.__class__.__name__)
 
     def __repr__(self):
         return f"<{self.__class__.__name__} '{self.version}'>"
@@ -354,8 +399,9 @@ class Config:
     def move_entries(self, src: str, dst: str, *names):
         """generic entry mover"""
         for name in names:
+            self.log.info("move from %s -> %s: %s", src, dst, name)
             self.cfg[src].remove(name)
-            self.cfg[dst].append(name)            
+            self.cfg[dst].append(name)
 
     def enable_static(self, *names):
         """move disabled entries to static"""
@@ -383,6 +429,7 @@ class Config:
 
     def write(self, method: str, to: Pathlike):
         """write configuration method to a file"""
+
         def _add_section(name):
             if self.cfg[name]:
                 self.out.append(f"\n*{name}*\n")
@@ -394,6 +441,7 @@ class Config:
                         line = [i] + ext
                     self.out.append(" ".join(line))
 
+        self.log.info("write method '%s' to %s", method, to)
         getattr(self, method)()
         for i in self.cfg["core"]:
             ext = self.cfg["extensions"][i]
@@ -402,17 +450,14 @@ class Config:
         for section in ["shared", "static", "disabled"]:
             _add_section(section)
 
-        with open(to, "w") as f:
+        with open(to, "w", encoding='utf8') as f:
             self.out.append("# end \n")
             f.write("\n".join(self.out))
-
-    def clone(self):
-        """clone and return builder instance"""
-        return copy.copy(self)
 
 
 class PythonConfig311(Config):
     """configuration class to build python 3.11"""
+
     version: str = "3.11.7"
 
     def patch(self) -> None:
@@ -429,14 +474,14 @@ class PythonConfig311(Config):
         """static build variant mid-size"""
         self.disable_static("_decimal")
         if PLATFORM == "Linux":
-            self.cfg['extensions']['_ssl'] = [
+            self.cfg["extensions"]["_ssl"] = [
                 "_ssl.c",
                 "-I$(OPENSSL)/include",
                 "-L$(OPENSSL)/lib",
                 "-l:libssl.a -Wl,--exclude-libs,libssl.a",
                 "-l:libcrypto.a -Wl,--exclude-libs,libcrypto.a",
             ]
-            self.cfg['extensions']['_hashlib'] = [
+            self.cfg["extensions"]["_hashlib"] = [
                 "_hashopenssl.c",
                 "-I$(OPENSSL)/include",
                 "-L$(OPENSSL)/lib",
@@ -446,16 +491,24 @@ class PythonConfig311(Config):
     def static_tiny(self):
         """static build variant tiny-size"""
         self.disable_static(
-            "_bz2", "_decimal", "_csv", "_json", "_lzma",
-            "_scproxy", "_sqlite3", "_ssl", "pyexpat", "readline",
+            "_bz2",
+            "_decimal",
+            "_csv",
+            "_json",
+            "_lzma",
+            "_scproxy",
+            "_sqlite3",
+            "_ssl",
+            "pyexpat",
+            "readline",
         )
 
     def static_bootstrap(self):
         """static build variant bootstrap-size"""
-        for i in self.cfg['static']:
-            self.cfg['disabled'].append(i)
-        self.cfg['static'] = self.cfg['core'].copy()
-        self.cfg['core'] = []
+        for i in self.cfg["static"]:
+            self.cfg["disabled"].append(i)
+        self.cfg["static"] = self.cfg["core"].copy()
+        self.cfg["core"] = []
 
     def shared_max(self):
         """shared build variant max-size"""
@@ -469,12 +522,13 @@ class PythonConfig311(Config):
 
 class PythonConfig312(PythonConfig311):
     """configuration class to build python 3.12"""
+
     version = "3.12.2"
 
     def patch(self):
         """patch cfg attribute"""
 
-        super().patch()        
+        super().patch()
         # if PLATFORM == "Darwin":
         #     self.enable_static("_scproxy")
         # elif PLATFORM == "Linux":
@@ -523,48 +577,6 @@ class PythonConfig312(PythonConfig311):
 
 # ----------------------------------------------------------------------------
 # utility classes
-
-
-class CustomFormatter(logging.Formatter):
-    """custom logging formatting class"""
-
-    white = "\x1b[97;20m"
-    grey = "\x1b[38;20m"
-    green = "\x1b[32;20m"
-    cyan = "\x1b[36;20m"
-    yellow = "\x1b[33;20m"
-    red = "\x1b[31;20m"
-    bold_red = "\x1b[31;1m"
-    reset = "\x1b[0m"
-    # fmt = "%(delta)s - {}%(levelname)s{} - %(name)s.%(funcName)s - %(message)s"
-    fmt = f"{white}%(delta)s{reset} - {{}}%(levelname)s{{}} - {white}%(name)s.%(funcName)s{reset} - {grey}%(message)s{reset}"
-
-    FORMATS = {
-        logging.DEBUG: fmt.format(grey, reset),
-        logging.INFO: fmt.format(green, reset),
-        logging.WARNING: fmt.format(yellow, reset),
-        logging.ERROR: fmt.format(red, reset),
-        logging.CRITICAL: fmt.format(bold_red, reset),
-    }
-
-    def format(self, record):
-        """custom logger formatting method"""
-        log_fmt = self.FORMATS.get(record.levelno)
-        if PY_VER_MINOR > 10:
-            duration = datetime.datetime.fromtimestamp(
-                record.relativeCreated / 1000, datetime.UTC
-            )
-        else:
-            duration = datetime.datetime.utcfromtimestamp(record.relativeCreated / 1000)
-        record.delta = duration.strftime("%H:%M:%S")
-        formatter = logging.Formatter(log_fmt)
-        return formatter.format(record)
-
-
-handler = logging.StreamHandler()
-handler.setFormatter(CustomFormatter())
-logging.basicConfig(level=logging.DEBUG if DEBUG else logging.INFO, handlers=[handler])
-
 
 class ShellCmd:
     """Provides platform agnostic file/folder handling."""
@@ -664,10 +676,10 @@ class ShellCmd:
         """Remove file or folder."""
 
         # handle windows error on read-only files
-        def remove_readonly(func, path, exc_info):
+        def remove_readonly(func, path, excptn):
             "Clear the readonly bit and reattempt the removal"
-            if func not in (os.unlink, os.rmdir) or exc_info[1].winerror != 5:
-                raise exc_info[1]
+            if func not in (os.unlink, os.rmdir) or excptn.winerror != 5:
+                raise excptn
             os.chmod(path, stat.S_IWRITE)
             func(path)
 
@@ -675,7 +687,7 @@ class ShellCmd:
         if path.is_dir():
             if not silent:
                 self.log.info("remove folder: %s", path)
-            shutil.rmtree(path, ignore_errors=not DEBUG, onerror=remove_readonly)
+            shutil.rmtree(path, ignore_errors=not DEBUG, onexc=remove_readonly)
         else:
             if not silent:
                 self.log.info("remove file: %s", path)
@@ -685,8 +697,13 @@ class ShellCmd:
                 if not silent:
                     self.log.warning("file not found: %s", path)
 
-    def walk(self, root: Pathlike, match_func: MatchFn,
-             action_func: ActionFn, skip_patterns: list[str]):
+    def walk(
+        self,
+        root: Pathlike,
+        match_func: MatchFn,
+        action_func: ActionFn,
+        skip_patterns: list[str],
+    ):
         """general recursive walk from root path with match and action functions"""
         for root_, dirs, filenames in os.walk(root):
             _root = Path(root_)
@@ -714,8 +731,7 @@ class ShellCmd:
         def remove(entry: Path):
             self.remove(entry)
 
-        self.walk(root,
-            match_func=match, action_func=remove, skip_patterns=skip_dirs)
+        self.walk(root, match_func=match, action_func=remove, skip_patterns=skip_dirs)
 
     def pip_install(
         self,
@@ -784,14 +800,8 @@ class ShellCmd:
         self.log.info(_cmd)
         self.cmd(_cmd)
 
-
-# ----------------------------------------------------------------------------
-# config class
-
-
 # ----------------------------------------------------------------------------
 # main classes
-
 
 class Project:
     """Utility class to hold project directory structure"""
@@ -799,22 +809,9 @@ class Project:
     def __init__(self):
         self.cwd = Path.cwd()
         self.build = self.cwd / "build"
-
         self.downloads = self.build / "downloads"
         self.src = self.build / "src"
         self.install = self.build / "install"
-
-        self.bin = self.install / "bin"
-        self.include = self.install / "include"
-        self.lib = self.install / "lib"
-        self.lib_static = self.lib / "static"
-        self.share = self.install / "share"
-
-        self.scripts = self.cwd / "scripts"
-        self.patch = self.cwd / "patch"
-        self.tests = self.cwd / "tests"
-        self.dist = self.cwd / "dist"
-        self.wheels = self.cwd / "wheels"
 
     def setup(self):
         """create main project directories"""
@@ -966,7 +963,8 @@ class AbstractBuilder(ShellCmd):
 
     def libs_static_exist(self):
         """check if all built stati libs already exist"""
-        return all((self.prefix / "lib" / lib).exists() for lib in self.libs_static)
+        return all((self.prefix / "lib" / lib).exists()
+                    for lib in self.libs_static)
 
     def pre_process(self):
         """override by subclass if needed"""
@@ -1012,8 +1010,10 @@ class Builder(AbstractBuilder):
             self.extract(archive, tofolder=self.project.src)
             assert self.src_path.exists(), f"could not extract from {archive}"
 
+
 class OpensslBuilder(Builder):
     """ssl builder class"""
+
     name = "openssl"
     version = "1.1.1w"
     url_template = "https://www.openssl.org/source/old/1.1.1/openssl-{ver}.tar.gz"
@@ -1032,6 +1032,7 @@ class OpensslBuilder(Builder):
 
 class Bzip2Builder(Builder):
     """bz2 builder class"""
+
     name = "bzip2"
     version = "1.0.8"
     url_template = "https://sourceware.org/pub/bzip2/bzip2-{ver}.tar.gz"
@@ -1042,11 +1043,15 @@ class Bzip2Builder(Builder):
         """main build method"""
         if not self.libs_static_exist():
             cflags = "-fPIC"
-            self.cmd(f"make install PREFIX={self.prefix} CFLAGS='{cflags}'", cwd=self.src_path)
+            self.cmd(
+                f"make install PREFIX={self.prefix} CFLAGS='{cflags}'",
+                cwd=self.src_path,
+            )
 
 
 class XzBuilder(Builder):
     """lzma builder class"""
+
     name = "xz"
     version = "5.2.5"
     url_template = "http://tukaani.org/xz/xz-{ver}.tar.gz"
@@ -1101,7 +1106,6 @@ class PythonBuilder(Builder):
 
     remove_patterns: list[str] = [
         "*.exe",
-        # "*.pyc",
         "*config-3*",
         "*tcl*",
         "*tdbc*",
@@ -1154,16 +1158,18 @@ class PythonBuilder(Builder):
 
     @property
     def build_type(self):
-        return self.config.split('_')[0]
+        """build type: 'static', 'shared' or 'framework'"""
+        return self.config.split("_")[0]
 
     @property
     def size_type(self):
-        return self.config.split('_')[1]
+        """size qualifier: 'max', 'mid', 'min', etc.."""
+        return self.config.split("_")[1]
 
     @property
     def prefix(self):
         """python builder prefix path"""
-        name = self.name.lower() + '-' + self.build_type
+        name = self.name.lower() + "-" + self.build_type
         return self.project.install / name
 
     @property
@@ -1203,8 +1209,7 @@ class PythonBuilder(Builder):
 
         config.write(self.config, to=self.src_path / "Modules" / "Setup.local")
         config_opts = " ".join(self.config_options)
-        self.cmd(f"./configure --prefix={self.prefix} {config_opts}",
-            cwd=self.src_path)
+        self.cmd(f"./configure --prefix={self.prefix} {config_opts}", cwd=self.src_path)
 
     def build(self):
         """main build process"""
@@ -1218,8 +1223,11 @@ class PythonBuilder(Builder):
 
     def clean(self):
         """clean installed build"""
-        self.glob_remove(self.prefix / "lib" / self.name_ver,
-            self.remove_patterns, skip_dirs=[".git"])
+        self.glob_remove(
+            self.prefix / "lib" / self.name_ver,
+            self.remove_patterns,
+            skip_dirs=[".git"],
+        )
 
         bins = [
             "2to3",
@@ -1299,7 +1307,6 @@ class PythonDebugBuilder(PythonBuilder):
     required_packages = []
 
 
-
 if __name__ == "__main__":
     import argparse
 
@@ -1330,15 +1337,13 @@ if __name__ == "__main__":
             pkgs=args.pkgs,
         )
         if args.write:
-            cfg = builder.get_config()
-            patch_dir = Path.cwd() / 'patch'
+            patch_dir = Path.cwd() / "patch"
             if not patch_dir.exists():
                 patch_dir.mkdir()
-            cfg_file = patch_dir / args.config.replace('_', '.')
-            cfg.write(args.config, to=cfg_file)
+            cfg_file = patch_dir / args.config.replace("_", ".")
+            builder.get_config().write(args.config, to=cfg_file)
             sys.exit()
 
         if args.reset:
             builder.remove("build")
         builder.process()
-

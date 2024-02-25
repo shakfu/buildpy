@@ -428,6 +428,20 @@ class PythonConfig311(Config):
     def static_mid(self):
         """static build variant mid-size"""
         self.disable_static("_decimal")
+        if PLATFORM == "Linux":
+            self.cfg['extensions']['_ssl'] = [
+                "_ssl.c",
+                "-I$(OPENSSL)/include",
+                "-L$(OPENSSL)/lib",
+                "-l:libssl.a -Wl,--exclude-libs,libssl.a",
+                "-l:libcrypto.a -Wl,--exclude-libs,libcrypto.a",
+            ]
+            self.cfg['extensions']['_hashlib'] = [
+                "_hashopenssl.c",
+                "-I$(OPENSSL)/include",
+                "-L$(OPENSSL)/lib",
+                "-l:libcrypto.a -Wl,--exclude-libs,libcrypto.a",
+            ]
 
     def static_tiny(self):
         """static build variant tiny-size"""
@@ -459,11 +473,12 @@ class PythonConfig312(PythonConfig311):
 
     def patch(self):
         """patch cfg attribute"""
-        
-        if PLATFORM == "Darwin":
-            self.enable_static("_scproxy")
-        elif PLATFORM == "Linux":
-            self.enable_static("ossaudiodev")
+
+        super().patch()        
+        # if PLATFORM == "Darwin":
+        #     self.enable_static("_scproxy")
+        # elif PLATFORM == "Linux":
+        #     self.enable_static("ossaudiodev")
 
         self.cfg["extensions"].update(
             {
@@ -522,7 +537,7 @@ class CustomFormatter(logging.Formatter):
     bold_red = "\x1b[31;1m"
     reset = "\x1b[0m"
     # fmt = "%(delta)s - {}%(levelname)s{} - %(name)s.%(funcName)s - %(message)s"
-    fmt = f"{white}%(delta)s{reset} - {{}}%(levelname)s{{}} - {white}%(name)s.%(funcName)s{reset} - %(message)s"
+    fmt = f"{white}%(delta)s{reset} - {{}}%(levelname)s{{}} - {white}%(name)s.%(funcName)s{reset} - {grey}%(message)s{reset}"
 
     FORMATS = {
         logging.DEBUG: fmt.format(grey, reset),
@@ -535,10 +550,12 @@ class CustomFormatter(logging.Formatter):
     def format(self, record):
         """custom logger formatting method"""
         log_fmt = self.FORMATS.get(record.levelno)
-        duration = datetime.datetime.fromtimestamp(
-            record.relativeCreated / 1000, datetime.UTC
-        )
-        # duration = datetime.datetime.utcfromtimestamp(record.relativeCreated / 1000)
+        if PY_VER_MINOR > 10:
+            duration = datetime.datetime.fromtimestamp(
+                record.relativeCreated / 1000, datetime.UTC
+            )
+        else:
+            duration = datetime.datetime.utcfromtimestamp(record.relativeCreated / 1000)
         record.delta = duration.strftime("%H:%M:%S")
         formatter = logging.Formatter(log_fmt)
         return formatter.format(record)
@@ -1024,7 +1041,8 @@ class Bzip2Builder(Builder):
     def build(self):
         """main build method"""
         if not self.libs_static_exist():
-            self.cmd(f"make install PREFIX={self.prefix}", cwd=self.src_path)
+            cflags = "-fPIC"
+            self.cmd(f"make install PREFIX={self.prefix} CFLAGS='{cflags}'", cwd=self.src_path)
 
 
 class XzBuilder(Builder):
@@ -1194,6 +1212,8 @@ class PythonBuilder(Builder):
 
     def install(self):
         """install to prefix"""
+        if self.prefix.exists():
+            self.remove(self.prefix)
         self.cmd("make install", cwd=self.src_path)
 
     def clean(self):
@@ -1290,13 +1310,13 @@ if __name__ == "__main__":
     )
     opt = parser.add_argument
 
-    opt("--debug", "-d", help="build debug python", action="store_true")
-    opt("--version", "-v", default=DEFAULT_PY_VERSION, help="python version")
-    opt("--config", "-c", default="shared_mid", help="build configuration", metavar="NAME")
-    opt("--reset", "-r", help="reset build", action="store_true")
-    opt("--optimize", "-o", help="optimize build", action="store_true")
-    opt("--pkgs", "-p", type=str, nargs="+", metavar="PKG")
-    opt("--write", "-w", help="write configuration", action="store_true")
+    opt("-c", "--config", default="shared_mid", help="build configuration", metavar="NAME")
+    opt("-d", "--debug", help="build debug python", action="store_true")
+    opt("-o", "--optimize", help="optimize build", action="store_true")
+    opt("-p", "--pkgs", type=str, nargs="+", metavar="PKG")
+    opt("-r", "--reset", help="reset build", action="store_true")
+    opt("-v", "--version", default=DEFAULT_PY_VERSION, help="python version")
+    opt("-w", "--write", help="write configuration", action="store_true")
 
     args = parser.parse_args()
     if args.debug:

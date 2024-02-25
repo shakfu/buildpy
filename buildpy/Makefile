@@ -16,7 +16,7 @@ repl:
 
 
 clean:
-	@rm -rf build/src log.txt build/install/python
+	@rm -rf build/src log.txt
 
 
 reset:

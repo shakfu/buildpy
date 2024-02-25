@@ -17,9 +17,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
 
 ## [0.0.1]
 
-- Added recursive `glob_remove` method for subtractive reduction of the build
+- Added Linux support (Python versions 3.11.7 and 3.12.2 tested).
+
+- Added recursive `glob_remove` method for subtractive reduction of the build.
 
 - Added static and shared `simple` and `pybind11` examples.
 
-- Added in-module configuration system
+- Added flexible in-module configuration system.
 

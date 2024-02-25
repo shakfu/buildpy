@@ -462,7 +462,7 @@ class PythonConfig312(PythonConfig311):
         
         if PLATFORM == "Darwin":
             self.enable_static("_scproxy")
-        elif PLATFORM == "Linux"
+        elif PLATFORM == "Linux":
             self.enable_static("ossaudiodev")
 
         self.cfg["extensions"].update(

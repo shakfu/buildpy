@@ -44,6 +44,7 @@ if PLATFORM == "Darwin":
     os.environ["MACOSX_DEPLOYMENT_TARGET"] = MACOSX_DEPLOYMENT_TARGET
 DEFAULT_PY_VERSION = "3.11.7"
 DEBUG = True
+COLORED_LOG = True
 
 # ----------------------------------------------------------------------------
 # logging config
@@ -59,34 +60,47 @@ class CustomFormatter(logging.Formatter):
     red = "\x1b[31;20m"
     bold_red = "\x1b[31;1m"
     reset = "\x1b[0m"
-    # fmt = "%(delta)s - {}%(levelname)s{} - %(name)s.%(funcName)s - %(message)s"
-    fmt = f"{white}%(delta)s{reset} - {{}}%(levelname)s{{}} - {white}%(name)s.%(funcName)s{reset} - {grey}%(message)s{reset}"
+    fmt = "%(delta)s - %(levelname)s - %(name)s.%(funcName)s - %(message)s"
+    cfmt = f"{white}%(delta)s{reset} - {{}}%(levelname)s{{}} - {white}%(name)s.%(funcName)s{reset} - {grey}%(message)s{reset}"
 
     FORMATS = {
-        logging.DEBUG: fmt.format(grey, reset),
-        logging.INFO: fmt.format(green, reset),
-        logging.WARNING: fmt.format(yellow, reset),
-        logging.ERROR: fmt.format(red, reset),
-        logging.CRITICAL: fmt.format(bold_red, reset),
+        logging.DEBUG: cfmt.format(grey, reset),
+        logging.INFO: cfmt.format(green, reset),
+        logging.WARNING: cfmt.format(yellow, reset),
+        logging.ERROR: cfmt.format(red, reset),
+        logging.CRITICAL: cfmt.format(bold_red, reset),
     }
+
+    def __init__(self, use_color=COLORED_LOG):
+        self.use_color = use_color
 
     def format(self, record):
         """custom logger formatting method"""
-        log_fmt = self.FORMATS.get(record.levelno)
+        if not self.use_color:
+            log_fmt = self.fmt
+        else:
+            log_fmt = self.FORMATS.get(record.levelno)
         if PY_VER_MINOR > 10:
             duration = datetime.datetime.fromtimestamp(
                 record.relativeCreated / 1000, datetime.UTC
             )
         else:
-            duration = datetime.datetime.utcfromtimestamp(record.relativeCreated / 1000)
+            duration = datetime.datetime.utcfromtimestamp(
+                record.relativeCreated / 1000)
         record.delta = duration.strftime("%H:%M:%S")
         formatter = logging.Formatter(log_fmt)
         return formatter.format(record)
 
 
-handler = logging.StreamHandler()
-handler.setFormatter(CustomFormatter())
-logging.basicConfig(level=logging.DEBUG if DEBUG else logging.INFO, handlers=[handler])
+strm_handler = logging.StreamHandler()
+strm_handler.setFormatter(CustomFormatter())
+# file_handler = logging.FileHandler("log.txt", mode='w')
+# file_handler.setFormatter(CustomFormatter(use_color=False))
+logging.basicConfig(
+    level=logging.DEBUG if DEBUG else logging.INFO,
+    handlers=[strm_handler],
+    # handlers=[strm_handler, file_handler],
+)
 
 
 # ----------------------------------------------------------------------------
@@ -383,13 +397,14 @@ class Config:
     """Abstract configuration class"""
 
     version: str
+    log: logging.Logger
 
     def __init__(self, cfg: dict):
         self.cfg = cfg.copy()
-        self.patch()
         self.out = ["# -*- makefile -*-"] + self.cfg["header"] + ["\n# core\n"]
         self.log = logging.getLogger(self.__class__.__name__)
-
+        self.patch()
+# 
     def __repr__(self):
         return f"<{self.__class__.__name__} '{self.version}'>"
 
@@ -1270,6 +1285,7 @@ class PythonBuilder(Builder):
 
     def post_process(self):
         """override by subclass if needed"""
+        self.log.info("DONE")
 
     def process(self):
         """main builder process"""
@@ -1317,7 +1333,7 @@ if __name__ == "__main__":
     )
     opt = parser.add_argument
 
-    opt("-c", "--config", default="shared_mid", help="build configuration", metavar="NAME")
+    opt("-c", "--config", default="static_max", help="build configuration", metavar="NAME")
     opt("-d", "--debug", help="build debug python", action="store_true")
     opt("-o", "--optimize", help="optimize build", action="store_true")
     opt("-p", "--pkgs", type=str, nargs="+", metavar="PKG")

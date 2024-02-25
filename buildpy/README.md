@@ -30,8 +30,6 @@ or just `make` to build the default configuration.
 
 - if `libb2` is installed on your system, `_blake2` will be linked to it creating a local dependency (need test for this)
 
-
-
 ## Configurations
 
 A configuration has a name with the structure `<build-type>.<size-type>`. For example, a `static.max` configuration means a `static` build-type of the `max` size-type, in other words, a build variant where libpython is statically linked and which tries to include the maximum number of extensions outside of the default configuration.

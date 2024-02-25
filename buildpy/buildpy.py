@@ -204,6 +204,7 @@ BASE_CONFIG = dict(
         "itertools": ["itertoolsmodule.c"],
         "math": ["mathmodule.c"],
         "mmap": ["mmapmodule.c"],
+        "ossaudiodev": ["ossaudiodev.c"],
         "posix": [
             "-DPy_BUILD_CORE_BUILTIN",
             "-I$(srcdir)/Include/internal",
@@ -324,6 +325,7 @@ BASE_CONFIG = dict(
         "_xxsubinterpreters",
         "audioop",
         "nis",
+        "ossaudiodev",
         "resource",
         "spwd",
         "syslog",
@@ -417,6 +419,8 @@ class PythonConfig311(Config):
         """patch cfg attribute"""
         if PLATFORM == "Darwin":
             self.enable_static("_scproxy")
+        elif PLATFORM == "Linux":
+            self.enable_static("ossaudiodev")
 
     def static_max(self):
         """static build variant max-size"""
@@ -458,6 +462,8 @@ class PythonConfig312(PythonConfig311):
         
         if PLATFORM == "Darwin":
             self.enable_static("_scproxy")
+        elif PLATFORM == "Linux"
+            self.enable_static("ossaudiodev")
 
         self.cfg["extensions"].update(
             {

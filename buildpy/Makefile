@@ -1,4 +1,5 @@
-
+STATICPY := build/install/python-static/bin/python3
+SHAREDPY := build/install/python-shared/bin/python3
 
 .PHONY: all build repl clean reset
 
@@ -11,7 +12,7 @@ build: clean
 
 
 repl:
-	@build/install/python/bin/python3
+	@test -f $(STATICPY) && $(STATICPY) || test -f $(SHAREDPY) && $(SHAREDPY)
 
 
 clean:

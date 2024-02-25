@@ -43,7 +43,7 @@ PY_VER_MINOR = sys.version_info.minor
 if PLATFORM == "Darwin":
     MACOSX_DEPLOYMENT_TARGET = os.getenv("MACOSX_DEPLOYMENT_TARGET", "12.6")
     os.environ["MACOSX_DEPLOYMENT_TARGET"] = MACOSX_DEPLOYMENT_TARGET
-
+DEFAULT_PY_VERSION = "3.11.7"
 DEBUG = True
 
 # ----------------------------------------------------------------------------
@@ -282,7 +282,6 @@ BASE_CONFIG = dict(
         "_posixsubprocess",
         "_queue",
         "_random",
-        "_scproxy",
         "_sha1",
         "_sha256",
         "_sha3",
@@ -320,6 +319,7 @@ BASE_CONFIG = dict(
         "_curses",
         "_curses_panel",
         "_dbm",
+        "_scproxy",
         "_tkinter",
         "_xxsubinterpreters",
         "audioop",
@@ -338,40 +338,46 @@ class Config:
     """Abstract configuration class"""
     version: str
 
-    def __init__(self, config: dict):
-        self.cfg = self.patch(config.copy())
+    def __init__(self, cfg: dict):
+        self.cfg = cfg.copy()
         self.out = ["# -*- makefile -*-"] + self.cfg["header"] + ["\n# core\n"]
+        self.patch()
 
     def __repr__(self):
         return f"<{self.__class__.__name__} '{self.version}'>"
 
-    def patch(self, cfg: dict) -> dict:
-        """patch and return config dict"""
-        return cfg
+    def patch(self) -> None:
+        """patch cfg attribute"""
+
+    def move_entries(self, src: str, dst: str, *names):
+        """generic entry mover"""
+        for name in names:
+            self.cfg[src].remove(name)
+            self.cfg[dst].append(name)            
+
+    def enable_static(self, *names):
+        """move disabled entries to static"""
+        self.move_entries("disabled", "static", *names)
+
+    def enable_shared(self, *names):
+        """move disabled entries to shared"""
+        self.move_entries("disabled", "shared", *names)
 
     def disable_static(self, *names):
         """move static entries to disabled"""
-        for name in names:
-            self.cfg["static"].remove(name)
-            self.cfg["disabled"].append(name)
+        self.move_entries("static", "disabled", *names)
 
     def disable_shared(self, *names):
         """move shared entries to disabled"""
-        for name in names:
-            self.cfg["shared"].remove(name)
-            self.cfg["disabled"].append(name)
+        self.move_entries("shared", "disabled", *names)
 
     def move_static_to_shared(self, *names):
         """move static entries to shared"""
-        for name in names:
-            self.cfg["static"].remove(name)
-            self.cfg["shared"].append(name)
+        self.move_entries("static", "shared", *names)
 
     def move_shared_to_static(self, *names):
         """move shared entries to static"""
-        for name in names:
-            self.cfg["shared"].remove(name)
-            self.cfg["static"].append(name)
+        self.move_entries("shared", "static", *names)
 
     def write(self, method: str, to: Pathlike):
         """write configuration method to a file"""
@@ -406,6 +412,11 @@ class Config:
 class PythonConfig311(Config):
     """configuration class to build python 3.11"""
     version: str = "3.11.7"
+
+    def patch(self) -> None:
+        """patch cfg attribute"""
+        if PLATFORM == "Darwin":
+            self.enable_static("_scproxy")
 
     def static_max(self):
         """static build variant max-size"""
@@ -442,9 +453,13 @@ class PythonConfig312(PythonConfig311):
     """configuration class to build python 3.12"""
     version = "3.12.2"
 
-    def patch(self, cfg: dict):
-        """patch and return config dict"""
-        cfg["extensions"].update(
+    def patch(self):
+        """patch cfg attribute"""
+        
+        if PLATFORM == "Darwin":
+            self.enable_static("_scproxy")
+
+        self.cfg["extensions"].update(
             {
                 "_md5": [
                     "md5module.c",
@@ -477,13 +492,12 @@ class PythonConfig312(PythonConfig311):
                 ],
             }
         )
-        del cfg["extensions"]["_sha256"]
-        del cfg["extensions"]["_sha512"]
-        cfg["static"].append("_sha2")
-        cfg["static"].remove("_sha256")
-        cfg["static"].remove("_sha512")
-        cfg["disabled"].append("_xxinterpchannels")
-        return cfg
+        del self.cfg["extensions"]["_sha256"]
+        del self.cfg["extensions"]["_sha512"]
+        self.cfg["static"].append("_sha2")
+        self.cfg["static"].remove("_sha256")
+        self.cfg["static"].remove("_sha512")
+        self.cfg["disabled"].append("_xxinterpchannels")
 
 
 # ----------------------------------------------------------------------------
@@ -971,7 +985,7 @@ class Builder(AbstractBuilder):
         self.project.setup()
         archive = self.download(self.url, tofolder=self.project.downloads)
         self.log.info("downloaded %s", archive)
-        if not self.prefix.exists():
+        if not self.src_path.exists():
             self.extract(archive, tofolder=self.project.src)
             assert self.src_path.exists(), f"could not extract from {archive}"
 
@@ -1030,7 +1044,7 @@ class PythonBuilder(Builder):
 
     name = "Python"
 
-    version = "3.11.7"
+    version = DEFAULT_PY_VERSION
 
     url_template = "https://www.python.org/ftp/python/{ver}/Python-{ver}.tar.xz"
 
@@ -1094,7 +1108,7 @@ class PythonBuilder(Builder):
 
     def __init__(
         self,
-        version: str = "3.11.7",
+        version: str = DEFAULT_PY_VERSION,
         project: Optional[Project] = None,
         config: str = "static_local",
         optimize: bool = False,
@@ -1271,7 +1285,7 @@ if __name__ == "__main__":
     opt = parser.add_argument
 
     opt("--debug", "-d", help="build debug python", action="store_true")
-    opt("--version", "-v", default="3.12.2", help="python version")
+    opt("--version", "-v", default=DEFAULT_PY_VERSION, help="python version")
     opt("--config", "-c", default="shared_mid", help="build configuration", metavar="NAME")
     opt("--reset", "-r", help="reset build", action="store_true")
     opt("--optimize", "-o", help="optimize build", action="store_true")

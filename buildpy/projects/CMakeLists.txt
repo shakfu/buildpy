@@ -28,6 +28,7 @@ if (EXISTS ${CMAKE_SOURCE_DIR}/build/install/python-shared)
     )
 
     if (DEFINED PYTHON_VER)
+        add_subdirectory(app_shared)
         add_subdirectory(simple_shared)
         add_subdirectory(pybind_shared)
     endif()

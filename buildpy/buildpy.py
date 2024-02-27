@@ -33,6 +33,21 @@ MatchFn = Callable[[Path], bool]
 ActionFn = Callable[[Path], None]
 
 # ----------------------------------------------------------------------------
+# env helpers
+
+def getenv(key: str, default: bool = False) -> bool:
+    """convert '0','1' env values to bool {True, False}"""
+    return bool(int(os.getenv(key, default)))
+
+def setenv(key: str, default: str):
+    """get environ variable if it is exists else set default"""
+    if key in os.environ:
+        return os.getenv(key, default)
+    else:
+        os.environ[key] = default
+        return default
+
+# ----------------------------------------------------------------------------
 # constants
 
 PYTHON = sys.executable
@@ -40,11 +55,10 @@ PLATFORM = platform.system()
 ARCH = platform.machine()
 PY_VER_MINOR = sys.version_info.minor
 if PLATFORM == "Darwin":
-    MACOSX_DEPLOYMENT_TARGET = os.getenv("MACOSX_DEPLOYMENT_TARGET", "12.6")
-    os.environ["MACOSX_DEPLOYMENT_TARGET"] = MACOSX_DEPLOYMENT_TARGET
+    MACOSX_DEPLOYMENT_TARGET = setenv("MACOSX_DEPLOYMENT_TARGET", "12.6")
 DEFAULT_PY_VERSION = "3.11.7"
-DEBUG = True
-COLORED_LOG = True
+DEBUG = getenv('DEBUG', default=True)
+COLOR = getenv('COLOR', default=True)
 
 # ----------------------------------------------------------------------------
 # logging config
@@ -61,7 +75,10 @@ class CustomFormatter(logging.Formatter):
     bold_red = "\x1b[31;1m"
     reset = "\x1b[0m"
     fmt = "%(delta)s - %(levelname)s - %(name)s.%(funcName)s - %(message)s"
-    cfmt = f"{white}%(delta)s{reset} - {{}}%(levelname)s{{}} - {white}%(name)s.%(funcName)s{reset} - {grey}%(message)s{reset}"
+    cfmt = (f"{white}%(delta)s{reset} - "
+            f"{{}}%(levelname)s{{}} - "
+            f"{white}%(name)s.%(funcName)s{reset} - "
+            f"{grey}%(message)s{reset}")
 
     FORMATS = {
         logging.DEBUG: cfmt.format(grey, reset),
@@ -71,7 +88,7 @@ class CustomFormatter(logging.Formatter):
         logging.CRITICAL: cfmt.format(bold_red, reset),
     }
 
-    def __init__(self, use_color=COLORED_LOG):
+    def __init__(self, use_color=COLOR):
         self.use_color = use_color
 
     def format(self, record):
@@ -601,7 +618,11 @@ class ShellCmd:
     def cmd(self, shellcmd: str, cwd: Pathlike = "."):
         """Run shell command within working directory"""
         self.log.info(shellcmd)
-        subprocess.call(shellcmd, shell=True, cwd=str(cwd))
+        try:
+            subprocess.check_call(shellcmd, shell=True, cwd=str(cwd))
+        except subprocess.CalledProcessError:
+            self.log.critical("", exc_info=True)
+            sys.exit(1)
 
     def download(self, url: str, tofolder: Optional[Pathlike] = None) -> Pathlike:
         """Download a file from a url to an optional folder"""
@@ -746,7 +767,8 @@ class ShellCmd:
         def remove(entry: Path):
             self.remove(entry)
 
-        self.walk(root, match_func=match, action_func=remove, skip_patterns=skip_dirs)
+        self.walk(root, match_func=match, action_func=remove,
+                  skip_patterns=skip_dirs)
 
     def pip_install(
         self,
@@ -808,12 +830,6 @@ class ShellCmd:
         if prefix:
             _cmds.append(f"--prefix {prefix}")
         self.cmd(" ".join(_cmds))
-
-    def install_name_tool(self, src: Pathlike, dst: Pathlike, mode: str = "id"):
-        """change dynamic shared library install names"""
-        _cmd = f"install_name_tool -{mode} {src} {dst}"
-        self.log.info(_cmd)
-        self.cmd(_cmd)
 
 # ----------------------------------------------------------------------------
 # main classes
@@ -913,7 +929,7 @@ class AbstractBuilder(ShellCmd):
     @property
     def executable_name(self):
         """executable name of buld target"""
-        name = self.name
+        name = self.name.lower()
         if PLATFORM == "Windows":
             name = f"{self.name}.exe"
         return name
@@ -1093,15 +1109,16 @@ class PythonBuilder(Builder):
     url_template = "https://www.python.org/ftp/python/{ver}/Python-{ver}.tar.xz"
 
     config_options: list[str] = [
+        # "--disable-ipv6",
         # "--disable-profiling",
         "--disable-test-modules",
         # "--enable-framework",
         # "--enable-framework=INSTALLDIR",
-        # "--enable-ipv6",
         # "--enable-optimizations",
         # "--enable-shared",
         # "--enable-universalsdk",
         # "--enable-universalsdk=SDKDIR",
+        # "--enable-loadable-sqlite-extensions",
         # "--with-lto",
         # "--with-lto=thin",
         # "--with-openssl-rpath=auto",
@@ -1153,15 +1170,17 @@ class PythonBuilder(Builder):
         self,
         version: str = DEFAULT_PY_VERSION,
         project: Optional[Project] = None,
-        config: str = "static_local",
+        config: str = "shared_max",
         optimize: bool = False,
         pkgs: Optional[list[str]] = None,
+        cfg_opts: Optional[list[str]] = None,
     ):
 
         super().__init__(version, project)
         self.config = config
         self.optimize = optimize
         self.pkgs = pkgs or []
+        self.cfg_opts = cfg_opts or []
         self.log = logging.getLogger(self.__class__.__name__)
 
     def get_config(self):
@@ -1170,6 +1189,11 @@ class PythonBuilder(Builder):
             "3.11": PythonConfig311,
             "3.12": PythonConfig312,
         }[self.ver](BASE_CONFIG)
+
+    @property
+    def libname(self):
+        """library name suffix"""
+        return f"lib{self.name_ver}"
 
     @property
     def build_type(self):
@@ -1222,9 +1246,17 @@ class PythonBuilder(Builder):
             self.remove_patterns.remove("ensurepip")
             self.pkgs.extend(self.required_packages)
 
+        if self.cfg_opts:
+            for cfg_opt in self.cfg_opts:
+                cfg_opt = cfg_opt.replace('_', '-')
+                cfg_opt = '--' + cfg_opt
+                if not cfg_opt in self.config_options:
+                     self.config_options.append(cfg_opt)
+
         config.write(self.config, to=self.src_path / "Modules" / "Setup.local")
         config_opts = " ".join(self.config_options)
-        self.cmd(f"./configure --prefix={self.prefix} {config_opts}", cwd=self.src_path)
+        self.cmd(f"./configure --prefix={self.prefix} {config_opts}",
+                 cwd=self.src_path)
 
     def build(self):
         """main build process"""
@@ -1283,8 +1315,20 @@ class PythonBuilder(Builder):
         self.cmd(f"{self.python} -m ensurepip")
         self.cmd(f"{self.pip} install {required_pkgs}")
 
+    def make_relocatable(self):
+        """fix dylib/exe @rpath shared buildtype in macos"""
+        dylib = self.prefix / "lib" / self.dylib_name
+        self.chmod(dylib)
+        self.cmd(f"install_name_tool -id @rpath/{self.dylib_name} {dylib}")
+        to = f"@executable_path/../lib/{self.dylib_name}"
+        exe = self.prefix / "bin" / self.name_ver
+        self.cmd(f"install_name_tool -change {dylib} {to} {exe}")
+
     def post_process(self):
         """override by subclass if needed"""
+        if PLATFORM == "Darwin":
+            if self.build_type == "shared":
+                self.make_relocatable()
         self.log.info("DONE")
 
     def process(self):
@@ -1309,7 +1353,6 @@ class PythonDebugBuilder(PythonBuilder):
     name = "python"
 
     config_options = [
-        "--enable-shared",
         "--disable-test-modules",
         "--without-static-libpython",
         "--with-pydebug",
@@ -1333,33 +1376,34 @@ if __name__ == "__main__":
     )
     opt = parser.add_argument
 
-    opt("-c", "--config", default="static_max", help="build configuration", metavar="NAME")
+    opt("-a", "--cfg-opts", help="add config options", type=str, nargs="+", metavar="CFG")
+    opt("-c", "--config", default="shared_mid", help="build configuration (default: %(default)s)", metavar="NAME")
     opt("-d", "--debug", help="build debug python", action="store_true")
     opt("-o", "--optimize", help="optimize build", action="store_true")
-    opt("-p", "--pkgs", type=str, nargs="+", metavar="PKG")
+    opt("-p", "--pkgs", help="install pkgs", type=str, nargs="+", metavar="PKG")
     opt("-r", "--reset", help="reset build", action="store_true")
-    opt("-v", "--version", default=DEFAULT_PY_VERSION, help="python version")
+    opt("-v", "--version", default=DEFAULT_PY_VERSION, help="python version (default: %(default)s)")
     opt("-w", "--write", help="write configuration", action="store_true")
 
     args = parser.parse_args()
+    python_builder_class = PythonBuilder
     if args.debug:
-        dbuilder = PythonDebugBuilder(version=args.version)
-        dbuilder.process()
-    else:
-        builder = PythonBuilder(
-            version=args.version,
-            config=args.config,
-            optimize=args.optimize,
-            pkgs=args.pkgs,
-        )
-        if args.write:
-            patch_dir = Path.cwd() / "patch"
-            if not patch_dir.exists():
-                patch_dir.mkdir()
-            cfg_file = patch_dir / args.config.replace("_", ".")
-            builder.get_config().write(args.config, to=cfg_file)
-            sys.exit()
+        python_builder_class = PythonDebugBuilder
+    builder = python_builder_class(
+        version=args.version,
+        config=args.config,
+        optimize=args.optimize,
+        pkgs=args.pkgs,
+        cfg_opts=args.cfg_opts,
+    )
+    if args.write:
+        patch_dir = Path.cwd() / "patch"
+        if not patch_dir.exists():
+            patch_dir.mkdir()
+        cfg_file = patch_dir / args.config.replace("_", ".")
+        builder.get_config().write(args.config, to=cfg_file)
+        sys.exit()
 
-        if args.reset:
-            builder.remove("build")
-        builder.process()
+    if args.reset:
+        builder.remove("build")
+    builder.process()

@@ -725,18 +725,26 @@ class ShellCmd:
         """Remove file or folder."""
 
         # handle windows error on read-only files
-        def remove_readonly(func, path, excptn):
+        def remove_readonly(func, path, exc_info):
             "Clear the readonly bit and reattempt the removal"
-            if func not in (os.unlink, os.rmdir) or excptn.winerror != 5:
-                raise excptn
+            if PY_VER_MINOR < 11:
+                if func not in (os.unlink, os.rmdir) or exc_info[1].winerror != 5:
+                    raise exc_info[1]
+            else:
+                if func not in (os.unlink, os.rmdir) or exc_info.winerror != 5:
+                    raise exc_info
             os.chmod(path, stat.S_IWRITE)
             func(path)
+
 
         path = Path(path)
         if path.is_dir():
             if not silent:
                 self.log.info("remove folder: %s", path)
-            shutil.rmtree(path, ignore_errors=not DEBUG, onexc=remove_readonly)
+            if PY_VER_MINOR < 11:
+                shutil.rmtree(path, ignore_errors=not DEBUG, onerror=remove_readonly)
+            else:
+                shutil.rmtree(path, ignore_errors=not DEBUG, onexc=remove_readonly)
         else:
             if not silent:
                 self.log.info("remove file: %s", path)
@@ -1299,8 +1307,8 @@ class PythonBuilder(Builder):
             f"pydoc{self.ver}",
             f"2to3-{self.ver}",
         ]
-        for f in bins:
-            self.remove(self.prefix / "bin" / f)
+        for executable in bins:
+            self.remove(self.prefix / "bin" / executable)
 
     def ziplib(self):
         """zip python site-packages"""
@@ -1332,27 +1340,30 @@ class PythonBuilder(Builder):
 
     def make_relocatable(self):
         """fix dylib/exe @rpath shared buildtype in macos"""
-        if self.build_type == "shared":
-            dylib = self.prefix / "lib" / self.dylib_name
-            self.chmod(dylib)
-            self.cmd(f"install_name_tool -id @rpath/{self.dylib_name} {dylib}")
-            to = f"@executable_path/../lib/{self.dylib_name}"
-            exe = self.prefix / "bin" / self.name_ver
-            self.cmd(f"install_name_tool -change {dylib} {to} {exe}")
-        elif self.build_type == "framework":
-            dylib = self.prefix / self.name
-            self.chmod(dylib)
-            self.cmd(f"install_name_tool -id @rpath/{self.name} {dylib}")
-            to = f"@executable_path/../{self.name}"
-            exe = self.prefix / "bin" / self.name_ver
-            self.cmd(f"install_name_tool -change {dylib} {to} {exe}")
-
+        if PLATFORM == "Darwin":
+            if self.build_type == "shared":
+                dylib = self.prefix / "lib" / self.dylib_name
+                self.chmod(dylib)
+                self.cmd(f"install_name_tool -id @rpath/{self.dylib_name} {dylib}")
+                to = f"@executable_path/../lib/{self.dylib_name}"
+                exe = self.prefix / "bin" / self.name_ver
+                self.cmd(f"install_name_tool -change {dylib} {to} {exe}")
+            elif self.build_type == "framework":
+                dylib = self.prefix / self.name
+                self.chmod(dylib)
+                self.cmd(f"install_name_tool -id @rpath/{self.name} {dylib}")
+                to = f"@executable_path/../{self.name}"
+                exe = self.prefix / "bin" / self.name_ver
+                self.cmd(f"install_name_tool -change {dylib} {to} {exe}")
+        elif PLATFORM == "Linux":
+            if self.build_type == "shared":
+                exe = self.prefix / "bin" / self.name_ver
+                self.cmd(f"patchelf --set-rpath '$ORIGIN'/../lib {exe}")
 
     def post_process(self):
         """override by subclass if needed"""
-        if PLATFORM == "Darwin":
-            if self.build_type in ["shared", "framework"]:
-                self.make_relocatable()
+        if self.build_type in ["shared", "framework"]:
+            self.make_relocatable()
         self.log.info("DONE")
 
 

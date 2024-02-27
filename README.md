@@ -2,11 +2,11 @@
 
 3 ways of building python from source using python: 
 
-1. `builder`: original package, extracted from another large project.. the kitchen-sink approach 
+1. `builder`: the original, a package extracted from another large project.. has a kitchen-sink approach 
 
-2. `pybuild`: lighter-weight package, subset of (1)
+2. `pybuild`: a subsequent attempt at a lighter-weight package, extracted from (1) with only the build features.
 
-3. `buildpy`: lightest-weight single script/module, a rewrite given experience of (1) and (2) with improved methods
+3. `buildpy`: lightest-weight single script/module, a 'modern' rewrite given collective experience of (1) and (2): the future.
 
 Ideally one should end up with 1 or maybe even 2 ways. 
 
@@ -77,24 +77,27 @@ subcommands:
 
 ## buildpy
 
-Intended to be the lightest weight single-script python builder with the simplest interface:
+The lightest weight single-script python builder with the simplest interface. Only handles python 3.11 - 3.12 and has a builtin congifuration system which handles differences between build variants efficiently.
 
 ```bash
 % ./buildpy.py --help
-usage: buildpy.py [-h] [--debug] [--version VERSION] [--config NAME] [--reset]
-                  [--optimize] [--pkgs PKG [PKG ...]] [--write]
+usage: buildpy.py [-h] [-a CFG [CFG ...]] [-c NAME] [-d] [-o]
+                  [-p PKG [PKG ...]] [-r] [-v VERSION] [-w]
 
 A python builder
 
 options:
   -h, --help            show this help message and exit
-  --debug, -d           build debug python
-  --version VERSION, -v VERSION
-                        python version
-  --config NAME, -c NAME
-                        build configuration
-  --reset, -r           reset build
-  --optimize, -o        optimize build
-  --pkgs PKG [PKG ...], -p PKG [PKG ...]
-  --write, -w           write configuration
+  -a CFG [CFG ...], --cfg-opts CFG [CFG ...]
+                        add config options
+  -c NAME, --config NAME
+                        build configuration (default: shared_mid)
+  -d, --debug           build debug python
+  -o, --optimize        optimize build
+  -p PKG [PKG ...], --pkgs PKG [PKG ...]
+                        install pkgs
+  -r, --reset           reset build
+  -v VERSION, --version VERSION
+                        python version (default: 3.11.7)
+  -w, --write           write configuration
 ```

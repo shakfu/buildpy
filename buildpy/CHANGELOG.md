@@ -17,6 +17,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
 
 ## [0.0.1]
 
+- Added `make_relocatable` feature for `framework-*` build variants on macOS to make the installed prefix relocatable
+
+- Added `framework` build-type for macOS
+
 - Added `make_relocatable` method for `shared-*` build variants on macOS to make the installed prefix relocatable
 
 - Added cmdline option to add config options `--cfg-opts`

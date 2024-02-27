@@ -431,7 +431,7 @@ class Config:
     def move_entries(self, src: str, dst: str, *names):
         """generic entry mover"""
         for name in names:
-            self.log.info("move from %s -> %s: %s", src, dst, name)
+            self.log.info("from %s -> %s: %s", src, dst, name)
             self.cfg[src].remove(name)
             self.cfg[dst].append(name)
 
@@ -550,6 +550,19 @@ class PythonConfig311(Config):
     def shared_mid(self):
         """shared build variant mid-size"""
         self.disable_static("_decimal", "_ssl", "_hashlib")
+
+    def framework_max(self):
+        """framework build variant max-size"""
+        self.shared_max()
+        self.move_static_to_shared(
+            "_bz2", "_lzma", "readline", "_sqlite3", 
+            "_scproxy", "zlib", "binascii",
+        )
+
+    def framework_mid(self):
+        """framework build variant mid-size"""
+        self.framework_max()
+        self.disable_shared("_decimal", "_ssl", "_hashlib")
 
 
 class PythonConfig312(PythonConfig311):
@@ -1131,7 +1144,7 @@ class PythonBuilder(Builder):
         # "--without-doc-strings",
         "--without-ensurepip",
         # "--without-readline",
-        "--without-static-libpython",
+        # "--without-static-libpython",
     ]
 
     required_packages: list[str] = []
@@ -1208,6 +1221,8 @@ class PythonBuilder(Builder):
     @property
     def prefix(self):
         """python builder prefix path"""
+        if PLATFORM == "Darwin" and self.build_type == "framework":
+            return self.project.install / "Python.framework" / "Versions" / self.ver
         name = self.name.lower() + "-" + self.build_type
         return self.project.install / name
 
@@ -1227,16 +1242,16 @@ class PythonBuilder(Builder):
     def configure(self):
         """configure build"""
         config = self.get_config()
+        prefix = self.prefix
 
-        _type, _size = self.config.split("_")
-        if _type == "static":
-            self.config_options.remove("--without-static-libpython")
-        elif _type == "shared":
-            self.config_options.append("--enable-shared")
-        elif _type == "framework":
-            self.config_options.append(f"--enable-framework={self.prefix}")
+        if self.build_type == "shared":
+            self.config_options.extend([
+                "--enable-shared", "--without-static-libpython"])
+        elif self.build_type == "framework":
+            prefix = self.project.install
+            self.config_options.append(f"--enable-framework={prefix}")
         else:
-            self.fail(f"{_type} not recognized build type")
+            self.fail(f"{self.build_type} not recognized build type")
 
         if self.optimize:
             self.config_options.append("--enable-optimizations")
@@ -1255,7 +1270,7 @@ class PythonBuilder(Builder):
 
         config.write(self.config, to=self.src_path / "Modules" / "Setup.local")
         config_opts = " ".join(self.config_options)
-        self.cmd(f"./configure --prefix={self.prefix} {config_opts}",
+        self.cmd(f"./configure --prefix={prefix} {config_opts}",
                  cwd=self.src_path)
 
     def build(self):
@@ -1317,19 +1332,29 @@ class PythonBuilder(Builder):
 
     def make_relocatable(self):
         """fix dylib/exe @rpath shared buildtype in macos"""
-        dylib = self.prefix / "lib" / self.dylib_name
-        self.chmod(dylib)
-        self.cmd(f"install_name_tool -id @rpath/{self.dylib_name} {dylib}")
-        to = f"@executable_path/../lib/{self.dylib_name}"
-        exe = self.prefix / "bin" / self.name_ver
-        self.cmd(f"install_name_tool -change {dylib} {to} {exe}")
+        if self.build_type == "shared":
+            dylib = self.prefix / "lib" / self.dylib_name
+            self.chmod(dylib)
+            self.cmd(f"install_name_tool -id @rpath/{self.dylib_name} {dylib}")
+            to = f"@executable_path/../lib/{self.dylib_name}"
+            exe = self.prefix / "bin" / self.name_ver
+            self.cmd(f"install_name_tool -change {dylib} {to} {exe}")
+        elif self.build_type == "framework":
+            dylib = self.prefix / self.name
+            self.chmod(dylib)
+            self.cmd(f"install_name_tool -id @rpath/{self.name} {dylib}")
+            to = f"@executable_path/../{self.name}"
+            exe = self.prefix / "bin" / self.name_ver
+            self.cmd(f"install_name_tool -change {dylib} {to} {exe}")
+
 
     def post_process(self):
         """override by subclass if needed"""
         if PLATFORM == "Darwin":
-            if self.build_type == "shared":
+            if self.build_type in ["shared", "framework"]:
                 self.make_relocatable()
         self.log.info("DONE")
+
 
     def process(self):
         """main builder process"""

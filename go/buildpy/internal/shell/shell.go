@@ -1,93 +1,24 @@
 package shell
 
 import (
-    "archive/tar"
-    "compress/gzip"
-    "fmt"
-    "io"
     "log"
     "path/filepath"
-    "net/http"
-    "os"
+    "os/exec"
 )
 
-func DownloadFile(filepath string, url string) (err error) {
-
-	// Create the file
-	out, err := os.Create(filepath)
-	if err != nil  {
-		return err
-	}
-	defer out.Close()
-
-	// Get the data
-	resp, err := http.Get(url)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	// Check server response
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("bad status: %s", resp.Status)
-	}
-
-	// Write the body to file
-	_, err = io.Copy(out, resp.Body)
-	if err != nil  {
-		return err
-	}
-
-	return nil
-}
-
-
-
-
-func ExtractTarGz(gzipStream io.Reader, toDir string) {
-    uncompressedStream, err := gzip.NewReader(gzipStream)
-    if err != nil {
-        log.Fatal("ExtractTarGz: NewReader failed")
+func DownloadTo(url string, directory string) {
+    download := exec.Command("wget", "-P", directory, url)
+    if err := download.Run(); err != nil {
+        log.Fatal(err)
     }
+    log.Printf("downloaded: %s", url)		
 
-    tarReader := tar.NewReader(uncompressedStream)
-
-    for {
-        header, err := tarReader.Next()
-
-        if err == io.EOF {
-            break
-        }
-
-        if err != nil {
-            log.Fatalf("ExtractTarGz: Next() failed: %s", err.Error())
-        }
-
-        switch header.Typeflag {
-        case tar.TypeDir:
-        	dir := filepath.Join(toDir, header.Name)
-            if err := os.Mkdir(dir, 0755); err != nil {
-                log.Fatalf("ExtractTarGz: Mkdir() failed: %s", err.Error())
-            }
-        case tar.TypeReg:
-        	file := filepath.Join(toDir, header.Name)
-            outFile, err := os.Create(file)
-            if err != nil {
-                log.Fatalf("ExtractTarGz: Create() failed: %s", err.Error())
-            }
-            if _, err := io.Copy(outFile, tarReader); err != nil {
-                log.Fatalf("ExtractTarGz: Copy() failed: %s", err.Error())
-            }
-            outFile.Close()
-
-        default:
-            // log.Fatalf(
-            log.Printf(
-                "ExtractTarGz: unknown type: %s in %s",
-                header.Typeflag,
-          		header.Name)
-        }
-
+    var name = filepath.Base(url)
+    extract := exec.Command("tar", "xvf", name)
+    extract.Dir = directory
+    if err := extract.Run(); err != nil {
+        log.Fatal(err)
     }
+    log.Printf("extracted: %s", name)
 }
 

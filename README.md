@@ -1,4 +1,9 @@
-# pybuild - python builds python
+# pybuild - a bunch of python builders
+
+This project contains several python builders from source (3 using python) and another in development using golang.
+
+
+## python builds python
 
 3 ways of building python from source using python: 
 
@@ -12,7 +17,7 @@ Ideally one should end up with 1 or maybe even 2 ways.
 
 (refactoring/consolidation-in-progress)
 
-## builder
+### builder
 
 Heavyweight, full featured, building, codesigning, packaging solution, extracted from [py-js](https://github.com/shakfu/py-js)
 
@@ -48,7 +53,7 @@ subcommands:
     python       download and build python from src
 ```
 
-## pybuild
+### pybuild
 
 Lighter weight python builder as a single module or minimal package, with just the build functionality extracted from `builder`.
 
@@ -75,7 +80,7 @@ subcommands:
     static              build static python
 ```
 
-## buildpy
+### buildpy
 
 The lightest weight single-script python builder with the simplest interface. Only handles python 3.11 - 3.12 and has a builtin congifuration system which handles differences between build variants efficiently.
 
@@ -101,3 +106,14 @@ options:
                         python version (default: 3.11.7)
   -w, --write           write configuration
 ```
+
+
+## go
+
+### buildpy (go-edition)
+
+Under development: a translation of `buildpy` to golang. (Hey, Why not?!)
+
+
+
+

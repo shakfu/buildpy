@@ -7,6 +7,22 @@ features:
 - Different build configurations (static, dynamic) possible
 - Trims python builds and zips site-packages by default.
 
+class structure:
+
+Config
+    PythonConfig311
+    PythonConfig312
+
+Project
+ShellCmd
+    AbstractBuilder
+        Builder
+            OpensslBuilder
+            Bzip2Builder
+            XzBuilder
+            PythonBuilder
+                PythonDebugBuilder
+
 """
 
 import datetime
@@ -56,7 +72,7 @@ ARCH = platform.machine()
 PY_VER_MINOR = sys.version_info.minor
 if PLATFORM == "Darwin":
     MACOSX_DEPLOYMENT_TARGET = setenv("MACOSX_DEPLOYMENT_TARGET", "12.6")
-DEFAULT_PY_VERSION = "3.11.7"
+DEFAULT_PY_VERSION = "3.12.2"
 DEBUG = getenv('DEBUG', default=True)
 COLOR = getenv('COLOR', default=True)
 
@@ -421,7 +437,7 @@ class Config:
         self.out = ["# -*- makefile -*-"] + self.cfg["header"] + ["\n# core\n"]
         self.log = logging.getLogger(self.__class__.__name__)
         self.patch()
-# 
+ 
     def __repr__(self):
         return f"<{self.__class__.__name__} '{self.version}'>"
 
@@ -431,7 +447,7 @@ class Config:
     def move_entries(self, src: str, dst: str, *names):
         """generic entry mover"""
         for name in names:
-            self.log.info("from %s -> %s: %s", src, dst, name)
+            self.log.info("%s -> %s: %s", src, dst, name)
             self.cfg[src].remove(name)
             self.cfg[dst].append(name)
 
@@ -1364,7 +1380,7 @@ class PythonBuilder(Builder):
         """override by subclass if needed"""
         if self.build_type in ["shared", "framework"]:
             self.make_relocatable()
-        self.log.info("DONE")
+        self.log.info("%s DONE", self.config)
 
 
     def process(self):

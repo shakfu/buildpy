@@ -22,6 +22,13 @@ type Builder interface {
 	Process()
 }
 
+type Dependency struct {
+	Name        string
+	Version     string
+	DownloadUrl string
+	RepoUrl     string
+	RepoBranch  string
+}
 
 type PythonBuilder struct {
 	Name           string
@@ -73,8 +80,20 @@ func NewPythonBuilder(version string) *PythonBuilder {
 }
 
 func (b *PythonBuilder) InstallOpenssl() {
-	const url string = "https://www.openssl.org/source/old/1.1.1/openssl-1.1.1w.tar.gz"
-	shell.DownloadTo(url, "./downloads")
+	dep := Dependency{
+		Name:        "openssl",
+		Version:     "1.1.1w",
+		DownloadUrl: "https://www.openssl.org/source/old/1.1.1/openssl-1.1.1w.tar.gz",
+		RepoUrl:     "https://github.com/openssl/openssl.git",
+		RepoBranch:  "OpenSSL_1_1_1w",
+	}
+	shell.Makedir("repos")
+	shell.Makedir("install")
+	// shell.DownloadTo(dep.DownloadUrl, "./downloads")
+	shell.GitClone(dep.RepoUrl, dep.RepoBranch, "./repos", false)
+	shell.ShellCmd("./repos/openssl", "./config", "no-shared", "no-tests",
+		"--prefix", "./install")
+	shell.Make("./repos/openssl", "install_sw")
 }
 
 func (b *PythonBuilder) InstallBzip2() {
@@ -101,8 +120,8 @@ func (b *PythonBuilder) DumpRemovePatterns() {
 
 func Demo() {
 	builder := NewPythonBuilder("3.11.7")
-	builder.DumpConfigOptions()
+	// builder.DumpConfigOptions()
 	builder.InstallOpenssl()
-	builder.InstallBzip2()
-	builder.InstallLzma()
+	// builder.InstallBzip2()
+	// builder.InstallLzma()
 }

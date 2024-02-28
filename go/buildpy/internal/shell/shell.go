@@ -12,10 +12,12 @@ func filepath_stem(fileName string) string {
 	return strings.TrimSuffix(fileName, filepath.Ext(fileName))
 }
 
-func Makedir(path string) {
-	err := os.Mkdir(path, 0750)
-	if err != nil && !os.IsExist(err) {
-		log.Fatal(err)
+func Makedirs(paths ...string) {
+	for _, path := range paths {
+		err := os.Mkdir(path, 0750)
+		if err != nil && !os.IsExist(err) {
+			log.Fatal(err)
+		}
 	}
 }
 
@@ -63,5 +65,5 @@ func ShellCmd(cwd string, args ...string) {
 	if err := scmd.Run(); err != nil {
 		log.Fatal(err)
 	}
-	log.Printf("shell comand: %s", strings.Join(args, " "))
+	log.Printf("bash: %s", strings.Join(args, " "))
 }

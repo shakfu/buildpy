@@ -11,6 +11,7 @@ run:
 
 build:
 	@go build -ldflags "-w"
+	@./buildpy build
 
 fmt:
 	@go fmt main.go
@@ -20,7 +21,7 @@ fmt:
 	@go fmt internal/builder/*.go
 
 clean:
-	@rm -f ./buildpy
+	@rm -rf ./buildpy install repos downloads
 
 test:
 	@echo "testing.."

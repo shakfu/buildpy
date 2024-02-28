@@ -4,9 +4,11 @@ Copyright © 2024 NAME HERE <EMAIL ADDRESS>
 package builder
 
 import (
-	// "os"
 	"fmt"
-	// "github.com/imroc/req/v3"
+	"log"
+	"os"
+	"path/filepath"
+
 	"github.com/shakfu/buildpy/internal/shell"
 )
 
@@ -28,6 +30,30 @@ type Dependency struct {
 	DownloadUrl string
 	RepoUrl     string
 	RepoBranch  string
+}
+
+type Project struct {
+	Cwd       string
+	Build     string
+	Downloads string
+	Src       string
+	Install   string
+}
+
+func NewProject() *Project {
+	cwd, err := os.Getwd()
+	if err != nil {
+		log.Println(err)
+	}
+	var build = filepath.Join(cwd, "build")
+	var downloads = filepath.Join(build, "downloads")
+	var src = filepath.Join(build, "src")
+	var install = filepath.Join(build, "install")
+	return &Project{cwd, build, downloads, src, install}
+}
+
+func (p *Project) Setup() {
+	shell.Makedirs(p.Build, p.Downloads, p.Src, p.Install)
 }
 
 type PythonBuilder struct {
@@ -80,30 +106,50 @@ func NewPythonBuilder(version string) *PythonBuilder {
 }
 
 func (b *PythonBuilder) InstallOpenssl() {
-	dep := Dependency{
+	ssl := Dependency{
 		Name:        "openssl",
 		Version:     "1.1.1w",
 		DownloadUrl: "https://www.openssl.org/source/old/1.1.1/openssl-1.1.1w.tar.gz",
 		RepoUrl:     "https://github.com/openssl/openssl.git",
 		RepoBranch:  "OpenSSL_1_1_1w",
 	}
-	shell.Makedir("repos")
-	shell.Makedir("install")
-	// shell.DownloadTo(dep.DownloadUrl, "./downloads")
-	shell.GitClone(dep.RepoUrl, dep.RepoBranch, "./repos", false)
+
+	// shell.DownloadTo(ssl.DownloadUrl, "./downloads")
+	shell.GitClone(ssl.RepoUrl, ssl.RepoBranch, "./repos", false)
 	shell.ShellCmd("./repos/openssl", "./config", "no-shared", "no-tests",
-		"--prefix", "./install")
+		"--prefix=/home/sa/projects/pybuild/go/buildpy/install")
 	shell.Make("./repos/openssl", "install_sw")
 }
 
 func (b *PythonBuilder) InstallBzip2() {
-	const url string = "https://sourceware.org/pub/bzip2/bzip2-1.0.8.tar.gz"
-	shell.DownloadTo(url, "./downloads")
+	bz2 := Dependency{
+		Name:        "bzip2",
+		Version:     "1.0.8",
+		DownloadUrl: "https://sourceware.org/pub/bzip2/bzip2-1.0.8.tar.gz",
+		RepoUrl:     "https://github.com/libarchive/bzip2.git",
+		RepoBranch:  "bzip2-1.0.8",
+	}
+	// shell.DownloadTo(bz2.DownloadUrl, "./downloads")
+	shell.GitClone(bz2.RepoUrl, bz2.RepoBranch, "./repos", false)
+	shell.Make("./repos/bzip2", "install",
+		"PREFIX=/home/sa/projects/pybuild/go/buildpy/install",
+		"CFLAGS='-fPIC'",
+	)
 }
 
 func (b *PythonBuilder) InstallLzma() {
-	const url string = "https://github.com/tukaani-project/xz/releases/download/v5.6.0/xz-5.6.0.tar.gz"
-	shell.DownloadTo(url, "./downloads")
+	xz := Dependency{
+		Name:        "xz",
+		Version:     "5.6.0",
+		DownloadUrl: "https://github.com/tukaani-project/xz/releases/download/v5.6.0/xz-5.6.0.tar.gz",
+		RepoUrl:     "https://github.com/tukaani-project/xz.git",
+		RepoBranch:  "v5.6.0",
+	}
+	// shell.DownloadTo(xz.DownloadUrl, "./downloads")
+	shell.GitClone(xz.RepoUrl, xz.RepoBranch, "./repos", false)
+	shell.ShellCmd("./repos/xz", "./configure", "--disable-shared", "--enable-static",
+		"PREFIX=/home/sa/projects/pybuild/go/buildpy/install",
+	)
 }
 
 func (b *PythonBuilder) DumpConfigOptions() {
@@ -119,6 +165,7 @@ func (b *PythonBuilder) DumpRemovePatterns() {
 }
 
 func Demo() {
+
 	builder := NewPythonBuilder("3.11.7")
 	// builder.DumpConfigOptions()
 	builder.InstallOpenssl()

@@ -10,7 +10,7 @@ run:
 	@go run main.go config
 
 build:
-	@go build
+	@go build -ldflags "-w"
 
 fmt:
 	@go fmt main.go

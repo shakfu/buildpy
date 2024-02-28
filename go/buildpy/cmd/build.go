@@ -5,8 +5,10 @@ package cmd
 
 import (
 	"fmt"
-
+	"github.com/shakfu/buildpy/internal/builder"
 	"github.com/spf13/cobra"
+	"log"
+	"os/exec"
 )
 
 // buildCmd represents the build command
@@ -21,6 +23,12 @@ This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("build called")
+
+		_cmd := exec.Command("sleep", "1")
+		log.Printf("Running command and waiting for it to finish...")
+		err := _cmd.Run()
+		log.Printf("Command finished with error: %v", err)
+		builder.Demo()
 	},
 }
 

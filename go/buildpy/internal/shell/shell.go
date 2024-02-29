@@ -110,14 +110,25 @@ func CmakeInstall(builddir string, prefix string) {
 }
 
 func RecursiveRemove(root string, patterns []string) {
+	cache := make(map[string]bool) // to skip pesky duplicates
 	base, _ := os.Getwd()
 	visit := func(path string, entry fs.DirEntry, err error) error {
 		for _, p := range patterns {
 			res, _ := filepath.Match(p, entry.Name())
 			if res {
 				rel, _ := filepath.Rel(base, path)
-				log.Info("removed", "path", rel)
-				os.RemoveAll(path)
+				if _, ok := cache[rel]; ok {
+					return nil
+				} else {
+					cache[rel] = true
+					var key = "f"
+					if entry.IsDir() {
+						key = "d"
+					}
+					log.Info("del", key, rel)
+					os.RemoveAll(path)
+				}
+				return nil
 			}
 		}
 		return nil

@@ -30,6 +30,7 @@ type Builder interface {
 type PythonBuilder struct {
 	Name           string
 	Version        string
+	Config         string
 	DownloadUrl    string
 	RepoUrl        string
 	ConfigOptions  []string
@@ -38,10 +39,11 @@ type PythonBuilder struct {
 	Project        *Project
 }
 
-func NewPythonBuilder(version string) *PythonBuilder {
+func NewPythonBuilder(version string, config string) *PythonBuilder {
 	return &PythonBuilder{
 		"Python",
 		version,
+		config,
 		"https://www.python.org/ftp/python/%s/Python-%s.tar.xz",
 		"https://github.com/python/cpython.git",
 		[]string{

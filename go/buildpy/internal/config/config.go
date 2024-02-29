@@ -4,7 +4,6 @@ Copyright © 2024 NAME HERE <EMAIL ADDRESS>
 package config
 
 import (
-	"fmt"
 	"os"
 	"strings"
 	"text/template"
@@ -12,32 +11,29 @@ import (
 
 const Template string = `
 # -*- makefile -*-
-$ version: {{.Version}}
+# name: {{.Name}}
+# version: {{.Version}}
 {{- range .Headers }}
 {{ . -}}
 {{- end }}
 
 # core
-
-{{- range $_, $key := .Core}}
+{{ range $_, $key := .Core}}
 {{ $key }} {{ join (index $.Exts $key) " " -}}
 {{- end }}
 
 *static*
-
-{{- range $key, $value := .Static}}
+{{ range $key, $value := .Static}}
 {{ $key }} {{ join (index $.Exts $key) " " -}}
 {{- end }}
 
 *shared*
-
-{{- range $key, $value := .Shared}}
+{{ range $key, $value := .Shared}}
 {{ $key }} {{ join (index $.Exts $key) " " -}}
 {{- end }}
 
 *disabled*
-
-{{- range $key, $value := .Disabled}}
+{{ range $key, $value := .Disabled}}
 {{ $key -}}
 {{- end }}
 
@@ -45,6 +41,7 @@ $ version: {{.Version}}
 `
 
 type Config struct {
+	Name     string
 	Version  string
 	Headers  []string
 	Exts     map[string][]string
@@ -100,7 +97,7 @@ func (c *Config) CommentStatic(names ...string) {
 	}
 }
 
-func (c *Config) UnommentStatic(names ...string) {
+func (c *Config) UncommentStatic(names ...string) {
 	for _, name := range names {
 		c.Static[name] = true
 	}
@@ -112,13 +109,26 @@ func (c *Config) CommentDisabled(names ...string) {
 	}
 }
 
-func (c *Config) UnommentDisabled(names ...string) {
+func (c *Config) UncommentDisabled(names ...string) {
 	for _, name := range names {
 		c.Disabled[name] = true
 	}
 }
 
+func (c *Config) Write(path string) {
+	funcMap := template.FuncMap{
+		"join": strings.Join,
+	}
+
+	tmpl, err := template.New("test").Funcs(funcMap).Parse(Template)
+	if err != nil {
+		panic(err)
+	}
+	createFileUsingTemplate(tmpl, path, c)
+}
+
 var base_cfg = Config{
+	Name:    "static_base",
 	Version: "3.11",
 	Headers: []string{
 		"DESTLIB=$(LIBDEST)",
@@ -410,27 +420,35 @@ var base_cfg = Config{
 	},
 }
 
+func createFileUsingTemplate(t *template.Template, filename string, data interface{}) error {
+	f, err := os.Create(filename)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	err = t.Execute(f, data)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func Demo() {
+
+	// var cmap = map[string]map[string]*Config{}
+	// cmap["3.11"] = map[string]*Config{}
+
+	var cmap = make(map[string]map[string]*Config)
+	cmap["3.11"] = make(map[string]*Config)
+	// cmap["3.11"]["static_max"] = &base_cfg
+	// cmap["3.11"]["static_max"].StaticToShared("cmath", "zlib")
+	// cmap["3.11"]["static_max"].CommentStatic("select")
 
 	cfg1 := &base_cfg
 	cfg1.StaticToShared("cmath", "zlib")
 	cfg1.CommentStatic("select")
-	// fmt.Println(cfg1)
-	fmt.Println("=>")
-
-	funcMap := template.FuncMap{
-		// The name "title" is what the function will be called in the template text.
-		"title": strings.Title,
-		"join":  strings.Join,
-	}
-
-	tmpl, err := template.New("test").Funcs(funcMap).Parse(Template)
-	if err != nil {
-		panic(err)
-	}
-	err = tmpl.Execute(os.Stdout, cfg1)
-	if err != nil {
-		panic(err)
-	}
-
+	cmap["3.11"]["static_max"] = cfg1
+	cmap["3.11"]["static_max"].Write("out.mk")
 }

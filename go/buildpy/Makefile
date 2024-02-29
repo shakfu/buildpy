@@ -18,10 +18,10 @@ fmt:
 	@go fmt cmd/*.go
 	@go fmt internal/config/*.go
 	@go fmt internal/shell/*.go
-	@go fmt internal/builder/*.go
+	@go fmt internal/models/*.go
 
 clean:
-	@rm -rf ./buildpy install repos downloads
+	@rm -rf ./buildpy ./build
 
 test:
 	@echo "testing.."

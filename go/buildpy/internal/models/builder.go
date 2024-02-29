@@ -6,7 +6,7 @@ package models
 import (
 	"fmt"
 	"github.com/charmbracelet/log"
-
+	"sync"
 	// "os"
 	// "path/filepath"
 	// "github.com/shakfu/buildpy/internal/shell"
@@ -77,11 +77,18 @@ func (b *PythonBuilder) InstallPython() {
 	log.Info("installing python...")
 }
 
-
 func (b *PythonBuilder) InstallDeps() {
-	InstallOpenssl()
-	InstallBzip2()
-	InstallXz()
+	var wg sync.WaitGroup
+
+	wg.Add(3)
+
+	go InstallOpenssl(&wg)
+	go InstallBzip2(&wg)
+	go InstallXz(&wg)
+
+	log.Info("waiting for goroutines to finish...")
+	wg.Wait()
+	log.Info("DONE")
 }
 
 func (b *PythonBuilder) DumpConfigOptions() {

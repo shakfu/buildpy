@@ -11,6 +11,7 @@ import (
 	"github.com/charmbracelet/log"
 	"os"
 	"path/filepath"
+	"sync"
 )
 
 type Dependency struct {
@@ -45,7 +46,9 @@ func (d *Dependency) StaticLibsExist() bool {
 	return true
 }
 
-func InstallOpenssl() {
+func InstallOpenssl(wg *sync.WaitGroup) {
+	defer wg.Done()
+
 	ssl := Dependency{
 		Name:        "openssl",
 		Version:     "1.1.1w",
@@ -68,7 +71,9 @@ func InstallOpenssl() {
 
 }
 
-func InstallBzip2() {
+func InstallBzip2(wg *sync.WaitGroup) {
+	defer wg.Done()
+
 	bz2 := Dependency{
 		Name:        "bzip2",
 		Version:     "1.0.8",
@@ -89,7 +94,9 @@ func InstallBzip2() {
 	}
 }
 
-func InstallXz() {
+func InstallXz(wg *sync.WaitGroup) {
+	defer wg.Done()
+
 	xz := Dependency{
 		Name:        "xz",
 		Version:     "5.6.0",

@@ -5,8 +5,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/shakfu/buildpy/internal/shell"
 	"github.com/charmbracelet/log"
+	"github.com/shakfu/buildpy/internal/shell"
 )
 
 type Project struct {

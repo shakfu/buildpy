@@ -5,9 +5,9 @@ package cmd
 
 import (
 	// "fmt"
+	"github.com/charmbracelet/log"
 	"github.com/shakfu/buildpy/internal/models"
 	"github.com/spf13/cobra"
-	"github.com/charmbracelet/log"
 	// "os/exec"
 )
 
@@ -23,6 +23,7 @@ This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.SetTimeFormat("15:04:05")
+		// log.SetReportCaller(true)
 		log.Info("build called")
 
 		builder := models.NewPythonBuilder("3.11.7")

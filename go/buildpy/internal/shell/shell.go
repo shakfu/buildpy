@@ -2,14 +2,12 @@ package shell
 
 import (
 	// "log"
+	"github.com/charmbracelet/log"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
-	"github.com/charmbracelet/log"
 )
-
-
 
 func filepath_stem(fileName string) string {
 	return strings.TrimSuffix(fileName, filepath.Ext(fileName))

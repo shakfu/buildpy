@@ -14,6 +14,9 @@ import (
 
 type Builder interface {
 	Url() string
+	Prefix() string
+	SrcDir() string
+	BuildDir() string
 	PreProcess()
 	Setup()
 	Configure()
@@ -64,7 +67,7 @@ func NewPythonBuilder(version string) *PythonBuilder {
 			"ensurepip",
 			"idlelib",
 			"lib2to3",
-			"libpython*",
+			// "libpython*",
 			"LICENSE.txt",
 			"pkgconfig",
 			"pydoc_data",
@@ -101,16 +104,8 @@ func (b *PythonBuilder) SrcDir() string {
 	return filepath.Join(b.Project.Src, "cpython")
 }
 
-func (b *PythonBuilder) InstallPython() {
-	log.Info("installing python", "version", b.Version)
-	b.Project.Setup()
-	// shell.DownloadTo(b.Url(), b.Project.Downloads, b.Project.Src)
-	shell.GitClone(b.RepoUrl, b.RepoBranch(), b.Project.Src, false)
-	var prefix = fmt.Sprintf("--prefix=%s", b.Prefix())
-	var args = []string{"./configure", prefix}
-	args = append(args, b.ConfigOptions...)
-	shell.ShellCmd(b.SrcDir(), args...)
-	shell.Make(b.SrcDir(), "install")
+func (b *PythonBuilder) BuildDir() string {
+	return filepath.Join(b.SrcDir(), "build")
 }
 
 func (b *PythonBuilder) InstallDeps() {
@@ -127,8 +122,47 @@ func (b *PythonBuilder) InstallDeps() {
 	log.Info("DONE")
 }
 
-func (b *PythonBuilder) CleanPython() {
-	shell.RecursiveRemove(b.Prefix())
+func (b *PythonBuilder) PreProcess() {
+}
+
+func (b *PythonBuilder) Setup() {
+	log.Info("installing python", "version", b.Version)
+	b.Project.Setup()
+	// shell.DownloadTo(b.Url(), b.Project.Downloads, b.Project.Src)
+	shell.GitClone(b.RepoUrl, b.RepoBranch(), b.Project.Src, false)
+}
+
+func (b *PythonBuilder) Configure() {
+	var prefix = fmt.Sprintf("--prefix=%s", b.Prefix())
+	var args = []string{"./configure", prefix}
+	args = append(args, b.ConfigOptions...)
+	shell.ShellCmd(b.SrcDir(), args...)
+}
+
+func (b *PythonBuilder) Build() {
+	shell.Make(b.SrcDir())
+}
+
+func (b *PythonBuilder) Install() {
+	shell.Make(b.SrcDir(), "install")
+}
+
+func (b *PythonBuilder) Clean() {
+	shell.RecursiveRemove(b.Prefix(), b.RemovePatterns)
+}
+
+func (b *PythonBuilder) PostProcess() {
+}
+
+func (b *PythonBuilder) Process() {
+	b.InstallDeps()
+	b.PreProcess()
+	b.Setup()
+	b.Configure()
+	b.Build()
+	b.Install()
+	b.Clean()
+	b.PostProcess()
 }
 
 func (b *PythonBuilder) DumpConfigOptions() {
@@ -141,10 +175,4 @@ func (b *PythonBuilder) DumpRemovePatterns() {
 	for _, pat := range b.RemovePatterns {
 		fmt.Println(pat)
 	}
-}
-
-func (b *PythonBuilder) Process() {
-	b.InstallDeps()
-	b.InstallPython()
-	b.CleanPython()
 }

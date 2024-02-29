@@ -109,45 +109,22 @@ func CmakeInstall(builddir string, prefix string) {
 	log.Info("cmake install: DONE")
 }
 
-func visit(path string, entry fs.DirEntry, err error) error {
-	var patterns = []string{
-		"*.exe",
-		"*config-3*",
-		"*tcl*",
-		"*tdbc*",
-		"*tk*",
-		"__phello__",
-		"__pycache__",
-		"_codecs_*.so",
-		"_test*",
-		"_tk*",
-		"_xx*.so",
-		"distutils",
-		"ensurepip",
-		"idlelib",
-		"lib2to3",
-		"libpython*",
-		"LICENSE.txt",
-		"pkgconfig",
-		"pydoc_data",
-		"site-packages",
-		"test",
-		"Tk*",
-		"turtle*",
-		"venv",
-		"xx*.so",
-	}
-	for _, p := range patterns {
-		res, _ := filepath.Match(p, entry.Name())
-		if res {
-			log.Printf("Visited: %s\n", path)
-			os.RemoveAll(path)
+func RecursiveRemove(root string, patterns []string) {
+	base, _ := os.Getwd()
+	visit := func(path string, entry fs.DirEntry, err error) error {
+		for _, p := range patterns {
+			res, _ := filepath.Match(p, entry.Name())
+			if res {
+				rel, _ := filepath.Rel(base, path)
+				log.Info("removed: %s", rel)
+				os.RemoveAll(path)
+			}
 		}
+		return nil
 	}
-	return nil
-}
-
-func RecursiveRemove(root string) {
 	err := filepath.WalkDir(root, visit)
-	log.Printf("filepath.WalkDir() returned %v\n", err)
+	if err != nil {
+		log.Fatal("filepath.WalkDir() returned %v", err)
+	}
+
 }

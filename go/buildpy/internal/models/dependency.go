@@ -56,7 +56,7 @@ func (d *Dependency) StaticLibsExist() bool {
 }
 
 func (d *Dependency) GitClone() {
-	shell.GitClone(d.RepoUrl, d.RepoBranch, d.Prefix(), false)
+	shell.GitClone(d.RepoUrl, d.RepoBranch, d.Project.Src, false)
 }
 
 func InstallOpenssl(wg *sync.WaitGroup) {

@@ -27,7 +27,7 @@ to quickly create a Cobra application.`,
 		log.Info("build called")
 
 		builder := models.NewPythonBuilder("3.11.7")
-		builder.InstallDeps()
+		// builder.InstallDeps()
 		builder.InstallPython()
 	},
 }

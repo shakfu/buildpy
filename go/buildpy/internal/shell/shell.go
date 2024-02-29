@@ -32,19 +32,21 @@ func Make(cwd string, args ...string) {
 	log.Info("make DONE")
 }
 
-func DownloadTo(url string, downDir string, extractDir string) {
-	download := exec.Command("wget", "-P", downDir, url)
+func DownloadTo(url string, directory string, extractToDir string) {
+	log.Info("Download", "url", url, "todir", directory, "extractodir", extractToDir)
+	download := exec.Command("wget", "-P", directory, url)
 	if err := download.Run(); err != nil {
 		log.Fatal(err)
 	}
-	log.Info("downloaded", url)
+	log.Info("downloaded", "url", url)
 	var name = filepath.Base(url)
-	extract := exec.Command("tar", "xvf", "-C", extractDir, name)
-	extract.Dir = extractDir
+	log.Info("extracting", "name", name)
+	extract := exec.Command("tar", "xvf", name, "-C", extractToDir)
+	extract.Dir = directory
 	if err := extract.Run(); err != nil {
 		log.Fatal(err)
 	}
-	log.Info("extracted:", name)
+	log.Info("extracted: DONE")
 }
 
 func GitClone(url string, branch string, directory string, recurse bool) {

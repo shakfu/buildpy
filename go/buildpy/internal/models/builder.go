@@ -8,8 +8,8 @@ import (
 	"github.com/charmbracelet/log"
 	"sync"
 	// "os"
-	// "path/filepath"
-	// "github.com/shakfu/buildpy/internal/shell"
+	"path/filepath"
+	"github.com/shakfu/buildpy/internal/shell"
 )
 
 type Builder interface {
@@ -27,10 +27,13 @@ type Builder interface {
 type PythonBuilder struct {
 	Name           string
 	Version        string
-	UrlTemplate    string
+	DownloadUrl    string
+	RepoUrl        string
 	ConfigOptions  []string
 	Packages       []string
 	RemovePatterns []string
+	Project        *Project
+
 }
 
 func NewPythonBuilder(version string) *PythonBuilder {
@@ -38,9 +41,12 @@ func NewPythonBuilder(version string) *PythonBuilder {
 		"Python",
 		version,
 		"https://www.python.org/ftp/python/%s/Python-%s.tar.xz",
+		"https://github.com/python/cpython.git",
 		[]string{
+			"--enable-shared",
 			"--disable-test-modules",
 			"--without-ensurepip",
+			"--without-static-libpython",
 		},
 		[]string{},
 		[]string{
@@ -70,11 +76,42 @@ func NewPythonBuilder(version string) *PythonBuilder {
 			"venv",
 			"xx*.so",
 		},
+		NewProject(),
 	}
 }
 
+func (b *PythonBuilder) Url() string {
+	return fmt.Sprintf(b.DownloadUrl, b.Version, b.Version)
+}
+
+func (b *PythonBuilder) RepoBranch() string {
+	return fmt.Sprintf("v%s", b.Version)
+}
+
+func (b *PythonBuilder) Prefix() string {
+	return filepath.Join(b.Project.Install, "python")
+}
+
+// func (b *PythonBuilder) SrcDir() string {
+// 	var name = filepath.Base(b.Url())
+// 	var stem = name[0:len(name)-len(".tar.xz")]
+// 	return filepath.Join(b.Project.Src, stem)
+// }
+
+func (b *PythonBuilder) SrcDir() string {
+	return filepath.Join(b.Project.Src, "cpython")
+}
+
 func (b *PythonBuilder) InstallPython() {
-	log.Info("installing python...")
+	log.Info("installing python", "version", b.Version)
+	b.Project.Setup()
+	// shell.DownloadTo(b.Url(), b.Project.Downloads, b.Project.Src)
+	shell.GitClone(b.RepoUrl, b.RepoBranch(), b.Project.Src, false)
+	var prefix = fmt.Sprintf("--prefix=%s", b.Prefix())
+	var args = []string{"./configure", prefix}
+	args = append(args, b.ConfigOptions...)
+	shell.ShellCmd(b.SrcDir(), args...)
+	shell.Make(b.SrcDir(), "install")
 }
 
 func (b *PythonBuilder) InstallDeps() {

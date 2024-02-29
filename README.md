@@ -107,13 +107,9 @@ options:
   -w, --write           write configuration
 ```
 
-
 ## go
 
 ### buildpy (go-edition)
 
 Under development: a translation of `buildpy` to golang. (Hey, Why not?!)
-
-
-
 

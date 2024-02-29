@@ -1,17 +1,15 @@
 
-
-.PHONY: all run build test clean fmt
+.PHONY: all run build test clean fmt tidy
 
 
 all: build
 
 
 run:
-	@go run main.go config
+	@go run main.go build
 
 build:
 	@go build -ldflags "-w"
-	@./buildpy build
 
 fmt:
 	@go fmt main.go
@@ -26,6 +24,8 @@ clean:
 test:
 	@echo "testing.."
 
-reset: clean
-	@go clean -modcache
+tidy: clean
+	@go mod tidy
 
+reset: clean
+	@go clean -cache -modcache -i -r

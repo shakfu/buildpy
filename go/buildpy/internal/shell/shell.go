@@ -116,7 +116,7 @@ func RecursiveRemove(root string, patterns []string) {
 			res, _ := filepath.Match(p, entry.Name())
 			if res {
 				rel, _ := filepath.Rel(base, path)
-				log.Info("removed: %s", rel)
+				log.Info("removed", "path", rel)
 				os.RemoveAll(path)
 			}
 		}

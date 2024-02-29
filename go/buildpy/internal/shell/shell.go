@@ -1,7 +1,6 @@
 package shell
 
 import (
-	// "log"
 	"io/fs"
 	"os"
 	"os/exec"
@@ -110,7 +109,7 @@ func CmakeInstall(builddir string, prefix string) {
 	log.Info("cmake install: DONE")
 }
 
-func visit(path string, di fs.DirEntry, err error) error {
+func visit(path string, entry fs.DirEntry, err error) error {
 	var patterns = []string{
 		"*.exe",
 		"*config-3*",
@@ -139,7 +138,7 @@ func visit(path string, di fs.DirEntry, err error) error {
 		"xx*.so",
 	}
 	for _, p := range patterns {
-		res, _ := filepath.Match(p, di.Name())
+		res, _ := filepath.Match(p, entry.Name())
 		if res {
 			log.Printf("Visited: %s\n", path)
 			os.RemoveAll(path)

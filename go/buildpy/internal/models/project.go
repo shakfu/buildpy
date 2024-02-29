@@ -1,7 +1,6 @@
 package models
 
 import (
-	// "log"
 	"os"
 	"path/filepath"
 
@@ -31,4 +30,12 @@ func NewProject() *Project {
 
 func (p *Project) Setup() {
 	shell.Makedirs(p.Build, p.Downloads, p.Src, p.Install)
+}
+
+func (p *Project) Clean() {
+	os.RemoveAll(p.Src)
+}
+
+func (p *Project) Reset() {
+	os.RemoveAll(p.Build)
 }

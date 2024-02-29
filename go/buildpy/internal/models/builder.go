@@ -5,13 +5,10 @@ package models
 
 import (
 	"fmt"
+	"path/filepath"
 	"sync"
 
 	"github.com/charmbracelet/log"
-
-	// "os"
-	"path/filepath"
-
 	"github.com/shakfu/buildpy/internal/shell"
 )
 

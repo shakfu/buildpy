@@ -6,12 +6,20 @@ package models
 import (
 	"errors"
 	"fmt"
-	"github.com/shakfu/buildpy/internal/shell"
-	// "log"
-	"github.com/charmbracelet/log"
 	"os"
 	"path/filepath"
 	"sync"
+
+	"github.com/charmbracelet/log"
+	"github.com/shakfu/buildpy/internal/shell"
+)
+
+type BuildSystem int16
+
+const (
+	CMAKE BuildSystem = iota
+	CONFIG
+	MAKE
 )
 
 type Dependency struct {
@@ -22,6 +30,7 @@ type Dependency struct {
 	RepoBranch  string
 	StaticLibs  []string
 	Project     *Project
+	BuildSys    BuildSystem
 }
 
 func (d *Dependency) Prefix() string {
@@ -46,6 +55,10 @@ func (d *Dependency) StaticLibsExist() bool {
 	return true
 }
 
+func (d *Dependency) GitClone() {
+	shell.GitClone(d.RepoUrl, d.RepoBranch, d.Prefix(), false)
+}
+
 func InstallOpenssl(wg *sync.WaitGroup) {
 	defer wg.Done()
 
@@ -57,11 +70,12 @@ func InstallOpenssl(wg *sync.WaitGroup) {
 		RepoBranch:  "OpenSSL_1_1_1w",
 		StaticLibs:  []string{"libssl.a", "libcrypto.a"},
 		Project:     NewProject(),
+		BuildSys:    CONFIG,
 	}
 	if !ssl.StaticLibsExist() {
 		ssl.Project.Setup()
 		prefixOpt := fmt.Sprintf("--prefix=%s", ssl.Prefix())
-		shell.GitClone(ssl.RepoUrl, ssl.RepoBranch, ssl.Project.Src, false)
+		ssl.GitClone()
 		shell.ShellCmd(ssl.SrcDir(), "./config", "no-shared", "no-tests", prefixOpt)
 		shell.Make(ssl.SrcDir(), "install_sw")
 		if !ssl.StaticLibsExist() {
@@ -82,11 +96,12 @@ func InstallBzip2(wg *sync.WaitGroup) {
 		RepoBranch:  "bzip2-1.0.8",
 		StaticLibs:  []string{"libbz2.a"},
 		Project:     NewProject(),
+		BuildSys:    MAKE,
 	}
 	if !bz2.StaticLibsExist() {
 		bz2.Project.Setup()
 		prefixOpt := fmt.Sprintf("PREFIX=%s", bz2.Prefix())
-		shell.GitClone(bz2.RepoUrl, bz2.RepoBranch, bz2.Project.Src, false)
+		bz2.GitClone()
 		shell.Make(bz2.SrcDir(), "install", prefixOpt, "CFLAGS='-fPIC'")
 		if !bz2.StaticLibsExist() {
 			log.Fatal("could not build bzip2")
@@ -105,10 +120,11 @@ func InstallXz(wg *sync.WaitGroup) {
 		RepoBranch:  "v5.6.0",
 		StaticLibs:  []string{"liblzma.a"},
 		Project:     NewProject(),
+		BuildSys:    CMAKE,
 	}
 	if !xz.StaticLibsExist() {
 		xz.Project.Setup()
-		shell.GitClone(xz.RepoUrl, xz.RepoBranch, xz.Project.Src, false)
+		xz.GitClone()
 		shell.CmakeConfigure(xz.SrcDir(), xz.BuildDir(),
 			"-DBUILD_SHARED_LIBS=OFF", "-DENABLE_NLS=OFF", "-DENABLE_SMALL=ON",
 			"-DCMAKE_BUILD_TYPE=MinSizeRel",

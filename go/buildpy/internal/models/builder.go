@@ -5,10 +5,13 @@ package models
 
 import (
 	"fmt"
-	"github.com/charmbracelet/log"
 	"sync"
+
+	"github.com/charmbracelet/log"
+
 	// "os"
 	"path/filepath"
+
 	"github.com/shakfu/buildpy/internal/shell"
 )
 
@@ -33,7 +36,6 @@ type PythonBuilder struct {
 	Packages       []string
 	RemovePatterns []string
 	Project        *Project
-
 }
 
 func NewPythonBuilder(version string) *PythonBuilder {
@@ -128,6 +130,10 @@ func (b *PythonBuilder) InstallDeps() {
 	log.Info("DONE")
 }
 
+func (b *PythonBuilder) CleanPython() {
+	shell.RecursiveRemove(b.Prefix())
+}
+
 func (b *PythonBuilder) DumpConfigOptions() {
 	for _, opt := range b.ConfigOptions {
 		fmt.Println(opt)
@@ -138,4 +144,10 @@ func (b *PythonBuilder) DumpRemovePatterns() {
 	for _, pat := range b.RemovePatterns {
 		fmt.Println(pat)
 	}
+}
+
+func (b *PythonBuilder) Process() {
+	b.InstallDeps()
+	b.InstallPython()
+	b.CleanPython()
 }

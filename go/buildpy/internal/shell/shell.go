@@ -2,11 +2,13 @@ package shell
 
 import (
 	// "log"
-	"github.com/charmbracelet/log"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+
+	"github.com/charmbracelet/log"
 )
 
 func filepath_stem(fileName string) string {
@@ -106,4 +108,47 @@ func CmakeInstall(builddir string, prefix string) {
 		log.Fatal(err)
 	}
 	log.Info("cmake install: DONE")
+}
+
+func visit(path string, di fs.DirEntry, err error) error {
+	var patterns = []string{
+		"*.exe",
+		"*config-3*",
+		"*tcl*",
+		"*tdbc*",
+		"*tk*",
+		"__phello__",
+		"__pycache__",
+		"_codecs_*.so",
+		"_test*",
+		"_tk*",
+		"_xx*.so",
+		"distutils",
+		"ensurepip",
+		"idlelib",
+		"lib2to3",
+		"libpython*",
+		"LICENSE.txt",
+		"pkgconfig",
+		"pydoc_data",
+		"site-packages",
+		"test",
+		"Tk*",
+		"turtle*",
+		"venv",
+		"xx*.so",
+	}
+	for _, p := range patterns {
+		res, _ := filepath.Match(p, di.Name())
+		if res {
+			log.Printf("Visited: %s\n", path)
+			os.RemoveAll(path)
+		}
+	}
+	return nil
+}
+
+func RecursiveRemove(root string) {
+	err := filepath.WalkDir(root, visit)
+	log.Printf("filepath.WalkDir() returned %v\n", err)
 }

@@ -14,12 +14,13 @@ import (
 var buildCmd = &cobra.Command{
 	Use:   "build",
 	Short: "Build python from source",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Long: `A tool to download, configure, build, install, and shrink python from source
+From source. Can be used as follows:
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	$ buildpy build -v 3.12.2 -c "static_max" -p "cython,ipython"
+
+	$ buildpy build --opts="--disable-ipv6,--with-lto=thin"
+`,
 	Run: func(cmd *cobra.Command, args []string) {
 		config, _ := cmd.Flags().GetString("config")
 		version, _ := cmd.Flags().GetString("version")
@@ -30,11 +31,10 @@ to quickly create a Cobra application.`,
 
 		log.SetTimeFormat("15:04:05")
 		// log.SetReportCaller(true)
-		log.Info("build called")
-		log.Printf("config:%v opts:%v pkgs:%v args: %v\n", config, opts, pkgs, args)
+		log.Info("buildpy build", "cfg", config, "opts", opts, "pkgs", pkgs)
 
 		builder := models.NewPythonBuilder(version, config)
-		log.Info("Environment", "runtime", runtime.Version(), "platform/arch", builder.PlatformArch())
+		log.Info("Environment", "runtime", runtime.Version(), "os/arch", builder.PlatformArch())
 		if len(opts) > 0 {
 			builder.SetConfigOptions(opts)
 		}

@@ -4,41 +4,13 @@ Copyright © 2024 NAME HERE <EMAIL ADDRESS>
 package config
 
 import (
+	"github.com/charmbracelet/log"
+	"gopkg.in/yaml.v3"
 	"os"
+	"sort"
 	"strings"
 	"text/template"
 )
-
-const Template string = `
-# -*- makefile -*-
-# name: {{.Name}}
-# version: {{.Version}}
-{{- range .Headers }}
-{{ . -}}
-{{- end }}
-
-# core
-{{ range $_, $key := .Core}}
-{{ $key }} {{ join (index $.Exts $key) " " -}}
-{{- end }}
-
-*static*
-{{ range $key, $value := .Static}}
-{{ $key }} {{ join (index $.Exts $key) " " -}}
-{{- end }}
-
-*shared*
-{{ range $key, $value := .Shared}}
-{{ $key }} {{ join (index $.Exts $key) " " -}}
-{{- end }}
-
-*disabled*
-{{ range $key, $value := .Disabled}}
-{{ $key -}}
-{{- end }}
-
-# end
-`
 
 type Config struct {
 	Name     string
@@ -46,76 +18,44 @@ type Config struct {
 	Headers  []string
 	Exts     map[string][]string
 	Core     []string
-	Static   map[string]bool
-	Shared   map[string]bool
-	Disabled map[string]bool
+	Static   []string
+	Shared   []string
+	Disabled []string
+}
+
+func (c *Config) MoveNames(src []string, dst []string, names ...string) {
+	RemoveNames(src, names...)
+	AddNames(dst, names...)
 }
 
 func (c *Config) StaticToShared(names ...string) {
-	for _, name := range names {
-		delete(c.Static, name)
-		c.Shared[name] = true
-	}
+	c.Static = RemoveNames(c.Static, names...)
+	c.Shared = AddNames(c.Shared, names...)
 }
 
 func (c *Config) SharedToStatic(names ...string) {
-	for _, name := range names {
-		delete(c.Shared, name)
-		c.Static[name] = true
-	}
+	c.Shared = RemoveNames(c.Shared, names...)
+	c.Static = AddNames(c.Static, names...)
 }
 
 func (c *Config) StaticToDisabled(names ...string) {
-	for _, name := range names {
-		delete(c.Static, name)
-		c.Disabled[name] = true
-	}
+	c.Static = RemoveNames(c.Static, names...)
+	c.Disabled = AddNames(c.Disabled, names...)
 }
 
 func (c *Config) SharedToDisabled(names ...string) {
-	for _, name := range names {
-		delete(c.Shared, name)
-		c.Disabled[name] = true
-	}
+	c.Static = RemoveNames(c.Static, names...)
+	c.Shared = AddNames(c.Shared, names...)
 }
 
-func (c *Config) CommentShared(names ...string) {
-	for _, name := range names {
-		c.Shared[name] = false
-	}
-}
-
-func (c *Config) UncommentShared(names ...string) {
-	for _, name := range names {
-		c.Shared[name] = true
-	}
-}
-
-func (c *Config) CommentStatic(names ...string) {
-	for _, name := range names {
-		c.Static[name] = false
-	}
-}
-
-func (c *Config) UncommentStatic(names ...string) {
-	for _, name := range names {
-		c.Static[name] = true
-	}
-}
-
-func (c *Config) CommentDisabled(names ...string) {
-	for _, name := range names {
-		c.Disabled[name] = false
-	}
-}
-
-func (c *Config) UncommentDisabled(names ...string) {
-	for _, name := range names {
-		c.Disabled[name] = true
-	}
+func (c *Config) Sort() {
+	sort.Strings(c.Static)
+	sort.Strings(c.Shared)
+	sort.Strings(c.Disabled)
 }
 
 func (c *Config) Write(path string) {
+	c.Sort()
 	funcMap := template.FuncMap{
 		"join": strings.Join,
 	}
@@ -125,6 +65,29 @@ func (c *Config) Write(path string) {
 		panic(err)
 	}
 	createFileUsingTemplate(tmpl, path, c)
+}
+
+func (c *Config) WriteYaml(path string) {
+	c.Sort()
+	d, err := yaml.Marshal(&c)
+	if err != nil {
+		log.Fatalf("error: %v", err)
+	}
+	log.Printf("--- t dump:\n%s\n\n", string(d))
+
+	f, err := os.Create(path)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer f.Close()
+
+	size, err := f.WriteString(string(d))
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Info("wrote yaml", "file", path, "size", size)
+
+	// f.Sync()
 }
 
 var base_cfg = Config{
@@ -341,98 +304,83 @@ var base_cfg = Config{
 		"time",
 	},
 
-	Static: map[string]bool{
-		"_asyncio":         true,
-		"_bisect":          true,
-		"_blake2":          true,
-		"_bz2":             true,
-		"_contextvars":     true,
-		"_csv":             true,
-		"_datetime":        true,
-		"_decimal":         true,
-		"_elementtree":     true,
-		"_hashlib":         true,
-		"_heapq":           true,
-		"_json":            true,
-		"_lsprof":          true,
-		"_lzma":            true,
-		"_md5":             true,
-		"_multibytecodec":  true,
-		"_multiprocessing": true,
-		"_opcode":          true,
-		"_pickle":          true,
-		"_posixshmem":      true,
-		"_posixsubprocess": true,
-		"_queue":           true,
-		"_random":          true,
-		"_sha1":            true,
-		"_sha256":          true,
-		"_sha3":            true,
-		"_sha512":          true,
-		"_socket":          true,
-		"_sqlite3":         true,
-		"_ssl":             true,
-		"_statistics":      true,
-		"_struct":          true,
-		"_typing":          true,
-		"_uuid":            true,
-		"_zoneinfo":        true,
-		"array":            true,
-		"binascii":         true,
-		"cmath":            true,
-		"fcntl":            true,
-		"grp":              true,
-		"math":             true,
-		"mmap":             true,
-		"pyexpat":          true,
-		"readline":         true,
-		"select":           true,
-		"unicodedata":      true,
-		"zlib":             true,
+	Static: []string{
+		"_asyncio",
+		"_bisect",
+		"_blake2",
+		"_bz2",
+		"_contextvars",
+		"_csv",
+		"_datetime",
+		"_decimal",
+		"_elementtree",
+		"_hashlib",
+		"_heapq",
+		"_json",
+		"_lsprof",
+		"_lzma",
+		"_md5",
+		"_multibytecodec",
+		"_multiprocessing",
+		"_opcode",
+		"_pickle",
+		"_posixshmem",
+		"_posixsubprocess",
+		"_queue",
+		"_random",
+		"_sha1",
+		"_sha256",
+		"_sha3",
+		"_sha512",
+		"_socket",
+		"_sqlite3",
+		"_ssl",
+		"_statistics",
+		"_struct",
+		"_typing",
+		"_uuid",
+		"_zoneinfo",
+		"array",
+		"binascii",
+		"cmath",
+		"fcntl",
+		"grp",
+		"math",
+		"mmap",
+		"pyexpat",
+		"readline",
+		"select",
+		"unicodedata",
+		"zlib",
 	},
 
-	Shared: map[string]bool{},
+	Shared: []string{},
 
-	Disabled: map[string]bool{
-		"_codecs_cn":         true,
-		"_codecs_hk":         true,
-		"_codecs_iso2022":    true,
-		"_codecs_jp":         true,
-		"_codecs_kr":         true,
-		"_codecs_tw":         true,
-		"_crypt":             true,
-		"_ctypes":            true,
-		"_curses":            true,
-		"_curses_panel":      true,
-		"_dbm":               true,
-		"_scproxy":           true,
-		"_tkinter":           true,
-		"_xxsubinterpreters": true,
-		"audioop":            true,
-		"nis":                true,
-		"ossaudiodev":        true,
-		"resource":           true,
-		"spwd":               true,
-		"syslog":             true,
-		"termios":            true,
-		"xxlimited":          true,
-		"xxlimited_35":       true,
+	Disabled: []string{
+		"_codecs_cn",
+		"_codecs_hk",
+		"_codecs_iso2022",
+		"_codecs_jp",
+		"_codecs_kr",
+		"_codecs_tw",
+		"_crypt",
+		"_ctypes",
+		"_curses",
+		"_curses_panel",
+		"_dbm",
+		"_scproxy",
+		"_tkinter",
+		"_xxsubinterpreters",
+		"audioop",
+		"nis",
+		"ossaudiodev",
+		"resource",
+		"spwd",
+		"syslog",
+		"termios",
+		"xxlimited",
+		"xxlimited_35",
 	},
-}
-
-func createFileUsingTemplate(t *template.Template, filename string, data interface{}) error {
-	f, err := os.Create(filename)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	err = t.Execute(f, data)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func Demo() {
@@ -448,7 +396,9 @@ func Demo() {
 
 	cfg1 := &base_cfg
 	cfg1.StaticToShared("cmath", "zlib")
-	cfg1.CommentStatic("select")
+	cfg1.StaticToDisabled("select")
 	cmap["3.11"]["static_max"] = cfg1
-	cmap["3.11"]["static_max"].Write("out.mk")
+	// cmap["3.11"]["static_max"].Write("out.mk")
+	cmap["3.11"]["static_max"].WriteYaml("out.yml")
+
 }

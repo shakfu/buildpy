@@ -86,6 +86,9 @@ func NewPythonBuilder(version string, config string) *PythonBuilder {
 	}
 }
 
+// -----------------------------------------------------------------
+// get properties
+
 func (b *PythonBuilder) Url() string {
 	return fmt.Sprintf(b.DownloadUrl, b.Version, b.Version)
 }
@@ -131,9 +134,11 @@ func (b *PythonBuilder) Ver() string {
 func (b *PythonBuilder) VerMajor() string {
 	return strings.Split(b.Version, ".")[0]
 }
+
 func (b *PythonBuilder) VerMinor() string {
 	return strings.Split(b.Version, ".")[1]
 }
+
 func (b *PythonBuilder) VerPatch() string {
 	return strings.Split(b.Version, ".")[2]
 }
@@ -148,6 +153,20 @@ func (b *PythonBuilder) NameVersion() string {
 
 func (b *PythonBuilder) NameVer() string {
 	return fmt.Sprintf("%s%s", strings.ToLower(b.Name), b.Ver())
+}
+
+func (b *PythonBuilder) DylibName() string {
+	var name = fmt.Sprintf("lib%s", b.NameVer())
+	if PLATFORM == "darwin" {
+		return fmt.Sprintf("%s.dylib", name)
+	} else if PLATFORM == "linux" {
+		return fmt.Sprintf("%s.so", name)
+	} else if PLATFORM == "windows" {
+		return fmt.Sprintf("%s.dll", name)
+	} else {
+		log.Fatal("platform not supported")
+		return ""
+	}
 }
 
 func (b *PythonBuilder) PythonExe() string {
@@ -170,22 +189,25 @@ func (b *PythonBuilder) InstallDeps() {
 	go InstallBzip2(&wg)
 	go InstallXz(&wg)
 
-	log.Info("waiting for goroutines to finish...")
+	log.Info("PythonBuilder.InstallDeps", "msg", "building openssl, bzip2, lzma deps")
 	wg.Wait()
-	log.Info("DONE")
+	log.Info("PythonBuilder.InstallDeps", "msg", "waiting for goroutines to finish...")
+
 }
 
 func (b *PythonBuilder) PreProcess() {
+	log.Info("PythonBuilder.PreProcess")
 }
 
 func (b *PythonBuilder) Setup() {
-	log.Info("installing python", "version", b.Version)
+	log.Info("PythonBuilder.Setup", "pyver", b.Version)
 	b.Project.Setup()
 	// shell.DownloadTo(b.Url(), b.Project.Downloads, b.Project.Src)
 	shell.GitClone(b.RepoUrl, b.RepoBranch(), b.Project.Src, false)
 }
 
 func (b *PythonBuilder) Configure() {
+	log.Info("PythonBuilder.Configure", "pyver", b.Version)
 	if b.BuildType() == "shared" {
 		b.ConfigOptions = append(b.ConfigOptions,
 			"--enable-shared", "--without-static-libpython")
@@ -205,33 +227,45 @@ func (b *PythonBuilder) Configure() {
 	var prefix = fmt.Sprintf("--prefix=%s", b.Prefix())
 	var args = []string{"./configure", prefix}
 	args = append(args, b.ConfigOptions...)
+	log.Info("PythonBuilder.Configure", "opts", args)
 	shell.ShellCmd(b.SrcDir(), args...)
 }
 
 func (b *PythonBuilder) Build() {
+	log.Info("PythonBuilder.Build")
 	shell.Make(b.SrcDir())
 }
 
 func (b *PythonBuilder) Install() {
+	log.Info("PythonBuilder.Install")
 	shell.Make(b.SrcDir(), "install")
 }
 
 func (b *PythonBuilder) Clean() {
+	log.Info("PythonBuilder.Clean")
 	shell.RecursiveRemove(b.Prefix(), b.RemovePatterns)
 }
 
 func (b *PythonBuilder) ZipLib() {
+	log.Info("PythonBuilder.ZipLib")
+
+	var tmp_libdynload = filepath.Join(b.Project.Build, "lib-dynload")
+	var tmp_os_py = filepath.Join(b.Project.Build, "os.py")
+
+	// pre-cleanup
+	os.RemoveAll(tmp_libdynload)
+	os.RemoveAll(tmp_os_py)
 
 	var src = filepath.Join(b.Prefix(), "lib", b.NameVer())
 
 	shell.Move(
 		filepath.Join(src, "lib-dynload"),
-		filepath.Join(b.Project.Build, "lib-dynload"),
+		tmp_libdynload,
 	)
 
 	shell.Move(
 		filepath.Join(src, "os.py"),
-		filepath.Join(b.Project.Build, "os.py"),
+		tmp_os_py,
 	)
 
 	var zippath = filepath.Join(
@@ -248,27 +282,61 @@ func (b *PythonBuilder) ZipLib() {
 	os.MkdirAll(src, 0750)
 	os.MkdirAll(site_packages, 0750)
 	shell.Move(
-		filepath.Join(b.Project.Build, "lib-dynload"),
+		tmp_libdynload,
 		filepath.Join(src, "lib-dynload"),
 	)
 	shell.Move(
-		filepath.Join(b.Project.Build, "os.py"),
+		tmp_os_py,
 		filepath.Join(src, "os.py"),
 	)
 }
 
 func (b *PythonBuilder) InstallPackages() {
-
+	log.Info("PythonBuilder.InstallPackages", "pkgs", b.Packages)
 	shell.Cmd(".", b.PythonExe(), "-m", "ensurepip")
 	var args = []string{"install"}
 	args = append(args, b.Packages...)
 	shell.Cmd(".", b.PipExe(), args...)
 }
 
+func (b *PythonBuilder) MakeRelocatable() {
+	log.Info("PythonBuilder.PostProcess")
+	if PLATFORM == "darwin" {
+		if b.BuildType() == "shared" {
+			var dylib = filepath.Join(b.Prefix(), "lib", b.DylibName())
+			var rpath = fmt.Sprintf("@rpath", b.DylibName())
+			var to = fmt.Sprintf("@executable_path/../lib/%s", b.DylibName())
+			var exe = filepath.Join(b.Prefix(), "bin", b.NameVer())
+			os.Chmod(dylib, 750)
+			shell.Cmd(".", "install_name_tool)", "-id", rpath, dylib)
+			shell.Cmd(".", "install_name_tool", "-change", dylib, to, exe)
+		} else if b.BuildType() == "framework" {
+			var dylib = filepath.Join(b.Prefix(), b.Name)
+			var rpath = fmt.Sprintf("@rpath", b.Name)
+			var to = fmt.Sprintf("@executable_path/../%s", b.Name)
+			var exe = filepath.Join(b.Prefix(), "bin", b.NameVer())
+			os.Chmod(dylib, 750)
+			shell.Cmd(".", "install_name_tool)", "-id", rpath, dylib)
+			shell.Cmd(".", "install_name_tool", "-change", dylib, to, exe)
+		}
+	} else if PLATFORM == "linux" {
+		if b.BuildType() == "shared" {
+			var exe = filepath.Join(b.Prefix(), "bin", b.NameVer())
+			shell.Cmd(".", "patchelf", "--set-rpath", "'$ORIGIN'/../lib", exe)
+		}		
+	}
+}
+
+
 func (b *PythonBuilder) PostProcess() {
+	log.Info("PythonBuilder.PostProcess")
+	if b.BuildType() == "shared" || b.BuildType() == "framework" {
+		b.MakeRelocatable()
+	}
 }
 
 func (b *PythonBuilder) Process() {
+	log.Info("PythonBuilder.Process", "ver", b.Version, "cfg", b.Config)
 	b.InstallDeps()
 	b.PreProcess()
 	b.Setup()
@@ -281,30 +349,36 @@ func (b *PythonBuilder) Process() {
 }
 
 func (b *PythonBuilder) SetConfigOptions(opts []string) {
+	log.Info("PythonBuilder.SetConfigOptions", "opts", opts)
+
 	if len(opts) > 0 {
 		b.ConfigOptions = opts
 	}
 }
 
 func (b *PythonBuilder) ListConfigOptions() {
+	log.Info("PythonBuilder.ListConfigOptions")
 	for _, opt := range b.ConfigOptions {
 		fmt.Println(opt)
 	}
 }
 
 func (b *PythonBuilder) ListRemovePatterns() {
+	log.Info("PythonBuilder.ListRemovePatterns")
 	for _, pat := range b.RemovePatterns {
 		fmt.Println(pat)
 	}
 }
 
 func (b *PythonBuilder) SetRemovePatterns(patterns []string) {
+	log.Info("PythonBuilder.SetRemovePatterns", "patterns", patterns)
 	if len(patterns) > 0 {
 		b.RemovePatterns = patterns
 	}
 }
 
 func (b *PythonBuilder) SetPackages(pkgs []string) {
+	log.Info("PythonBuilder.SetPackages", "pkgs", pkgs)
 	if len(pkgs) > 0 {
 		b.Packages = pkgs
 	}

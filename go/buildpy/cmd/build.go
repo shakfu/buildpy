@@ -1,6 +1,3 @@
-/*
-Copyright © 2024 NAME HERE <EMAIL ADDRESS>
-*/
 package cmd
 
 import (
@@ -22,26 +19,26 @@ From source. Can be used as follows:
 	$ buildpy build --opts="--disable-ipv6,--with-lto=thin"
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-		config, _ := cmd.Flags().GetString("config")
 		version, _ := cmd.Flags().GetString("version")
+		config, _ := cmd.Flags().GetString("config")
 		pkgs, _ := cmd.Flags().GetStringSlice("pkgs")
 		opts, _ := cmd.Flags().GetStringSlice("opts")
+		jobs, _ := cmd.Flags().GetInt8("jobs")
 		optimize, _ := cmd.Flags().GetBool("optimize")
 		reset, _ := cmd.Flags().GetBool("reset")
+		debug, _ := cmd.Flags().GetBool("debug")
 
 		log.SetTimeFormat("15:04:05")
-		// log.SetReportCaller(true)
-		log.Info("buildpy build", "cfg", config, "opts", opts, "pkgs", pkgs)
-
+		if debug {
+			log.SetReportCaller(true)
+		}
+		log.Info("Environment", "runtime", runtime.Version(), "platform", runtime.GOOS, "arch", runtime.GOARCH)
+		log.Info("build cmd", "ver", version, "cfg", config, "opts", opts, "pkgs", pkgs, "jobs", jobs)
 		builder := models.NewPythonBuilder(version, config)
-		log.Info("Environment", "runtime", runtime.Version(), "os/arch", builder.PlatformArch())
-		if len(opts) > 0 {
-			builder.SetConfigOptions(opts)
-		}
-		if len(pkgs) > 0 {
-			builder.SetPackages(pkgs)
-		}
+		builder.ConfigOptions = opts
+		builder.Packages = pkgs
 		builder.Optimize = optimize
+		builder.Jobs = jobs
 		if reset {
 			builder.Project.Reset()
 		}
@@ -65,6 +62,8 @@ func init() {
 	buildCmd.Flags().StringP("config", "c", "shared_mid", "Python version")
 	buildCmd.Flags().StringSliceP("opts", "o", []string{}, "Override python config options")
 	buildCmd.Flags().StringSliceP("pkgs", "p", []string{}, "Add python packages")
+	buildCmd.Flags().Int8P("jobs", "j", 1, "Set # of build jobs")
 	buildCmd.Flags().BoolP("optimize", "O", false, "Optimize build")
 	buildCmd.Flags().BoolP("reset", "r", false, "Reset build")
+	buildCmd.Flags().BoolP("debug", "d", false, "Debug build")
 }

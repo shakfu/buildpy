@@ -1,6 +1,3 @@
-/*
-Copyright © 2024 NAME HERE <EMAIL ADDRESS>
-*/
 package models
 
 import (
@@ -14,7 +11,7 @@ import (
 	"github.com/shakfu/buildpy/internal/shell"
 )
 
-var PLATFORM = shell.GetOs()
+var PLATFORM = shell.GetPlatform()
 var ARCH = shell.GetArch()
 
 type Builder interface {
@@ -43,6 +40,7 @@ type PythonBuilder struct {
 	RemovePatterns []string
 	Project        *Project
 	Optimize       bool
+	Jobs 		   int8
 }
 
 func NewPythonBuilder(version string, config string) *PythonBuilder {
@@ -83,6 +81,7 @@ func NewPythonBuilder(version string, config string) *PythonBuilder {
 		},
 		NewProject(),
 		false,
+		1,
 	}
 }
 
@@ -113,14 +112,8 @@ func (b *PythonBuilder) Prefix() string {
 	return filepath.Join(b.Project.Install, "python")
 }
 
-// func (b *PythonBuilder) SrcDir() string {
-// 	var name = filepath.Base(b.Url())
-// 	var stem = name[0:len(name)-len(".tar.xz")]
-// 	return filepath.Join(b.Project.Src, stem)
-// }
-
 func (b *PythonBuilder) SrcDir() string {
-	return filepath.Join(b.Project.Src, "cpython")
+	return filepath.Join(b.Project.Src, "python")
 }
 
 func (b *PythonBuilder) BuildDir() string {
@@ -180,6 +173,12 @@ func (b *PythonBuilder) PipExe() string {
 // -----------------------------------------------------------------
 // methods
 
+func (b *PythonBuilder) CheckDeps() {
+	log.Info("PythonBuilder.CheckDeps")
+	// core dependencies
+	shell.CheckDeps("git", "zip", "cmake", "make", "bash")
+}
+
 func (b *PythonBuilder) InstallDeps() {
 	var wg sync.WaitGroup
 
@@ -203,7 +202,7 @@ func (b *PythonBuilder) Setup() {
 	log.Info("PythonBuilder.Setup", "pyver", b.Version)
 	b.Project.Setup()
 	// shell.DownloadTo(b.Url(), b.Project.Downloads, b.Project.Src)
-	shell.GitClone(b.RepoUrl, b.RepoBranch(), b.Project.Src, false)
+	shell.GitClone(b.RepoUrl, b.RepoBranch(), b.SrcDir(), false)
 }
 
 func (b *PythonBuilder) Configure() {
@@ -233,7 +232,7 @@ func (b *PythonBuilder) Configure() {
 
 func (b *PythonBuilder) Build() {
 	log.Info("PythonBuilder.Build")
-	shell.Make(b.SrcDir())
+	shell.Make(b.SrcDir(), "-j", string(b.Jobs))
 }
 
 func (b *PythonBuilder) Install() {
@@ -323,10 +322,9 @@ func (b *PythonBuilder) MakeRelocatable() {
 		if b.BuildType() == "shared" {
 			var exe = filepath.Join(b.Prefix(), "bin", b.NameVer())
 			shell.Cmd(".", "patchelf", "--set-rpath", "'$ORIGIN'/../lib", exe)
-		}		
+		}
 	}
 }
-
 
 func (b *PythonBuilder) PostProcess() {
 	log.Info("PythonBuilder.PostProcess")
@@ -337,6 +335,7 @@ func (b *PythonBuilder) PostProcess() {
 
 func (b *PythonBuilder) Process() {
 	log.Info("PythonBuilder.Process", "ver", b.Version, "cfg", b.Config)
+	b.CheckDeps()
 	b.InstallDeps()
 	b.PreProcess()
 	b.Setup()

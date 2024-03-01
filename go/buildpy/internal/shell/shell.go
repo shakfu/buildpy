@@ -12,7 +12,7 @@ import (
 	"github.com/charmbracelet/log"
 )
 
-func GetOs() string {
+func GetPlatform() string {
 	return runtime.GOOS
 }
 
@@ -39,7 +39,7 @@ func ShellCmd(cwd string, args ...string) {
 	Cmd(cwd, "bash", args...)
 }
 
-func filepathStem(fileName string) string {
+func GetFilepathStem(fileName string) string {
 	return strings.TrimSuffix(fileName, filepath.Ext(fileName))
 }
 
@@ -57,20 +57,28 @@ func Make(cwd string, args ...string) {
 	Cmd(cwd, "make", args...)
 }
 
-func DownloadTo(url string, directory string, extractToDir string) {
-	log.Info("DownloadTo", "url", url, "to", directory, "extract_to")
-	Cmd(".", "wget", "-P", directory, url)
-	var name = filepath.Base(url)
-	Cmd(directory, "tar", "xvf", name, "-C", extractToDir)
+func DownloadTo(url string, downloaddir string, srcdir string) {
+	log.Info("DownloadTo", "url", url, "to", downloaddir, "extract_to", srcdir)
+	var archive_name = filepath.Base(url)
+	var archive = filepath.Join(downloaddir, archive_name)
+	var extracted_name = GetFilepathStem(GetFilepathStem(archive_name))
+	var extracted = filepath.Join(srcdir, extracted_name)
+
+	if _, err := os.Stat(archive); err != nil {
+		// archive does not exist in downloads, then download it
+		Cmd(".", "wget", "-P", downloaddir, url)
+	}
+	Cmd(downloaddir, "tar", "xvf", archive_name, "-C", srcdir)
+	// normalize extracted src_dir 
+	os.Rename(extracted, filepath.Join(srcdir, "python"))
 }
 
-func GitClone(url string, branch string, directory string, recurse bool) {
-	var target = filepath.Join(directory, filepathStem(filepath.Base(url)))
+func GitClone(url string, branch string, as_directory string, recurse bool) {
 	var args = []string{"clone", "--depth=1"}
 	if recurse {
 		args = append(args, "--recurse-submodules", "--shallow-submodules")
 	}
-	args = append(args, "--branch", branch, url, target)
+	args = append(args, "--branch", branch, url, as_directory)
 	log.Info("GitClone", "exe", "git", "args", args)
 	Cmd(".", "git", args...)
 }
@@ -142,4 +150,14 @@ func Move(src string, dst string) {
 
 func ZipLib(zipPath string, libpath string) {
 	Cmd(libpath, "zip", "-r", zipPath, ".")
+}
+
+func CheckDeps(names ...string) {
+	for _, name := range names {
+		path, err := exec.LookPath(name)
+		if err != nil {
+			log.Fatal(err)
+		}
+		log.Info("check", "name", name, "path", path)
+	}
 }

@@ -4,11 +4,9 @@ Copyright © 2024 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	// "fmt"
 	"github.com/charmbracelet/log"
 	"github.com/shakfu/buildpy/internal/models"
 	"github.com/spf13/cobra"
-	// "os/exec"
 )
 
 // buildCmd represents the build command
@@ -26,6 +24,8 @@ to quickly create a Cobra application.`,
 		version, _ := cmd.Flags().GetString("version")
 		pkgs, _ := cmd.Flags().GetStringSlice("pkgs")
 		opts, _ := cmd.Flags().GetStringSlice("opts")
+		optimize, _ := cmd.Flags().GetBool("optimize")
+		reset, _ := cmd.Flags().GetBool("reset")
 
 		log.SetTimeFormat("15:04:05")
 		// log.SetReportCaller(true)
@@ -33,6 +33,16 @@ to quickly create a Cobra application.`,
 		log.Printf("config:%v opts:%v pkgs:%v args: %v\n", config, opts, pkgs, args)
 
 		builder := models.NewPythonBuilder(version, config)
+		if len(opts) > 0 {
+			builder.SetConfigOptions(opts)
+		}
+		if len(pkgs) > 0 {
+			builder.SetPackages(pkgs)
+		}
+		builder.Optimize = optimize
+		if reset {
+			builder.Project.Reset()
+		}
 		builder.Process()
 	},
 }
@@ -49,12 +59,10 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// buildCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	buildCmd.Flags().StringP("version", "v", "3.11.7", "Build configuration")
+	buildCmd.Flags().StringP("config", "c", "shared_mid", "Python version")
+	buildCmd.Flags().StringSliceP("opts", "o", []string{}, "Override python config options")
+	buildCmd.Flags().StringSliceP("pkgs", "p", []string{}, "Add python packages")
 	buildCmd.Flags().BoolP("optimize", "O", false, "Optimize build")
 	buildCmd.Flags().BoolP("reset", "r", false, "Reset build")
-	buildCmd.Flags().StringP("config", "c", "shared_mid", "Python version")
-	buildCmd.Flags().StringP("version", "v", "3.11.7", "Build configuration")
-
-	buildCmd.Flags().StringSliceP("pkgs", "p", []string{}, "Add python packages")
-	buildCmd.Flags().StringSliceP("opts", "o", []string{}, "Add python config options")
-
 }

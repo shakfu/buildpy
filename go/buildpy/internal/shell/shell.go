@@ -1,6 +1,8 @@
 package shell
 
 import (
+	"archive/zip"
+	"io"
 	"io/fs"
 	"os"
 	"os/exec"
@@ -10,7 +12,21 @@ import (
 	"github.com/charmbracelet/log"
 )
 
-func filepath_stem(fileName string) string {
+func Cmd(cwd string, exe string, args ...string) {
+	cmd := exec.Command(exe, args...)
+	cmd.Dir = cwd
+	log.Info(exe, "args", args)
+	if err := cmd.Run(); err != nil {
+		log.Fatal(err)
+	}
+	log.Info(exe, "status", "DONE")
+}
+
+func ShellCmd(cwd string, args ...string) {
+	Cmd(cwd, "bash", args...)
+}
+
+func filepathStem(fileName string) string {
 	return strings.TrimSuffix(fileName, filepath.Ext(fileName))
 }
 
@@ -51,7 +67,7 @@ func DownloadTo(url string, directory string, extractToDir string) {
 }
 
 func GitClone(url string, branch string, directory string, recurse bool) {
-	var target = filepath.Join(directory, filepath_stem(filepath.Base(url)))
+	var target = filepath.Join(directory, filepathStem(filepath.Base(url)))
 	var args = []string{"clone", "--depth=1"}
 	if recurse {
 		args = append(args, "--recurse-submodules", "--shallow-submodules")
@@ -63,16 +79,6 @@ func GitClone(url string, branch string, directory string, recurse bool) {
 		log.Fatal(err)
 	}
 	log.Info("git clone DONE")
-}
-
-func ShellCmd(cwd string, args ...string) {
-	scmd := exec.Command("bash", args...)
-	scmd.Dir = cwd
-	log.Info("bash", "args", args)
-	if err := scmd.Run(); err != nil {
-		log.Fatal(err)
-	}
-	log.Info("bash DONE")
 }
 
 func CmakeConfigure(srcdir string, builddir string, options ...string) {
@@ -138,4 +144,80 @@ func RecursiveRemove(root string, patterns []string) {
 		log.Fatal("filepath.WalkDir() returned %v", err)
 	}
 
+}
+
+func Move(src string, dst string) {
+	err := os.Rename(src, dst)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func ZipFileOrFolder(zipPath, filePath, basePath string) (err error) {
+	var newZipFile *os.File
+	newZipFile, err = os.Create(zipPath)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		newZipFile.Close()
+		if err != nil {
+			os.Remove(zipPath)
+		}
+	}()
+
+	zipWriter := zip.NewWriter(newZipFile)
+	defer zipWriter.Close()
+
+	if err = addToZip(zipWriter, filePath, basePath); err != nil {
+		return err
+	}
+	return nil
+}
+
+func addToZip(zipWriter *zip.Writer, filename, basePath string) error {
+	stat, err := os.Stat(filename)
+	if err != nil {
+		return err
+	}
+	if stat.IsDir() {
+		infos, err := os.ReadDir(filename)
+		if err != nil {
+			return err
+		}
+		for _, info := range infos {
+			fname := filepath.Join(filename, info.Name())
+			relpath, _ := filepath.Rel(basePath, fname)
+			log.Info("zip", "adding", relpath)
+			err = addToZip(zipWriter, fname, basePath)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+
+	fileToZip, err := os.Open(filename)
+	if err != nil {
+		return err
+	}
+	defer fileToZip.Close()
+
+	header, err := zip.FileInfoHeader(stat)
+	if err != nil {
+		return err
+	}
+	header.Name, err = filepath.Rel(basePath, filename)
+	if err != nil {
+		return err
+	}
+	header.Name = strings.ReplaceAll(header.Name, `\`, `/`) // Linux can only deal with /, while Windows can deal with / and \.
+	header.Method = zip.Deflate
+
+	writer, err := zipWriter.CreateHeader(header)
+	if err != nil {
+		return err
+	}
+	_, err = io.Copy(writer, fileToZip)
+	return err
 }

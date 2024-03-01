@@ -1166,7 +1166,7 @@ class PythonBuilder(Builder):
         # "--with-system-libmpdec",
         # "--without-builtin-hashlib-hashes",
         # "--without-doc-strings",
-        "--without-ensurepip",
+        # "--without-ensurepip",
         # "--without-readline",
         # "--without-static-libpython",
     ]
@@ -1186,7 +1186,6 @@ class PythonBuilder(Builder):
         "_tk*",
         "_xx*.so",
         "distutils",
-        "ensurepip",
         "idlelib",
         "lib2to3",
         "libpython*",
@@ -1274,15 +1273,16 @@ class PythonBuilder(Builder):
         elif self.build_type == "framework":
             prefix = self.project.install
             self.config_options.append(f"--enable-framework={prefix}")
-        else:
+        elif self.build_type != "static":
             self.fail(f"{self.build_type} not recognized build type")
 
         if self.optimize:
             self.config_options.append("--enable-optimizations")
 
-        if self.pkgs or self.required_packages:
-            self.config_options.remove("--without-ensurepip")
-            self.remove_patterns.remove("ensurepip")
+        if not self.pkgs and not self.required_packages:
+            self.config_options.append("--without-ensurepip")
+            self.remove_patterns.append("ensurepip")
+        else:
             self.pkgs.extend(self.required_packages)
 
         if self.cfg_opts:

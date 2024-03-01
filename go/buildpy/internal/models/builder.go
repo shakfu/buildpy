@@ -14,6 +14,10 @@ import (
 	"github.com/shakfu/buildpy/internal/shell"
 )
 
+var PLATFORM = shell.GetOs()
+var ARCH = shell.GetArch()
+
+
 type Builder interface {
 	Url() string
 	Prefix() string
@@ -50,10 +54,7 @@ func NewPythonBuilder(version string, config string) *PythonBuilder {
 		"https://www.python.org/ftp/python/%s/Python-%s.tar.xz",
 		"https://github.com/python/cpython.git",
 		[]string{
-			"--enable-shared",
 			"--disable-test-modules",
-			"--without-ensurepip",
-			"--without-static-libpython",
 		},
 		[]string{},
 		[]string{
@@ -88,6 +89,10 @@ func NewPythonBuilder(version string, config string) *PythonBuilder {
 
 func (b *PythonBuilder) Url() string {
 	return fmt.Sprintf(b.DownloadUrl, b.Version, b.Version)
+}
+
+func (b *PythonBuilder) PlatformArch() string {
+	return fmt.Sprintf("%s/%s", PLATFORM, ARCH)
 }
 
 func (b *PythonBuilder) BuildType() string {
@@ -233,9 +238,12 @@ func (b *PythonBuilder) ZipLib() {
 	var zippath = filepath.Join(
 		b.Prefix(), "lib", fmt.Sprintf("python%s.zip", b.VerNoDot()))
 
-	if err := shell.ZipFileOrFolder(zippath, src, filepath.Dir(src)); err != nil {
-		log.Fatal(err)
-	}
+
+	// if err := shell.ZipFileOrFolder(zippath, src, filepath.Dir(src)); err != nil {
+	// 	log.Fatal(err)
+	// }
+
+	shell.ZipLib(zippath, src)
 
 	os.RemoveAll(src)
 

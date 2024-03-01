@@ -8,9 +8,18 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"runtime"
 
 	"github.com/charmbracelet/log"
 )
+
+func GetOs() string {
+	return runtime.GOOS
+}
+
+func GetArch() string {
+	return runtime.GOARCH
+}
 
 func Cmd(cwd string, exe string, args ...string) {
 	cmd := exec.Command(exe, args...)
@@ -151,6 +160,10 @@ func Move(src string, dst string) {
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+func ZipLib(zipPath string, libpath string) {
+	Cmd(libpath, "zip", "-r", zipPath, ".")
 }
 
 func ZipFileOrFolder(zipPath, filePath, basePath string) (err error) {

@@ -19,7 +19,7 @@ fmt:
 	@go fmt internal/models/*.go
 
 clean:
-	@rm -rf ./buildpy ./build
+	@rm -rf ./buildpy ./build/lib/python ./build/src/cpython
 
 test:
 	@echo "testing.."

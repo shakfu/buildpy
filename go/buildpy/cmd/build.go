@@ -7,6 +7,7 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/shakfu/buildpy/internal/models"
 	"github.com/spf13/cobra"
+	"runtime"
 )
 
 // buildCmd represents the build command
@@ -33,6 +34,7 @@ to quickly create a Cobra application.`,
 		log.Printf("config:%v opts:%v pkgs:%v args: %v\n", config, opts, pkgs, args)
 
 		builder := models.NewPythonBuilder(version, config)
+		log.Info("Environment", "runtime", runtime.Version(), "platform/arch", builder.PlatformArch())
 		if len(opts) > 0 {
 			builder.SetConfigOptions(opts)
 		}

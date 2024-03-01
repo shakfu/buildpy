@@ -17,7 +17,6 @@ import (
 var PLATFORM = shell.GetOs()
 var ARCH = shell.GetArch()
 
-
 type Builder interface {
 	Url() string
 	Prefix() string
@@ -237,11 +236,6 @@ func (b *PythonBuilder) ZipLib() {
 
 	var zippath = filepath.Join(
 		b.Prefix(), "lib", fmt.Sprintf("python%s.zip", b.VerNoDot()))
-
-
-	// if err := shell.ZipFileOrFolder(zippath, src, filepath.Dir(src)); err != nil {
-	// 	log.Fatal(err)
-	// }
 
 	shell.ZipLib(zippath, src)
 

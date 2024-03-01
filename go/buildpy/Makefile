@@ -1,5 +1,5 @@
 
-.PHONY: all run build test clean fmt tidy
+.PHONY: all run build test clean fmt tidy repl
 
 
 all: build
@@ -11,6 +11,9 @@ run:
 build:
 	@go build -ldflags "-w"
 
+repl:
+	@build/install/python/bin/python3
+
 fmt:
 	@go fmt main.go
 	@go fmt cmd/*.go
@@ -19,7 +22,7 @@ fmt:
 	@go fmt internal/models/*.go
 
 clean:
-	@rm -rf ./buildpy ./build/lib/python ./build/src/cpython
+	@rm -rf ./buildpy ./build/src/cpython ./build/install/python
 
 test:
 	@echo "testing.."

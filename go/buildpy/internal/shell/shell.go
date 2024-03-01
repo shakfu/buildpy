@@ -1,14 +1,12 @@
 package shell
 
 import (
-	"archive/zip"
-	"io"
 	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 	"runtime"
+	"strings"
 
 	"github.com/charmbracelet/log"
 )
@@ -163,74 +161,5 @@ func Move(src string, dst string) {
 }
 
 func ZipLib(zipPath string, libpath string) {
-	Cmd(libpath, "zip", "-r", zipPath, ".")
-}
-
-func ZipFileOrFolder(zipPath, filePath, basePath string) (err error) {
-	var newZipFile *os.File
-	newZipFile, err = os.Create(zipPath)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		newZipFile.Close()
-		if err != nil {
-			os.Remove(zipPath)
-		}
-	}()
-
-	zipWriter := zip.NewWriter(newZipFile)
-	defer zipWriter.Close()
-
-	if err = addToZip(zipWriter, filePath, basePath); err != nil {
-		return err
-	}
-	return nil
-}
-
-func addToZip(zipWriter *zip.Writer, filename, basePath string) error {
-	stat, err := os.Stat(filename)
-	if err != nil {
-		return err
-	}
-	if stat.IsDir() {
-		infos, err := os.ReadDir(filename)
-		if err != nil {
-			return err
-		}
-		for _, info := range infos {
-			fname := filepath.Join(filename, info.Name())
-			relpath, _ := filepath.Rel(basePath, fname)
-			log.Info("zip", "adding", relpath)
-			err = addToZip(zipWriter, fname, basePath)
-			if err != nil {
-				return err
-			}
-		}
-		return nil
-	}
-
-	fileToZip, err := os.Open(filename)
-	if err != nil {
-		return err
-	}
-	defer fileToZip.Close()
-
-	header, err := zip.FileInfoHeader(stat)
-	if err != nil {
-		return err
-	}
-	header.Name, err = filepath.Rel(basePath, filename)
-	if err != nil {
-		return err
-	}
-	header.Name = strings.ReplaceAll(header.Name, `\`, `/`) // Linux can only deal with /, while Windows can deal with / and \.
-	header.Method = zip.Deflate
-
-	writer, err := zipWriter.CreateHeader(header)
-	if err != nil {
-		return err
-	}
-	_, err = io.Copy(writer, fileToZip)
-	return err
+	Cmd(libpath, "ziplib", "-r", zipPath, ".")
 }

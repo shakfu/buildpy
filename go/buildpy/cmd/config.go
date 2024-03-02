@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/charmbracelet/log"
 	"github.com/shakfu/buildpy/internal/config"
 	"github.com/spf13/cobra"
 )
@@ -18,9 +19,21 @@ This can include dumping the existing configuration, changing it,
 saving it, etc..`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("config called")
+
+		version, _ := cmd.Flags().GetString("version")
+		cfg, _ := cmd.Flags().GetString("config")
+		write, _ := cmd.Flags().GetString("write")
+
+		log.SetTimeFormat("15:04:05")
+		// log.Info("Environment", "runtime", runtime.Version(), "platform", runtime.GOOS, "arch", runtime.GOARCH)
+		// log.Info("build cmd", "ver", version, "cfg", config, "opts", opts, "pkgs", pkgs, "jobs", jobs)
+
 		// config.Demo()
-		// config.ConfigWrite("3.11.7", "shared_mid", "build/src/python/Modules/Setup.local")
-		config.ConfigWrite("3.11", "shared_max", "Setup.local")
+		if write != "" {
+			config.ConfigWrite(version, cfg, write)
+		} else {
+			config.ConfigWrite(version, cfg, "build/src/python/Modules/Setup.local")
+		}
 	},
 }
 
@@ -37,4 +50,13 @@ func init() {
 	// is called directly, e.g.:
 	// configCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 	configCmd.Flags().StringP("write", "w", "", "Write config to path")
+	configCmd.Flags().StringP("version", "v", "3.11.7", "Build configuration")
+	configCmd.Flags().StringP("config", "c", "shared_mid", "Python version")
+	// configCmd.Flags().StringSliceP("opts", "o", []string{}, "Override python config options")
+	// configCmd.Flags().StringSliceP("pkgs", "p", []string{}, "Add python packages")
+	// configCmd.Flags().IntP("jobs", "j", 1, "Set # of build jobs")
+	// configCmd.Flags().BoolP("optimize", "O", false, "Optimize build")
+	// configCmd.Flags().BoolP("reset", "r", false, "Reset build")
+	// configCmd.Flags().BoolP("debug", "d", false, "Debug build")
+	// configCmd.Flags().BoolP("git", "g", false, "Use git to download python")
 }

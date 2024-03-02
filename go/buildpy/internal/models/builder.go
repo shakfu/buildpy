@@ -231,7 +231,7 @@ func (b *PythonBuilder) Configure() {
 	var args = []string{"./configure", prefix}
 	args = append(args, b.ConfigOptions...)
 	log.Info("PythonBuilder.Configure", "pyver", b.Version, "opts", args)
-	config.ConfigWrite(b.Version, b.Config,
+	config.ConfigWrite(b.Ver(), b.Config,
 		filepath.Join(b.SrcDir(), "Modules", "Setup.local"))
 	shell.ShellCmd(b.SrcDir(), args...)
 }

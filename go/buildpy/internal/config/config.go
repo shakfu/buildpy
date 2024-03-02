@@ -7,7 +7,10 @@ import (
 	"sort"
 	"strings"
 	"text/template"
+	"runtime"
 )
+
+var PLATFORM = runtime.GOOS
 
 type Config struct {
 	Name     string
@@ -392,28 +395,139 @@ var base_cfg = Config{
 
 func ConfigWrite(version string, name string, tofile string) {
 
-	// var m = map[string]*Config{}
 	var m = map[string]map[string]*Config{}
-	m["3.11"] = map[string]*Config{}
 
-	shared_max := base_cfg
-	shared_max.DisabledToShared("_ctypes")
-	shared_max.StaticToShared("_decimal", "_ssl", "_hashlib")
-	// shared_max.Write(tofile)
+	// common patch: applies to 3.11-3.12
+    if PLATFORM == "darwin" {
+        base_cfg.DisabledToStatic("_scproxy")
+    }
+    if PLATFORM == "linux" {
+        base_cfg.DisabledToStatic("ossaudiodev")
+    }
 
-	m["3.11"]["shared_max"] = &shared_max
+	if version == "3.11" {
+
+		m["3.11"] = map[string]*Config{}
+
+		static_max := base_cfg
+		m["3.11"]["static_max"] = &static_max
+
+		static_mid := base_cfg
+		static_mid.StaticToDisabled("_decimal")
+		if PLATFORM == "linux" {
+            static_mid.Exts["_ssl"] = []string{
+                "_ssl.c",
+                "-I$(OPENSSL)/include",
+                "-L$(OPENSSL)/lib",
+                "-l:libssl.a -Wl,--exclude-libs,libssl.a",
+                "-l:libcrypto.a -Wl,--exclude-libs,libcrypto.a",
+            }
+            static_mid.Exts["_hashlib"] = []string{
+                "_hashopenssl.c",
+                "-I$(OPENSSL)/include",
+                "-L$(OPENSSL)/lib",
+                "-l:libcrypto.a -Wl,--exclude-libs,libcrypto.a",
+            }
+		}
+		m["3.11"]["static_mid"] = &static_mid
+
+		static_min := base_cfg
+		static_min.StaticToDisabled("_bz2", "_decimal", "_csv", "_json", "_lzma", "_scproxy", "_sqlite3", "_ssl", "pyexpat", "readline")
+		m["3.11"]["static_min"] = &static_min
+
+		shared_max := base_cfg
+		shared_max.DisabledToShared("_ctypes")
+		shared_max.StaticToShared("_decimal", "_ssl", "_hashlib")
+		m["3.11"]["shared_max"] = &shared_max
+
+		shared_mid := base_cfg
+		shared_mid.StaticToDisabled("_decimal", "_ssl", "_hashlib")
+		m["3.11"]["shared_mid"] = &shared_mid
+
+	} else if version == "3.12" {
+
+		m["3.12"] = map[string]*Config{}
+
+        base_cfg.Exts["_md5"] = []string{
+            "md5module.c",
+            "-I$(srcdir)/Modules/_hacl/include",
+            "_hacl/Hacl_Hash_MD5.c",
+            "-D_BSD_SOURCE",
+            "-D_DEFAULT_SOURCE",
+        }
+
+        base_cfg.Exts["_sha1"] = []string{
+	        "sha1module.c",
+	        "-I$(srcdir)/Modules/_hacl/include",
+	        "_hacl/Hacl_Hash_SHA1.c",
+	        "-D_BSD_SOURCE",
+	        "-D_DEFAULT_SOURCE",
+        }
+
+        base_cfg.Exts["_sha2"] = []string{
+	        "sha2module.c",
+	        "-I$(srcdir)/Modules/_hacl/include",
+	        "_hacl/Hacl_Hash_SHA2.c",
+	        "-D_BSD_SOURCE",
+	        "-D_DEFAULT_SOURCE",
+	        "Modules/_hacl/libHacl_Hash_SHA2.a",
+        }
+
+        base_cfg.Exts["_sha3"] = []string{
+            "sha3module.c",
+            "-I$(srcdir)/Modules/_hacl/include",
+            "_hacl/Hacl_Hash_SHA3.c",
+            "-D_BSD_SOURCE",
+            "-D_DEFAULT_SOURCE",
+        }
+
+        delete(base_cfg.Exts, "_sha256")
+        delete(base_cfg.Exts, "_sha512")
+
+        base_cfg.Static = append(base_cfg.Static, "_sha2")
+        base_cfg.Disabled = append(base_cfg.Static, "_xxinterpchannels")
+
+        base_cfg.Static = RemoveNames(base_cfg.Static, "_sha256", "_sha512")
+
+		static_max := base_cfg
+		m["3.12"]["static_max"] = &static_max
+
+		static_mid := base_cfg
+		static_mid.StaticToDisabled("_decimal")
+		if PLATFORM == "linux" {
+            static_mid.Exts["_ssl"] = []string{
+                "_ssl.c",
+                "-I$(OPENSSL)/include",
+                "-L$(OPENSSL)/lib",
+                "-l:libssl.a -Wl,--exclude-libs,libssl.a",
+                "-l:libcrypto.a -Wl,--exclude-libs,libcrypto.a",
+            }
+            static_mid.Exts["_hashlib"] = []string{
+                "_hashopenssl.c",
+                "-I$(OPENSSL)/include",
+                "-L$(OPENSSL)/lib",
+                "-l:libcrypto.a -Wl,--exclude-libs,libcrypto.a",
+            }
+		}
+		m["3.12"]["static_mid"] = &static_mid
+
+		static_min := base_cfg
+		static_min.StaticToDisabled("_bz2", "_decimal", "_csv", "_json", "_lzma", "_scproxy", "_sqlite3", "_ssl", "pyexpat", "readline")
+		m["3.12"]["static_min"] = &static_min
+
+		shared_max := base_cfg
+		shared_max.DisabledToShared("_ctypes")
+		shared_max.StaticToShared("_decimal", "_ssl", "_hashlib")
+		m["3.12"]["shared_max"] = &shared_max
+
+		shared_mid := base_cfg
+		shared_mid.StaticToDisabled("_decimal", "_ssl", "_hashlib")
+		m["3.12"]["shared_mid"] = &shared_mid
+
+	}
 
 	m[version][name].Write(tofile)
 }
-
-    // def shared_max(self):
-    //     """shared build variant max-size"""
-    //     self.cfg["disabled"].remove("_ctypes")
-    //     self.move_static_to_shared("_decimal", "_ssl", "_hashlib")
-
-    // def shared_mid(self):
-    //     """shared build variant mid-size"""
-    //     self.disable_static("_decimal", "_ssl", "_hashlib")
 
 
 func Demo() {

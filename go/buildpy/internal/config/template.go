@@ -5,11 +5,12 @@ import (
 	"text/template"
 )
 
-const Template string = `
-# -*- makefile -*-
+const Template string = `# -*- makefile -*-
 # name: {{.Name}}
 # version: {{.Version}}
-{{- range .Headers }}
+
+# headers
+{{ range .Headers }}
 {{ . -}}
 {{- end }}
 

@@ -22,17 +22,18 @@ saving it, etc..`,
 
 		version, _ := cmd.Flags().GetString("version")
 		cfg, _ := cmd.Flags().GetString("config")
-		write, _ := cmd.Flags().GetString("write")
+		write, _ := cmd.Flags().GetBool("write")
 
 		log.SetTimeFormat("15:04:05")
 		// log.Info("Environment", "runtime", runtime.Version(), "platform", runtime.GOOS, "arch", runtime.GOARCH)
 		// log.Info("build cmd", "ver", version, "cfg", config, "opts", opts, "pkgs", pkgs, "jobs", jobs)
-
 		// config.Demo()
-		if write != "" {
-			config.ConfigWrite(version, cfg, write)
+		var ver = config.ToVer(version)
+
+		if write {
+			config.ConfigWrite(ver, cfg, "./Setup.local")
 		} else {
-			config.ConfigWrite(version, cfg, "build/src/python/Modules/Setup.local")
+			config.ConfigWrite(ver, cfg, "build/src/python/Modules/Setup.local")
 		}
 	},
 }
@@ -49,7 +50,8 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// configCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-	configCmd.Flags().StringP("write", "w", "", "Write config to path")
+	// configCmd.Flags().StringP("write", "w", "", "Write config to path")
+	configCmd.Flags().BoolP("write", "w", false, "Write config to cwd")
 	configCmd.Flags().StringP("version", "v", "3.11.7", "Build configuration")
 	configCmd.Flags().StringP("config", "c", "shared_mid", "Python version")
 	// configCmd.Flags().StringSliceP("opts", "o", []string{}, "Override python config options")

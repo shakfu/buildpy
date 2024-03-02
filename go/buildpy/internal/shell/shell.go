@@ -57,6 +57,17 @@ func Make(cwd string, args ...string) {
 	Cmd(cwd, "make", args...)
 }
 
+func Wget(cwd string, downloaddir string, url string) {
+	Cmd(cwd, "wget", "-P", downloaddir, url)
+}
+
+// func Curl(cwd string, downloaddir string, url string) {
+// 	// see: https://www.warp.dev/terminus/curl-vs-wget
+// 	Cmc(cwd, "curl", "-L", "-O", )
+// 	Cmc(cwd, "curl", "-L" "--output-dir", downloaddir, "-o", as_name, url)
+// 	Cmc(cwd, "curl", "-L" "--output-dir", downloaddir, "-O", url)
+// }
+
 func DownloadTo(url string, downloaddir string, srcdir string) {
 	log.Info("DownloadTo", "url", url, "to", downloaddir, "extract_to", srcdir)
 	var archive_name = filepath.Base(url)
@@ -66,7 +77,7 @@ func DownloadTo(url string, downloaddir string, srcdir string) {
 
 	if _, err := os.Stat(archive); err != nil {
 		// archive does not exist in downloads, then download it
-		Cmd(".", "wget", "-P", downloaddir, url)
+		Wget(".", downloaddir, url)
 	}
 	Cmd(downloaddir, "tar", "xvf", archive_name, "-C", srcdir)
 	// normalize extracted src_dir

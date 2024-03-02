@@ -1,5 +1,5 @@
 
-.PHONY: all run build test clean fmt tidy repl
+.PHONY: all run build test clean fmt tidy repl rpath
 
 
 all: build
@@ -8,7 +8,7 @@ all: build
 run:
 	@go run main.go build
 
-build: clean
+build:
 	@go build -ldflags "-w"
 
 repl:
@@ -23,6 +23,9 @@ fmt:
 
 clean:
 	@rm -rf ./buildpy ./build/src/python ./build/install/python
+
+rpath:
+	otool -L build/install/python/bin/python3
 
 test:
 	@echo "testing.."

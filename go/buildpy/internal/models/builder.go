@@ -305,22 +305,22 @@ func (b *PythonBuilder) InstallPackages() {
 }
 
 func (b *PythonBuilder) MakeRelocatable() {
-	log.Info("PythonBuilder.PostProcess")
+	log.Info("PythonBuilder.MakeRelocatable")
 	if PLATFORM == "darwin" {
 		if b.BuildType() == "shared" {
 			var dylib = filepath.Join(b.Prefix(), "lib", b.DylibName())
 			var rpath = fmt.Sprintf("@rpath", b.DylibName())
 			var to = fmt.Sprintf("@executable_path/../lib/%s", b.DylibName())
 			var exe = filepath.Join(b.Prefix(), "bin", b.NameVer())
-			os.Chmod(dylib, 750)
-			shell.Cmd(".", "install_name_tool)", "-id", rpath, dylib)
+			os.Chmod(dylib, 777)
+			shell.Cmd(".", "install_name_tool", "-id", rpath, dylib)
 			shell.Cmd(".", "install_name_tool", "-change", dylib, to, exe)
 		} else if b.BuildType() == "framework" {
 			var dylib = filepath.Join(b.Prefix(), b.Name)
 			var rpath = fmt.Sprintf("@rpath", b.Name)
 			var to = fmt.Sprintf("@executable_path/../%s", b.Name)
 			var exe = filepath.Join(b.Prefix(), "bin", b.NameVer())
-			os.Chmod(dylib, 750)
+			os.Chmod(dylib, 777)
 			shell.Cmd(".", "install_name_tool)", "-id", rpath, dylib)
 			shell.Cmd(".", "install_name_tool", "-change", dylib, to, exe)
 		}
@@ -341,15 +341,15 @@ func (b *PythonBuilder) PostProcess() {
 
 func (b *PythonBuilder) Process() {
 	log.Info("PythonBuilder.Process", "ver", b.Version, "cfg", b.Config)
-	b.CheckDeps()
-	b.InstallDeps()
-	b.PreProcess()
-	b.Setup()
-	b.Configure()
-	b.Build()
-	b.Install()
-	b.Clean()
-	b.ZipLib()
+	// b.CheckDeps()
+	// b.InstallDeps()
+	// b.PreProcess()
+	// b.Setup()
+	// b.Configure()
+	// b.Build()
+	// b.Install()
+	// b.Clean()
+	// b.ZipLib()
 	b.PostProcess()
 	log.Info("PythonBuilder.Process", "status", "DONE")
 }

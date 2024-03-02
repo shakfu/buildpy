@@ -111,5 +111,11 @@ options:
 
 ### buildpy (go-edition)
 
-Under development: a translation of `buildpy` to golang. (Hey, Why not?!)
+A golang version of `buildpy`. (Hey, Why not?!)
+
+Mostly mirrors the python version except for the following:
+
+- Can convert configuration into yaml
+
+
 

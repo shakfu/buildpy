@@ -23,10 +23,11 @@ From source. Can be used as follows:
 		config, _ := cmd.Flags().GetString("config")
 		pkgs, _ := cmd.Flags().GetStringSlice("pkgs")
 		opts, _ := cmd.Flags().GetStringSlice("opts")
-		jobs, _ := cmd.Flags().GetInt8("jobs")
+		jobs, _ := cmd.Flags().GetInt("jobs")
 		optimize, _ := cmd.Flags().GetBool("optimize")
 		reset, _ := cmd.Flags().GetBool("reset")
 		debug, _ := cmd.Flags().GetBool("debug")
+		git, _ := cmd.Flags().GetBool("git")
 
 		log.SetTimeFormat("15:04:05")
 		if debug {
@@ -39,6 +40,7 @@ From source. Can be used as follows:
 		builder.Packages = pkgs
 		builder.Optimize = optimize
 		builder.Jobs = jobs
+		builder.UseGit = git
 		if reset {
 			builder.Project.Reset()
 		}
@@ -62,8 +64,9 @@ func init() {
 	buildCmd.Flags().StringP("config", "c", "shared_mid", "Python version")
 	buildCmd.Flags().StringSliceP("opts", "o", []string{}, "Override python config options")
 	buildCmd.Flags().StringSliceP("pkgs", "p", []string{}, "Add python packages")
-	buildCmd.Flags().Int8P("jobs", "j", 1, "Set # of build jobs")
+	buildCmd.Flags().IntP("jobs", "j", 1, "Set # of build jobs")
 	buildCmd.Flags().BoolP("optimize", "O", false, "Optimize build")
 	buildCmd.Flags().BoolP("reset", "r", false, "Reset build")
 	buildCmd.Flags().BoolP("debug", "d", false, "Debug build")
+	buildCmd.Flags().BoolP("git", "g", false, "Use git to download python")
 }

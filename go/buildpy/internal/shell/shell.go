@@ -79,7 +79,7 @@ func GitClone(url string, branch string, as_directory string, recurse bool) {
 		args = append(args, "--recurse-submodules", "--shallow-submodules")
 	}
 	args = append(args, "--branch", branch, url, as_directory)
-	log.Info("GitClone", "exe", "git", "args", args)
+	log.Info("GitClone")
 	Cmd(".", "git", args...)
 }
 

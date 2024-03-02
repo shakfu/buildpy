@@ -18,7 +18,9 @@ This can include dumping the existing configuration, changing it,
 saving it, etc..`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("config called")
-		config.Demo()
+		// config.Demo()
+		// config.ConfigWrite("3.11.7", "shared_mid", "build/src/python/Modules/Setup.local")
+		config.ConfigWrite("3.11.7", "shared_mid", "Setup.local")
 	},
 }
 

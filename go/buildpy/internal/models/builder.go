@@ -9,6 +9,7 @@ import (
 
 	"github.com/charmbracelet/log"
 	"github.com/shakfu/buildpy/internal/shell"
+	"github.com/shakfu/buildpy/internal/config"
 )
 
 var PLATFORM = shell.GetPlatform()
@@ -40,21 +41,21 @@ type PythonBuilder struct {
 	RemovePatterns []string
 	Project        *Project
 	Optimize       bool
-	Jobs 		   int8
+	UseGit 		   bool
+	Jobs 		   int
+
 }
 
 func NewPythonBuilder(version string, config string) *PythonBuilder {
 	return &PythonBuilder{
-		"Python",
-		version,
-		config,
-		"https://www.python.org/ftp/python/%s/Python-%s.tar.xz",
-		"https://github.com/python/cpython.git",
-		[]string{
-			"--disable-test-modules",
-		},
-		[]string{},
-		[]string{
+		Name: "Python",
+		Version: version,
+		Config: config,
+		DownloadUrl: "https://www.python.org/ftp/python/%s/Python-%s.tar.xz",
+		RepoUrl: "https://github.com/python/cpython.git",
+		ConfigOptions: []string{"--disable-test-modules"},
+		Packages: []string{},
+		RemovePatterns: []string{
 			"*.exe",
 			"*config-3*",
 			"*tcl*",
@@ -79,9 +80,10 @@ func NewPythonBuilder(version string, config string) *PythonBuilder {
 			"venv",
 			"xx*.so",
 		},
-		NewProject(),
-		false,
-		1,
+		Project: NewProject(),
+		Optimize: false,
+		UseGit: false,
+		Jobs: 1,
 	}
 }
 
@@ -201,12 +203,14 @@ func (b *PythonBuilder) PreProcess() {
 func (b *PythonBuilder) Setup() {
 	log.Info("PythonBuilder.Setup", "pyver", b.Version)
 	b.Project.Setup()
-	// shell.DownloadTo(b.Url(), b.Project.Downloads, b.Project.Src)
-	shell.GitClone(b.RepoUrl, b.RepoBranch(), b.SrcDir(), false)
+	if b.UseGit {
+		shell.GitClone(b.RepoUrl, b.RepoBranch(), b.SrcDir(), false)
+	} else {
+		shell.DownloadTo(b.Url(), b.Project.Downloads, b.Project.Src)
+	}
 }
 
 func (b *PythonBuilder) Configure() {
-	log.Info("PythonBuilder.Configure", "pyver", b.Version)
 	if b.BuildType() == "shared" {
 		b.ConfigOptions = append(b.ConfigOptions,
 			"--enable-shared", "--without-static-libpython")
@@ -226,13 +230,17 @@ func (b *PythonBuilder) Configure() {
 	var prefix = fmt.Sprintf("--prefix=%s", b.Prefix())
 	var args = []string{"./configure", prefix}
 	args = append(args, b.ConfigOptions...)
-	log.Info("PythonBuilder.Configure", "opts", args)
+	log.Info("PythonBuilder.Configure", "pyver", b.Version, "opts", args)
+	config.ConfigWrite(b.Version, b.Config,
+		filepath.Join(b.SrcDir(), "Modules", "Setup.local"))
+	// var cfg = config.GetConfig(b.Version, b.Config)
+    // cfg.Write(filepath.Join(b.SrcDir(), "Modules", "Setup.local"))
 	shell.ShellCmd(b.SrcDir(), args...)
 }
 
 func (b *PythonBuilder) Build() {
 	log.Info("PythonBuilder.Build")
-	shell.Make(b.SrcDir(), "-j", string(b.Jobs))
+	shell.Make(b.SrcDir(), "-j", fmt.Sprintf("%d", b.Jobs))
 }
 
 func (b *PythonBuilder) Install() {
@@ -345,6 +353,7 @@ func (b *PythonBuilder) Process() {
 	b.Clean()
 	b.ZipLib()
 	b.PostProcess()
+	log.Info("PythonBuilder.Process", "status", "DONE")
 }
 
 func (b *PythonBuilder) SetConfigOptions(opts []string) {

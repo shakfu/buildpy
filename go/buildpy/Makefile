@@ -8,7 +8,7 @@ all: build
 run:
 	@go run main.go build
 
-build:
+build: clean
 	@go build -ldflags "-w"
 
 repl:
@@ -22,7 +22,7 @@ fmt:
 	@go fmt internal/models/*.go
 
 clean:
-	@rm -rf ./buildpy ./build/src/cpython ./build/install/python
+	@rm -rf ./buildpy ./build/src/python ./build/install/python
 
 test:
 	@echo "testing.."

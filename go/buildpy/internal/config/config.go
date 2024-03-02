@@ -380,6 +380,23 @@ var base_cfg = Config{
 	},
 }
 
+func ConfigWrite(version string, name string, tofile string) {
+	// var m = make(map[string]map[string]*Config)
+	// m["3.11"] = make(map[string]*Config)
+	// m["3.11"]["shared_max"] = &base_cfg
+	// m["3.11"]["shared_mid"] = &base_cfg
+	cfg1 := base_cfg
+	cfg1.StaticToDisabled("_decimal")
+	cfg1.Write(tofile)
+	// m["3.11"]["shared_mid"] = &cfg1
+	// m["3.11"]["shared_mid"].StaticToDisabled("_decimal")
+	// m["3.12"] = make(map[string]*Config)
+	// m["3.12"]["static_max"] = &base_cfg
+	// m["3.12"]["static_mid"] = &base_cfg
+	// m["3.12"]["static_mid"].StaticToDisabled("_decimal")
+	// return m[version][name]
+}
+
 func Demo() {
 
 	// var cmap = map[string]map[string]*Config{}

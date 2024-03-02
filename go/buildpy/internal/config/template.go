@@ -18,19 +18,25 @@ const Template string = `
 {{ $key }} {{ join (index $.Exts $key) " " -}}
 {{- end }}
 
-*static*
-{{ range $key, $value := .Static}}
+{{ if .Static}} 
+*static* 
+{{ else }} 
+{{ end }}
+{{ range $_, $key := .Static}}
 {{ $key }} {{ join (index $.Exts $key) " " -}}
 {{- end }}
 
+{{ if .Shared}}
 *shared*
-{{ range $key, $value := .Shared}}
+{{ else }} 
+{{ end }}
+{{ range $_, $key := .Shared}}
 {{ $key }} {{ join (index $.Exts $key) " " -}}
 {{- end }}
 
 *disabled*
 {{ range $key, $value := .Disabled}}
-{{ $key -}}
+{{ $value -}}
 {{- end }}
 
 # end

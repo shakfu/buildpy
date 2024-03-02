@@ -99,11 +99,11 @@ func (b *PythonBuilder) PlatformArch() string {
 }
 
 func (b *PythonBuilder) BuildType() string {
-	return strings.Split(b.Config, "-")[0]
+	return strings.Split(b.Config, "_")[0]
 }
 
 func (b *PythonBuilder) SizeType() string {
-	return strings.Split(b.Config, "-")[1]
+	return strings.Split(b.Config, "_")[1]
 }
 
 func (b *PythonBuilder) RepoBranch() string {
@@ -211,6 +211,7 @@ func (b *PythonBuilder) Setup() {
 }
 
 func (b *PythonBuilder) Configure() {
+	log.Info(b.BuildType())
 	if b.BuildType() == "shared" {
 		b.ConfigOptions = append(b.ConfigOptions,
 			"--enable-shared", "--without-static-libpython")
@@ -233,8 +234,6 @@ func (b *PythonBuilder) Configure() {
 	log.Info("PythonBuilder.Configure", "pyver", b.Version, "opts", args)
 	config.ConfigWrite(b.Version, b.Config,
 		filepath.Join(b.SrcDir(), "Modules", "Setup.local"))
-	// var cfg = config.GetConfig(b.Version, b.Config)
-    // cfg.Write(filepath.Join(b.SrcDir(), "Modules", "Setup.local"))
 	shell.ShellCmd(b.SrcDir(), args...)
 }
 

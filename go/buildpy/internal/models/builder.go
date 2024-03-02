@@ -8,8 +8,8 @@ import (
 	"sync"
 
 	"github.com/charmbracelet/log"
-	"github.com/shakfu/buildpy/internal/shell"
 	"github.com/shakfu/buildpy/internal/config"
+	"github.com/shakfu/buildpy/internal/shell"
 )
 
 var PLATFORM = shell.GetPlatform()
@@ -41,20 +41,19 @@ type PythonBuilder struct {
 	RemovePatterns []string
 	Project        *Project
 	Optimize       bool
-	UseGit 		   bool
-	Jobs 		   int
-
+	UseGit         bool
+	Jobs           int
 }
 
 func NewPythonBuilder(version string, config string) *PythonBuilder {
 	return &PythonBuilder{
-		Name: "Python",
-		Version: version,
-		Config: config,
-		DownloadUrl: "https://www.python.org/ftp/python/%s/Python-%s.tar.xz",
-		RepoUrl: "https://github.com/python/cpython.git",
+		Name:          "Python",
+		Version:       version,
+		Config:        config,
+		DownloadUrl:   "https://www.python.org/ftp/python/%s/Python-%s.tar.xz",
+		RepoUrl:       "https://github.com/python/cpython.git",
 		ConfigOptions: []string{"--disable-test-modules"},
-		Packages: []string{},
+		Packages:      []string{},
 		RemovePatterns: []string{
 			"*.exe",
 			"*config-3*",
@@ -80,10 +79,10 @@ func NewPythonBuilder(version string, config string) *PythonBuilder {
 			"venv",
 			"xx*.so",
 		},
-		Project: NewProject(),
+		Project:  NewProject(),
 		Optimize: false,
-		UseGit: false,
-		Jobs: 1,
+		UseGit:   false,
+		Jobs:     1,
 	}
 }
 

@@ -20,7 +20,7 @@ saving it, etc..`,
 		fmt.Println("config called")
 		// config.Demo()
 		// config.ConfigWrite("3.11.7", "shared_mid", "build/src/python/Modules/Setup.local")
-		config.ConfigWrite("3.11.7", "shared_mid", "Setup.local")
+		config.ConfigWrite("3.11", "shared_max", "Setup.local")
 	},
 }
 

@@ -69,7 +69,7 @@ func DownloadTo(url string, downloaddir string, srcdir string) {
 		Cmd(".", "wget", "-P", downloaddir, url)
 	}
 	Cmd(downloaddir, "tar", "xvf", archive_name, "-C", srcdir)
-	// normalize extracted src_dir 
+	// normalize extracted src_dir
 	os.Rename(extracted, filepath.Join(srcdir, "python"))
 }
 

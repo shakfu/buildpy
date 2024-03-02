@@ -45,6 +45,16 @@ func (c *Config) SharedToDisabled(names ...string) {
 	c.Shared = AddNames(c.Shared, names...)
 }
 
+func (c *Config) DisabledToStatic(names ...string) {
+	c.Disabled = RemoveNames(c.Disabled, names...)
+	c.Static = AddNames(c.Static, names...)
+}
+
+func (c *Config) DisabledToShared(names ...string) {
+	c.Shared = RemoveNames(c.Shared, names...)
+	c.Static = AddNames(c.Static, names...)
+}
+
 func (c *Config) Sort() {
 	sort.Strings(c.Static)
 	sort.Strings(c.Shared)
@@ -381,21 +391,30 @@ var base_cfg = Config{
 }
 
 func ConfigWrite(version string, name string, tofile string) {
-	// var m = make(map[string]map[string]*Config)
-	// m["3.11"] = make(map[string]*Config)
-	// m["3.11"]["shared_max"] = &base_cfg
-	// m["3.11"]["shared_mid"] = &base_cfg
-	cfg1 := base_cfg
-	cfg1.StaticToDisabled("_decimal")
-	cfg1.Write(tofile)
-	// m["3.11"]["shared_mid"] = &cfg1
-	// m["3.11"]["shared_mid"].StaticToDisabled("_decimal")
-	// m["3.12"] = make(map[string]*Config)
-	// m["3.12"]["static_max"] = &base_cfg
-	// m["3.12"]["static_mid"] = &base_cfg
-	// m["3.12"]["static_mid"].StaticToDisabled("_decimal")
-	// return m[version][name]
+
+	// var m = map[string]*Config{}
+	var m = map[string]map[string]*Config{}
+	m["3.11"] = map[string]*Config{}
+
+	shared_max := base_cfg
+	shared_max.DisabledToShared("_ctypes")
+	shared_max.StaticToShared("_decimal", "_ssl", "_hashlib")
+	// shared_max.Write(tofile)
+
+	m["3.11"]["shared_max"] = &shared_max
+
+	m[version][name].Write(tofile)
 }
+
+    // def shared_max(self):
+    //     """shared build variant max-size"""
+    //     self.cfg["disabled"].remove("_ctypes")
+    //     self.move_static_to_shared("_decimal", "_ssl", "_hashlib")
+
+    // def shared_mid(self):
+    //     """shared build variant mid-size"""
+    //     self.disable_static("_decimal", "_ssl", "_hashlib")
+
 
 func Demo() {
 

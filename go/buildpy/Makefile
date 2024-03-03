@@ -1,5 +1,6 @@
+GO_FILES=$(shell go list ./... | grep -v /vendor/)
 
-.PHONY: all run build test clean fmt tidy repl rpath
+.PHONY: all run build test clean fmt vet tidy repl repl-test rpath
 
 
 all: build
@@ -14,21 +15,23 @@ build:
 repl:
 	@build/install/python/bin/python3
 
+repl-test:
+	@LD_LIBRARY_PATH=$(PWD)/build/install/python/lib build/install/python/bin/python3
+
 fmt:
-	@go fmt main.go
-	@go fmt cmd/*.go
-	@go fmt internal/config/*.go
-	@go fmt internal/shell/*.go
-	@go fmt internal/models/*.go
+	@go fmt $(GO_FILES)
+
+vet:
+	@go vet $(GO_FILES)
+
+testt:
+	@go test $(GO_FILES)
 
 clean:
 	@rm -rf ./buildpy ./build/src/python ./build/install/python
 
 rpath:
 	otool -L build/install/python/bin/python3
-
-test:
-	@echo "testing.."
 
 tidy: clean
 	@go mod tidy

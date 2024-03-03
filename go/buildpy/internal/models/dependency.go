@@ -53,12 +53,11 @@ func (d *Dependency) StaticLibsExist() bool {
 }
 
 func (d *Dependency) GitClone() {
-	shell.GitClone(d.RepoUrl, d.RepoBranch, d.Project.Src, false)
+	shell.GitClone(d.RepoUrl, d.RepoBranch, d.SrcDir(), false)
+	// shell.GitClone(d.RepoUrl, d.RepoBranch, d.Project.Src, false)
 }
 
-func InstallOpenssl(wg *sync.WaitGroup) {
-	defer wg.Done()
-
+func InstallOpenssl() {
 	ssl := Dependency{
 		Name:        "openssl",
 		Version:     "1.1.1w",
@@ -79,12 +78,14 @@ func InstallOpenssl(wg *sync.WaitGroup) {
 			log.Fatal("could not build openssl")
 		}
 	}
-
 }
 
-func InstallBzip2(wg *sync.WaitGroup) {
+func InstallOpensslAsync(wg *sync.WaitGroup) {
 	defer wg.Done()
+	InstallOpenssl()
+}
 
+func InstallBzip2() {
 	bz2 := Dependency{
 		Name:        "bzip2",
 		Version:     "1.0.8",
@@ -106,9 +107,12 @@ func InstallBzip2(wg *sync.WaitGroup) {
 	}
 }
 
-func InstallXz(wg *sync.WaitGroup) {
+func InstallBzip2Async(wg *sync.WaitGroup) {
 	defer wg.Done()
+	InstallBzip2()
+}
 
+func InstallXz() {
 	xz := Dependency{
 		Name:        "xz",
 		Version:     "5.6.0",
@@ -127,10 +131,15 @@ func InstallXz(wg *sync.WaitGroup) {
 			"-DBUILD_SHARED_LIBS=OFF", "-DENABLE_NLS=OFF", "-DENABLE_SMALL=ON",
 			"-DCMAKE_BUILD_TYPE=MinSizeRel",
 		)
-		shell.CmakeBuild(xz.BuildDir(), true)
+		shell.CmakeBuildEnv(xz.BuildDir(), true, envars)
 		shell.CmakeInstall(xz.BuildDir(), xz.Prefix())
 		if !xz.StaticLibsExist() {
 			log.Fatal("could not build lzma")
 		}
 	}
+}
+
+func InstallXzAsync(wg *sync.WaitGroup) {
+	defer wg.Done()
+	InstallXz()
 }

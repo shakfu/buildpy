@@ -1,10 +1,11 @@
 package cmd
 
 import (
+	"runtime"
+
 	"github.com/charmbracelet/log"
 	"github.com/shakfu/buildpy/internal/models"
 	"github.com/spf13/cobra"
-	"runtime"
 )
 
 // buildCmd represents the build command
@@ -64,7 +65,7 @@ func init() {
 	buildCmd.Flags().StringP("config", "c", "shared_mid", "Python version")
 	buildCmd.Flags().StringSliceP("opts", "o", []string{}, "Override python config options")
 	buildCmd.Flags().StringSliceP("pkgs", "p", []string{}, "Add python packages")
-	buildCmd.Flags().IntP("jobs", "j", 1, "Set # of build jobs")
+	buildCmd.Flags().IntP("jobs", "j", 4, "Set # of build jobs")
 	buildCmd.Flags().BoolP("optimize", "O", false, "Optimize build")
 	buildCmd.Flags().BoolP("reset", "r", false, "Reset build")
 	buildCmd.Flags().BoolP("debug", "d", false, "Debug build")

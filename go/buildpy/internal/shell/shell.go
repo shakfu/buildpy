@@ -128,6 +128,15 @@ func CmakeConfigureEnv(srcdir string, builddir string, envars []string, options 
 	CmdEnv(".", "cmake", envars, args...)
 }
 
+func CmakeBuildEnv(builddir string, release bool, envars []string) {
+	var args = []string{"--build", builddir}
+	if release {
+		args = append(args, "--config", "Release")
+	}
+	log.Info("CmakeBuild", "exe", "cmake", "args", args)
+	CmdEnv(".", "cmake", envars, args...)
+}
+
 func CmakeBuild(builddir string, release bool) {
 	var args = []string{"--build", builddir}
 	if release {

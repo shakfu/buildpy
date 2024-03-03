@@ -1,10 +1,5 @@
 package config
 
-import (
-	"os"
-	"text/template"
-)
-
 const Template string = `# -*- makefile -*-
 # name: {{.Name}}
 # version: {{.Version}}
@@ -42,18 +37,3 @@ const Template string = `# -*- makefile -*-
 
 # end
 `
-
-func createFileUsingTemplate(t *template.Template, filename string, data interface{}) error {
-	f, err := os.Create(filename)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	err = t.Execute(f, data)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}

@@ -4,7 +4,6 @@ import (
 	"strings"
 )
 
-
 func RemoveName(s []string, name string) []string {
 	for i, v := range s {
 		if v == name {

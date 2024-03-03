@@ -185,14 +185,13 @@ func (b *PythonBuilder) InstallDeps() {
 
 	wg.Add(3)
 
-	go InstallOpenssl(&wg)
-	go InstallBzip2(&wg)
-	go InstallXz(&wg)
+	go InstallOpensslAsync(&wg)
+	go InstallBzip2Async(&wg)
+	go InstallXzAsync(&wg)
 
 	log.Info("PythonBuilder.InstallDeps", "msg", "building openssl, bzip2, lzma deps")
 	wg.Wait()
 	log.Info("PythonBuilder.InstallDeps", "msg", "waiting for goroutines to finish...")
-
 }
 
 func (b *PythonBuilder) PreProcess() {

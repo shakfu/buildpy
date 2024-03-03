@@ -17,6 +17,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
 
 ## [0.0.1]
 
+- Added improved configuration cli options
+
 - Added multi-config write
 
 - Added serialization of `config.Config` instance as yaml
@@ -31,5 +33,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
 
 - Added `shell.GitClone` to download src via `git` for all deps and including python.
 
-- 
-
+- Added golang implementation of python `buildpy.py` script

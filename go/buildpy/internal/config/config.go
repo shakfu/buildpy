@@ -1,13 +1,14 @@
 package config
 
 import (
-	"github.com/charmbracelet/log"
-	"gopkg.in/yaml.v3"
 	"os"
+	"runtime"
 	"sort"
 	"strings"
 	"text/template"
-	"runtime"
+
+	"github.com/charmbracelet/log"
+	"gopkg.in/yaml.v3"
 )
 
 var PLATFORM = runtime.GOOS
@@ -363,74 +364,38 @@ func (c *Config) Sort() {
 	sort.Strings(c.Disabled)
 }
 
-func (c *Config) Write(path string) {
-	c.Sort()
-	funcMap := template.FuncMap{
-		"join": strings.Join,
+func (c *Config) Configure() {
+
+	if PLATFORM == "darwin" {
+		c.DisabledToStatic("_scproxy")
 	}
-
-	tmpl, err := template.New("test").Funcs(funcMap).Parse(Template)
-	if err != nil {
-		panic(err)
+	if PLATFORM == "linux" {
+		c.DisabledToStatic("ossaudiodev")
 	}
-	createFileUsingTemplate(tmpl, path, c)
-}
-
-func (c *Config) WriteYaml(path string) {
-	c.Sort()
-	d, err := yaml.Marshal(&c)
-	if err != nil {
-		log.Fatalf("error: %v", err)
-	}
-	log.Printf("--- t dump:\n%s\n\n", string(d))
-
-	f, err := os.Create(path)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer f.Close()
-
-	size, err := f.WriteString(string(d))
-	if err != nil {
-		log.Fatal(err)
-	}
-	log.Info("wrote yaml", "file", path, "size", size)
-
-	// f.Sync()
-}
-
-func (c *Config) WriteSetupLocal(path string) {
-
-    if PLATFORM == "darwin" {
-        c.DisabledToStatic("_scproxy")
-    }
-    if PLATFORM == "linux" {
-        c.DisabledToStatic("ossaudiodev")
-    }
 
 	if c.Ver() == "3.11" {
 
 		if c.Name == "static_max" {
-        	// fall through
- 
+			// fall through
+
 		} else if c.Name == "static_mid" {
 
 			c.StaticToDisabled("_decimal")
 
 			if PLATFORM == "linux" {
-	            c.Exts["_ssl"] = []string{
-	                "_ssl.c",
-	                "-I$(OPENSSL)/include",
-	                "-L$(OPENSSL)/lib",
-	                "-l:libssl.a -Wl,--exclude-libs,libssl.a",
-	                "-l:libcrypto.a -Wl,--exclude-libs,libcrypto.a",
-	            }
-	            c.Exts["_hashlib"] = []string{
-	                "_hashopenssl.c",
-	                "-I$(OPENSSL)/include",
-	                "-L$(OPENSSL)/lib",
-	                "-l:libcrypto.a -Wl,--exclude-libs,libcrypto.a",
-	            }
+				c.Exts["_ssl"] = []string{
+					"_ssl.c",
+					"-I$(OPENSSL)/include",
+					"-L$(OPENSSL)/lib",
+					"-l:libssl.a -Wl,--exclude-libs,libssl.a",
+					"-l:libcrypto.a -Wl,--exclude-libs,libcrypto.a",
+				}
+				c.Exts["_hashlib"] = []string{
+					"_hashopenssl.c",
+					"-I$(OPENSSL)/include",
+					"-L$(OPENSSL)/lib",
+					"-l:libcrypto.a -Wl,--exclude-libs,libcrypto.a",
+				}
 			}
 
 		} else if c.Name == "static_min" {
@@ -449,82 +414,148 @@ func (c *Config) WriteSetupLocal(path string) {
 
 	} else if c.Ver() == "3.12" {
 
-        c.Exts["_md5"] = []string{
-            "md5module.c",
-            "-I$(srcdir)/Modules/_hacl/include",
-            "_hacl/Hacl_Hash_MD5.c",
-            "-D_BSD_SOURCE",
-            "-D_DEFAULT_SOURCE",
-        }
+		c.Exts["_md5"] = []string{
+			"md5module.c",
+			"-I$(srcdir)/Modules/_hacl/include",
+			"_hacl/Hacl_Hash_MD5.c",
+			"-D_BSD_SOURCE",
+			"-D_DEFAULT_SOURCE",
+		}
 
-        c.Exts["_sha1"] = []string{
-	        "sha1module.c",
-	        "-I$(srcdir)/Modules/_hacl/include",
-	        "_hacl/Hacl_Hash_SHA1.c",
-	        "-D_BSD_SOURCE",
-	        "-D_DEFAULT_SOURCE",
-        }
+		c.Exts["_sha1"] = []string{
+			"sha1module.c",
+			"-I$(srcdir)/Modules/_hacl/include",
+			"_hacl/Hacl_Hash_SHA1.c",
+			"-D_BSD_SOURCE",
+			"-D_DEFAULT_SOURCE",
+		}
 
-        c.Exts["_sha2"] = []string{
-	        "sha2module.c",
-	        "-I$(srcdir)/Modules/_hacl/include",
-	        "_hacl/Hacl_Hash_SHA2.c",
-	        "-D_BSD_SOURCE",
-	        "-D_DEFAULT_SOURCE",
-	        "Modules/_hacl/libHacl_Hash_SHA2.a",
-        }
+		c.Exts["_sha2"] = []string{
+			"sha2module.c",
+			"-I$(srcdir)/Modules/_hacl/include",
+			"_hacl/Hacl_Hash_SHA2.c",
+			"-D_BSD_SOURCE",
+			"-D_DEFAULT_SOURCE",
+			"Modules/_hacl/libHacl_Hash_SHA2.a",
+		}
 
-        c.Exts["_sha3"] = []string{
-            "sha3module.c",
-            "-I$(srcdir)/Modules/_hacl/include",
-            "_hacl/Hacl_Hash_SHA3.c",
-            "-D_BSD_SOURCE",
-            "-D_DEFAULT_SOURCE",
-        }
+		c.Exts["_sha3"] = []string{
+			"sha3module.c",
+			"-I$(srcdir)/Modules/_hacl/include",
+			"_hacl/Hacl_Hash_SHA3.c",
+			"-D_BSD_SOURCE",
+			"-D_DEFAULT_SOURCE",
+		}
 
-        delete(c.Exts, "_sha256")
-        delete(c.Exts, "_sha512")
+		delete(c.Exts, "_sha256")
+		delete(c.Exts, "_sha512")
 
-        c.Static = append(c.Static, "_sha2")
-        c.Disabled = append(c.Static, "_xxinterpchannels")
+		c.Static = append(c.Static, "_sha2")
+		c.Disabled = append(c.Static, "_xxinterpchannels")
 
-        c.Static = RemoveNames(c.Static, "_sha256", "_sha512")
+		c.Static = RemoveNames(c.Static, "_sha256", "_sha512")
 
-        if c.Name == "static_max" {
-        	// fall through
-        } else if c.Name == "static_mid" {
+		if c.Name == "static_max" {
+			// fall through
+		} else if c.Name == "static_mid" {
 
 			c.StaticToDisabled("_decimal")
 
 			if PLATFORM == "linux" {
-	            c.Exts["_ssl"] = []string{
-	                "_ssl.c",
-	                "-I$(OPENSSL)/include",
-	                "-L$(OPENSSL)/lib",
-	                "-l:libssl.a -Wl,--exclude-libs,libssl.a",
-	                "-l:libcrypto.a -Wl,--exclude-libs,libcrypto.a",
-	            }
-	            c.Exts["_hashlib"] = []string{
-	                "_hashopenssl.c",
-	                "-I$(OPENSSL)/include",
-	                "-L$(OPENSSL)/lib",
-	                "-l:libcrypto.a -Wl,--exclude-libs,libcrypto.a",
-	            }
+				c.Exts["_ssl"] = []string{
+					"_ssl.c",
+					"-I$(OPENSSL)/include",
+					"-L$(OPENSSL)/lib",
+					"-l:libssl.a -Wl,--exclude-libs,libssl.a",
+					"-l:libcrypto.a -Wl,--exclude-libs,libcrypto.a",
+				}
+				c.Exts["_hashlib"] = []string{
+					"_hashopenssl.c",
+					"-I$(OPENSSL)/include",
+					"-L$(OPENSSL)/lib",
+					"-l:libcrypto.a -Wl,--exclude-libs,libcrypto.a",
+				}
 			}
 
-        } else if c.Name == "static_min" {
+		} else if c.Name == "static_min" {
 
 			c.StaticToDisabled("_bz2", "_decimal", "_csv", "_json", "_lzma", "_scproxy", "_sqlite3", "_ssl", "pyexpat", "readline")
 
-		} else if c.Name == "static_min" {
+		} else if c.Name == "shared_max" {
 
 			c.DisabledToShared("_ctypes")
 			c.StaticToShared("_decimal", "_ssl", "_hashlib")
-		} else if c.Name == "static_min" {
+		} else if c.Name == "shared_mid" {
 			c.StaticToDisabled("_decimal", "_ssl", "_hashlib")
 		}
 
 	}
+}
 
-	c.Write(path)
+func (c *Config) getTemplate() *template.Template {
+	c.Sort()
+	funcMap := template.FuncMap{
+		"join": strings.Join,
+	}
+
+	tmpl, err := template.New("test").Funcs(funcMap).Parse(Template)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return tmpl
+}
+
+func (c *Config) PrintSetupLocal() {
+	tmpl := c.getTemplate()
+	err := tmpl.Execute(os.Stdout, c)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func (c *Config) WriteSetupLocal(path string) {
+	tmpl := c.getTemplate()
+	f, err := os.Create(path)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer f.Close()
+
+	err = tmpl.Execute(f, c)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func (c *Config) getYaml() []byte {
+	c.Sort()
+	data, err := yaml.Marshal(&c)
+	if err != nil {
+		log.Fatalf("error: %v", err)
+	}
+	return data
+
+}
+
+func (c *Config) PrintYaml() {
+	data := c.getYaml()
+	log.Printf("--- t dump:\n%s\n\n", string(data))
+}
+
+func (c *Config) WriteYaml(path string) {
+	data := c.getYaml()
+
+	f, err := os.Create(path)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer f.Close()
+
+	size, err := f.WriteString(string(data))
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Info("wrote yaml", "file", path, "size", size)
+
+	// f.Sync()
 }

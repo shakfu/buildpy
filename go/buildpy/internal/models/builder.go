@@ -231,8 +231,8 @@ func (b *PythonBuilder) Configure() {
 	var args = []string{"./configure", prefix}
 	args = append(args, b.ConfigOptions...)
 	log.Info("PythonBuilder.Configure", "pyver", b.Version, "opts", args)
-	config.ConfigWrite(b.Ver(), b.Config,
-		filepath.Join(b.SrcDir(), "Modules", "Setup.local"))
+	cfg := config.NewConfig(b.Config, b.Version)
+	cfg.WriteSetupLocal(filepath.Join(b.SrcDir(), "Modules", "Setup.local"))
 	shell.ShellCmd(b.SrcDir(), args...)
 }
 
@@ -341,15 +341,15 @@ func (b *PythonBuilder) PostProcess() {
 
 func (b *PythonBuilder) Process() {
 	log.Info("PythonBuilder.Process", "ver", b.Version, "cfg", b.Config)
-	// b.CheckDeps()
-	// b.InstallDeps()
-	// b.PreProcess()
-	// b.Setup()
-	// b.Configure()
-	// b.Build()
-	// b.Install()
-	// b.Clean()
-	// b.ZipLib()
+	b.CheckDeps()
+	b.InstallDeps()
+	b.PreProcess()
+	b.Setup()
+	b.Configure()
+	b.Build()
+	b.Install()
+	b.Clean()
+	b.ZipLib()
 	b.PostProcess()
 	log.Info("PythonBuilder.Process", "status", "DONE")
 }

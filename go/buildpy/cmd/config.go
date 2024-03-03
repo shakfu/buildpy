@@ -28,12 +28,12 @@ saving it, etc..`,
 		// log.Info("Environment", "runtime", runtime.Version(), "platform", runtime.GOOS, "arch", runtime.GOARCH)
 		// log.Info("build cmd", "ver", version, "cfg", config, "opts", opts, "pkgs", pkgs, "jobs", jobs)
 		// config.Demo()
-		var ver = config.ToVer(version)
 
+		local_cfg := config.NewConfig(cfg, version)
 		if write {
-			config.ConfigWrite(ver, cfg, "./Setup.local")
+			local_cfg.WriteSetupLocal("./Setup.local")
 		} else {
-			config.ConfigWrite(ver, cfg, "build/src/python/Modules/Setup.local")
+			local_cfg.WriteSetupLocal("build/src/python/Modules/Setup.local")
 		}
 	},
 }

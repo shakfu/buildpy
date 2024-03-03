@@ -318,6 +318,10 @@ func NewConfig(name string, version string) *Config {
 	}
 }
 
+func (c *Config) Ver() string {
+	return strings.Join(strings.Split(c.Version, ".")[:2], ".")
+}
+
 func (c *Config) MoveNames(src []string, dst []string, names ...string) {
 	RemoveNames(src, names...)
 	AddNames(dst, names...)
@@ -395,36 +399,33 @@ func (c *Config) WriteYaml(path string) {
 	// f.Sync()
 }
 
-func ConfigWrite(version string, name string, tofile string) {
-
-	var cfg = NewConfig(name, version)
+func (c *Config) WriteSetupLocal(path string) {
 
     if PLATFORM == "darwin" {
-        cfg.DisabledToStatic("_scproxy")
+        c.DisabledToStatic("_scproxy")
     }
     if PLATFORM == "linux" {
-        cfg.DisabledToStatic("ossaudiodev")
+        c.DisabledToStatic("ossaudiodev")
     }
 
-	if version == "3.11" {
+	if c.Ver() == "3.11" {
 
-		if name == "static_max" {
-			cfg.Write(tofile)
-			return
+		if c.Name == "static_max" {
+        	// fall through
+ 
+		} else if c.Name == "static_mid" {
 
-		} else if name == "static_mid" {
-
-			cfg.StaticToDisabled("_decimal")
+			c.StaticToDisabled("_decimal")
 
 			if PLATFORM == "linux" {
-	            cfg.Exts["_ssl"] = []string{
+	            c.Exts["_ssl"] = []string{
 	                "_ssl.c",
 	                "-I$(OPENSSL)/include",
 	                "-L$(OPENSSL)/lib",
 	                "-l:libssl.a -Wl,--exclude-libs,libssl.a",
 	                "-l:libcrypto.a -Wl,--exclude-libs,libcrypto.a",
 	            }
-	            cfg.Exts["_hashlib"] = []string{
+	            c.Exts["_hashlib"] = []string{
 	                "_hashopenssl.c",
 	                "-I$(OPENSSL)/include",
 	                "-L$(OPENSSL)/lib",
@@ -432,23 +433,23 @@ func ConfigWrite(version string, name string, tofile string) {
 	            }
 			}
 
-		} else if name == "static_min" {
+		} else if c.Name == "static_min" {
 
-			cfg.StaticToDisabled("_bz2", "_decimal", "_csv", "_json", "_lzma", "_scproxy", "_sqlite3", "_ssl", "pyexpat", "readline")
+			c.StaticToDisabled("_bz2", "_decimal", "_csv", "_json", "_lzma", "_scproxy", "_sqlite3", "_ssl", "pyexpat", "readline")
 
-		} else if name == "shared_max" {
+		} else if c.Name == "shared_max" {
 
-			cfg.DisabledToShared("_ctypes")
-			cfg.StaticToShared("_decimal", "_ssl", "_hashlib")
+			c.DisabledToShared("_ctypes")
+			c.StaticToShared("_decimal", "_ssl", "_hashlib")
 
-		} else if name == "shared_mid" {
-			cfg.StaticToDisabled("_decimal", "_ssl", "_hashlib")
+		} else if c.Name == "shared_mid" {
+			c.StaticToDisabled("_decimal", "_ssl", "_hashlib")
 
 		}
 
-	} else if version == "3.12" {
+	} else if c.Ver() == "3.12" {
 
-        cfg.Exts["_md5"] = []string{
+        c.Exts["_md5"] = []string{
             "md5module.c",
             "-I$(srcdir)/Modules/_hacl/include",
             "_hacl/Hacl_Hash_MD5.c",
@@ -456,7 +457,7 @@ func ConfigWrite(version string, name string, tofile string) {
             "-D_DEFAULT_SOURCE",
         }
 
-        cfg.Exts["_sha1"] = []string{
+        c.Exts["_sha1"] = []string{
 	        "sha1module.c",
 	        "-I$(srcdir)/Modules/_hacl/include",
 	        "_hacl/Hacl_Hash_SHA1.c",
@@ -464,7 +465,7 @@ func ConfigWrite(version string, name string, tofile string) {
 	        "-D_DEFAULT_SOURCE",
         }
 
-        cfg.Exts["_sha2"] = []string{
+        c.Exts["_sha2"] = []string{
 	        "sha2module.c",
 	        "-I$(srcdir)/Modules/_hacl/include",
 	        "_hacl/Hacl_Hash_SHA2.c",
@@ -473,7 +474,7 @@ func ConfigWrite(version string, name string, tofile string) {
 	        "Modules/_hacl/libHacl_Hash_SHA2.a",
         }
 
-        cfg.Exts["_sha3"] = []string{
+        c.Exts["_sha3"] = []string{
             "sha3module.c",
             "-I$(srcdir)/Modules/_hacl/include",
             "_hacl/Hacl_Hash_SHA3.c",
@@ -481,30 +482,29 @@ func ConfigWrite(version string, name string, tofile string) {
             "-D_DEFAULT_SOURCE",
         }
 
-        delete(cfg.Exts, "_sha256")
-        delete(cfg.Exts, "_sha512")
+        delete(c.Exts, "_sha256")
+        delete(c.Exts, "_sha512")
 
-        cfg.Static = append(cfg.Static, "_sha2")
-        cfg.Disabled = append(cfg.Static, "_xxinterpchannels")
+        c.Static = append(c.Static, "_sha2")
+        c.Disabled = append(c.Static, "_xxinterpchannels")
 
-        cfg.Static = RemoveNames(cfg.Static, "_sha256", "_sha512")
+        c.Static = RemoveNames(c.Static, "_sha256", "_sha512")
 
-        if name == "static_max" {
-        	cfg.Write(tofile)
-        	return
-        } else if name == "static_mid" {
+        if c.Name == "static_max" {
+        	// fall through
+        } else if c.Name == "static_mid" {
 
-			cfg.StaticToDisabled("_decimal")
+			c.StaticToDisabled("_decimal")
 
 			if PLATFORM == "linux" {
-	            cfg.Exts["_ssl"] = []string{
+	            c.Exts["_ssl"] = []string{
 	                "_ssl.c",
 	                "-I$(OPENSSL)/include",
 	                "-L$(OPENSSL)/lib",
 	                "-l:libssl.a -Wl,--exclude-libs,libssl.a",
 	                "-l:libcrypto.a -Wl,--exclude-libs,libcrypto.a",
 	            }
-	            cfg.Exts["_hashlib"] = []string{
+	            c.Exts["_hashlib"] = []string{
 	                "_hashopenssl.c",
 	                "-I$(OPENSSL)/include",
 	                "-L$(OPENSSL)/lib",
@@ -512,19 +512,19 @@ func ConfigWrite(version string, name string, tofile string) {
 	            }
 			}
 
-        } else if name == "static_min" {
+        } else if c.Name == "static_min" {
 
-			cfg.StaticToDisabled("_bz2", "_decimal", "_csv", "_json", "_lzma", "_scproxy", "_sqlite3", "_ssl", "pyexpat", "readline")
+			c.StaticToDisabled("_bz2", "_decimal", "_csv", "_json", "_lzma", "_scproxy", "_sqlite3", "_ssl", "pyexpat", "readline")
 
-		} else if name == "static_min" {
+		} else if c.Name == "static_min" {
 
-			cfg.DisabledToShared("_ctypes")
-			cfg.StaticToShared("_decimal", "_ssl", "_hashlib")
-		} else if name == "static_min" {
-			cfg.StaticToDisabled("_decimal", "_ssl", "_hashlib")
+			c.DisabledToShared("_ctypes")
+			c.StaticToShared("_decimal", "_ssl", "_hashlib")
+		} else if c.Name == "static_min" {
+			c.StaticToDisabled("_decimal", "_ssl", "_hashlib")
 		}
 
 	}
 
-	cfg.Write(tofile)
+	c.Write(path)
 }

@@ -309,18 +309,18 @@ func (b *PythonBuilder) MakeRelocatable() {
 	if PLATFORM == "darwin" {
 		if b.BuildType() == "shared" {
 			var dylib = filepath.Join(b.Prefix(), "lib", b.DylibName())
-			var rpath = fmt.Sprintf("@rpath", b.DylibName())
+			var rpath = fmt.Sprintf("@rpath/%s", b.DylibName())
 			var to = fmt.Sprintf("@executable_path/../lib/%s", b.DylibName())
 			var exe = filepath.Join(b.Prefix(), "bin", b.NameVer())
-			os.Chmod(dylib, 777)
+			os.Chmod(dylib, 0777) // FIXME: should restore to perms after change
 			shell.Cmd(".", "install_name_tool", "-id", rpath, dylib)
 			shell.Cmd(".", "install_name_tool", "-change", dylib, to, exe)
 		} else if b.BuildType() == "framework" {
 			var dylib = filepath.Join(b.Prefix(), b.Name)
-			var rpath = fmt.Sprintf("@rpath", b.Name)
+			var rpath = fmt.Sprintf("@rpath/%s", b.Name)
 			var to = fmt.Sprintf("@executable_path/../%s", b.Name)
 			var exe = filepath.Join(b.Prefix(), "bin", b.NameVer())
-			os.Chmod(dylib, 777)
+			os.Chmod(dylib, 0777)
 			shell.Cmd(".", "install_name_tool)", "-id", rpath, dylib)
 			shell.Cmd(".", "install_name_tool", "-change", dylib, to, exe)
 		}

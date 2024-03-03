@@ -122,7 +122,8 @@ func InstallXz(wg *sync.WaitGroup) {
 	if !xz.StaticLibsExist() {
 		xz.Project.Setup()
 		xz.GitClone()
-		shell.CmakeConfigure(xz.SrcDir(), xz.BuildDir(),
+		var envars = []string{"CFLAGS=-fPIC"}
+		shell.CmakeConfigureEnv(xz.SrcDir(), xz.BuildDir(), envars,
 			"-DBUILD_SHARED_LIBS=OFF", "-DENABLE_NLS=OFF", "-DENABLE_SMALL=ON",
 			"-DCMAKE_BUILD_TYPE=MinSizeRel",
 		)

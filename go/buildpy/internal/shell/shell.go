@@ -35,6 +35,23 @@ func Cmd(cwd string, exe string, args ...string) {
 	}
 }
 
+func CmdEnv(cwd string, exe string, envars []string, args ...string) {
+	cmd := exec.Command(exe, args...)
+	cmd.Env = os.Environ()
+	cmd.Env = append(cmd.Env, envars...)
+	cmd.Dir = cwd
+	log.Info("Cmd", "exe", exe, "args", args)
+	// store all output in `out` for log in case of error
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	cmd.Stderr = cmd.Stdout
+
+	if err := cmd.Run(); err != nil {
+		log.Fatal("error executing", "exe", exe,
+			"err", err, "oug", out.String())
+	}
+}
+
 func ShellCmd(cwd string, args ...string) {
 	Cmd(cwd, "bash", args...)
 }
@@ -102,6 +119,13 @@ func CmakeConfigure(srcdir string, builddir string, options ...string) {
 	if err := cmake.Run(); err != nil {
 		log.Fatal(err)
 	}
+}
+
+func CmakeConfigureEnv(srcdir string, builddir string, envars []string, options ...string) {
+	var args = []string{"-S", srcdir, "-B", builddir}
+	args = append(args, options...)
+	log.Info("CmakeConfigure", "exe", "cmake", "env", envars, "args", args)
+	CmdEnv(".", "cmake", envars, args...)
 }
 
 func CmakeBuild(builddir string, release bool) {

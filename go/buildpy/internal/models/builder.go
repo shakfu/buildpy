@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 
@@ -12,8 +13,8 @@ import (
 	"github.com/shakfu/buildpy/internal/shell"
 )
 
-var PLATFORM = shell.GetPlatform()
-var ARCH = shell.GetArch()
+const PLATFORM = runtime.GOOS
+const ARCH = runtime.GOARCH
 
 type Builder interface {
 	Url() string

@@ -11,7 +11,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-var PLATFORM = runtime.GOOS
+const PLATFORM = runtime.GOOS
 
 type Config struct {
 	Name     string
@@ -492,7 +492,7 @@ func (c *Config) Configure() {
 	}
 }
 
-func (c *Config) getTemplate() *template.Template {
+func (c *Config) ToSetupLocal() *template.Template {
 	c.Sort()
 	funcMap := template.FuncMap{
 		"join": strings.Join,
@@ -506,7 +506,7 @@ func (c *Config) getTemplate() *template.Template {
 }
 
 func (c *Config) PrintSetupLocal() {
-	tmpl := c.getTemplate()
+	tmpl := c.ToSetupLocal()
 	err := tmpl.Execute(os.Stdout, c)
 	if err != nil {
 		log.Fatal(err)
@@ -514,7 +514,7 @@ func (c *Config) PrintSetupLocal() {
 }
 
 func (c *Config) WriteSetupLocal(path string) {
-	tmpl := c.getTemplate()
+	tmpl := c.ToSetupLocal()
 	f, err := os.Create(path)
 	if err != nil {
 		log.Fatal(err)
@@ -527,23 +527,35 @@ func (c *Config) WriteSetupLocal(path string) {
 	}
 }
 
-func (c *Config) getYaml() []byte {
+func (c *Config) FromYaml(path string) {
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = yaml.Unmarshal(data, c)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func (c *Config) ToYaml() string {
 	c.Sort()
 	data, err := yaml.Marshal(&c)
 	if err != nil {
 		log.Fatalf("error: %v", err)
 	}
-	return data
-
+	return string(data)
 }
 
 func (c *Config) PrintYaml() {
-	data := c.getYaml()
-	log.Printf("--- t dump:\n%s\n\n", string(data))
+	data := c.ToYaml()
+	log.Printf("\n%s\n", data)
 }
 
 func (c *Config) WriteYaml(path string) {
-	data := c.getYaml()
+	data := c.ToYaml()
 
 	f, err := os.Create(path)
 	if err != nil {
@@ -551,11 +563,9 @@ func (c *Config) WriteYaml(path string) {
 	}
 	defer f.Close()
 
-	size, err := f.WriteString(string(data))
+	size, err := f.WriteString(data)
 	if err != nil {
 		log.Fatal(err)
 	}
 	log.Info("wrote yaml", "file", path, "size", size)
-
-	// f.Sync()
 }

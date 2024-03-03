@@ -6,19 +6,10 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strings"
 
 	"github.com/charmbracelet/log"
 )
-
-func GetPlatform() string {
-	return runtime.GOOS
-}
-
-func GetArch() string {
-	return runtime.GOARCH
-}
 
 func Cmd(cwd string, exe string, args ...string) {
 	cmd := exec.Command(exe, args...)

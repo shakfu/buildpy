@@ -31,6 +31,7 @@ From source. Can be used as follows:
 		git, _ := cmd.Flags().GetBool("git")
 
 		log.SetTimeFormat("15:04:05")
+		log.SetLevel(log.DebugLevel)
 		if debug {
 			log.SetReportCaller(true)
 		}
@@ -62,7 +63,7 @@ func init() {
 	// is called directly, e.g.:
 	// buildCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 	buildCmd.Flags().StringP("version", "v", "3.11.7", "Build configuration")
-	buildCmd.Flags().StringP("config", "c", "shared_mid", "Python version")
+	buildCmd.Flags().StringP("config", "c", "static_max", "Python version")
 	buildCmd.Flags().StringSliceP("opts", "o", []string{}, "Override python config options")
 	buildCmd.Flags().StringSliceP("pkgs", "p", []string{}, "Add python packages")
 	buildCmd.Flags().IntP("jobs", "j", 4, "Set # of build jobs")

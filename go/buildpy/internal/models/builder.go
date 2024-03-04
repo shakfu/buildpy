@@ -64,6 +64,7 @@ func NewPythonBuilder(version string, config string) *PythonBuilder {
 			"__phello__",
 			"__pycache__",
 			"_codecs_*.so",
+			"_ctypes_test*",
 			"_test*",
 			"_tk*",
 			"_xx*.so",
@@ -190,9 +191,8 @@ func (b *PythonBuilder) InstallDeps() {
 	go InstallBzip2Async(&wg)
 	go InstallXzAsync(&wg)
 
-	log.Info("PythonBuilder.InstallDeps", "msg", "building openssl, bzip2, lzma deps")
+	log.Info("PythonBuilder.InstallDeps", "deps", "openssl, bzip2, lzma")
 	wg.Wait()
-	log.Info("PythonBuilder.InstallDeps", "msg", "waiting for goroutines to finish...")
 }
 
 func (b *PythonBuilder) PreProcess() {
@@ -210,7 +210,7 @@ func (b *PythonBuilder) Setup() {
 }
 
 func (b *PythonBuilder) Configure() {
-	log.Info(b.BuildType())
+	log.Info("PythonBuilder.Configure", "cfg", b.Config, "ver", b.Ver())
 	if b.BuildType() == "shared" {
 		b.ConfigOptions = append(b.ConfigOptions,
 			"--enable-shared", "--without-static-libpython")
@@ -230,15 +230,18 @@ func (b *PythonBuilder) Configure() {
 	var prefix = fmt.Sprintf("--prefix=%s", b.Prefix())
 	var args = []string{"./configure", prefix}
 	args = append(args, b.ConfigOptions...)
-	log.Info("PythonBuilder.Configure", "pyver", b.Version, "opts", args)
+	var setupLocal = filepath.Join(b.SrcDir(), "Modules", "Setup.local")
+	log.Info("PythonBuilder.Configure", "write", setupLocal)
 	cfg := config.NewConfig(b.Config, b.Version)
-	cfg.WriteSetupLocal(filepath.Join(b.SrcDir(), "Modules", "Setup.local"))
+	cfg.Configure()
+	cfg.WriteSetupLocal(setupLocal)
+	log.Info("PythonBuilder.Configure", "opts", args)
 	shell.ShellCmd(b.SrcDir(), args...)
 }
 
 func (b *PythonBuilder) Build() {
 	log.Info("PythonBuilder.Build")
-	shell.Make(b.SrcDir(), "-j", fmt.Sprintf("%d", b.Jobs))
+	shell.Make(b.SrcDir(), fmt.Sprintf("-j%d", b.Jobs))
 }
 
 func (b *PythonBuilder) Install() {

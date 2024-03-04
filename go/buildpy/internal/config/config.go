@@ -366,48 +366,61 @@ func (c *Config) Sort() {
 
 func (c *Config) Configure() {
 
+	log.Debug("config.Configure: starting", "plat", PLATFORM, "cfg", c.Name, "ver", c.Version)
+
 	if PLATFORM == "darwin" {
+		log.Debug("config.Configure: common > darwin")
 		c.DisabledToStatic("_scproxy")
 	}
 	if PLATFORM == "linux" {
+		log.Debug("config.Configure: common > linux")
+
 		c.DisabledToStatic("ossaudiodev")
+
+		c.Exts["_ssl"] = []string{
+			"_ssl.c",
+			"-I$(OPENSSL)/include",
+			"-L$(OPENSSL)/lib",
+			"-l:libssl.a -Wl,--exclude-libs,libssl.a",
+			"-l:libcrypto.a -Wl,--exclude-libs,libcrypto.a",
+		}
+		c.Exts["_hashlib"] = []string{
+			"_hashopenssl.c",
+			"-I$(OPENSSL)/include",
+			"-L$(OPENSSL)/lib",
+			"-l:libcrypto.a -Wl,--exclude-libs,libcrypto.a",
+		}
 	}
 
 	if c.Ver() == "3.11" {
 
 		if c.Name == "static_max" {
-			// fall through
-
-		} else if c.Name == "static_mid" {
-
-			c.StaticToDisabled("_decimal")
-
+			log.Debug("config.Configure: 3.11 > static_max")
 			if PLATFORM == "linux" {
-				c.Exts["_ssl"] = []string{
-					"_ssl.c",
-					"-I$(OPENSSL)/include",
-					"-L$(OPENSSL)/lib",
-					"-l:libssl.a -Wl,--exclude-libs,libssl.a",
-					"-l:libcrypto.a -Wl,--exclude-libs,libcrypto.a",
-				}
-				c.Exts["_hashlib"] = []string{
-					"_hashopenssl.c",
-					"-I$(OPENSSL)/include",
-					"-L$(OPENSSL)/lib",
-					"-l:libcrypto.a -Wl,--exclude-libs,libcrypto.a",
-				}
+				c.StaticToDisabled("_decimal")
 			}
 
-		} else if c.Name == "static_min" {
+		} else if c.Name == "static_mid" {
+			log.Debug("config.Configure: 3.11 > static_mid")
+			c.StaticToDisabled("_decimal")
 
-			c.StaticToDisabled("_bz2", "_decimal", "_csv", "_json", "_lzma", "_scproxy", "_sqlite3", "_ssl", "pyexpat", "readline")
+		} else if c.Name == "static_min" {
+			log.Debug("config.Configure: 3.11 > static_min")
+			c.StaticToDisabled("_bz2", "_decimal", "_csv", "_json",
+				"_lzma", "_scproxy", "_sqlite3", "_ssl", "pyexpat",
+				"readline")
 
 		} else if c.Name == "shared_max" {
-
-			c.DisabledToShared("_ctypes")
-			c.StaticToShared("_decimal", "_ssl", "_hashlib")
+			log.Debug("config.Configure: 3.11 > shared_max")
+			if PLATFORM == "linux" {
+				c.StaticToDisabled("_decimal")
+			} else {
+				c.DisabledToShared("_ctypes")
+				c.StaticToShared("_decimal", "_ssl", "_hashlib")
+			}
 
 		} else if c.Name == "shared_mid" {
+			log.Debug("config.Configure: 3.11 > shared_mid")
 			c.StaticToDisabled("_decimal", "_ssl", "_hashlib")
 
 		}
@@ -456,39 +469,27 @@ func (c *Config) Configure() {
 		c.Static = RemoveNames(c.Static, "_sha256", "_sha512")
 
 		if c.Name == "static_max" {
-			// fall through
+			log.Debug("config.Configure: 3.12 > static_max")
+			if PLATFORM == "linux" {
+				c.StaticToDisabled("_decimal")
+			}
 		} else if c.Name == "static_mid" {
-
+			log.Debug("config.Configure: 3.12 > static_mid")
 			c.StaticToDisabled("_decimal")
 
-			if PLATFORM == "linux" {
-				c.Exts["_ssl"] = []string{
-					"_ssl.c",
-					"-I$(OPENSSL)/include",
-					"-L$(OPENSSL)/lib",
-					"-l:libssl.a -Wl,--exclude-libs,libssl.a",
-					"-l:libcrypto.a -Wl,--exclude-libs,libcrypto.a",
-				}
-				c.Exts["_hashlib"] = []string{
-					"_hashopenssl.c",
-					"-I$(OPENSSL)/include",
-					"-L$(OPENSSL)/lib",
-					"-l:libcrypto.a -Wl,--exclude-libs,libcrypto.a",
-				}
-			}
-
 		} else if c.Name == "static_min" {
-
+			log.Debug("config.Configure: 3.12 > static_min")
 			c.StaticToDisabled("_bz2", "_decimal", "_csv", "_json", "_lzma", "_scproxy", "_sqlite3", "_ssl", "pyexpat", "readline")
 
 		} else if c.Name == "shared_max" {
-
+			log.Debug("config.Configure: 3.12 > shared_max")
 			c.DisabledToShared("_ctypes")
 			c.StaticToShared("_decimal", "_ssl", "_hashlib")
+
 		} else if c.Name == "shared_mid" {
+			log.Debug("config.Configure: 3.12 > shared_max")
 			c.StaticToDisabled("_decimal", "_ssl", "_hashlib")
 		}
-
 	}
 }
 

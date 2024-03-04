@@ -40,7 +40,7 @@ var configCmd = &cobra.Command{
 				cfg.WriteSetupLocal(write)
 			} else {
 				cfg.PrintSetupLocal()
-				// cfg.WriteSetupLocal("build/src/python/Modules/Setup.local")
+				cfg.WriteSetupLocal("build/src/python/Modules/Setup.local")
 			}
 		}
 

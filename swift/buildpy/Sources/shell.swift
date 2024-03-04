@@ -2,12 +2,28 @@ import Foundation
 
 
 
+
+
 class Shell {
     
     let fm: FileManager
 
     init() {
         self.fm = FileManager.default
+    }
+    
+    // var cwd: String {
+    //     return self.fm.currentDirectoryPath
+    // }
+
+    func cwd() -> String {
+        return self.fm.currentDirectoryPath
+    }
+
+    func chdir(path: String) -> () {
+        if !self.fm.changeCurrentDirectoryPath(path) {
+            print("Could not change working diectory to \(path)")            
+        }
     }
 
     func iterdir(path: String) -> [String] {
@@ -19,6 +35,60 @@ class Shell {
         }
     }
 
+    func userdir() -> String {
+        return self.fm.homeDirectoryForCurrentUser.absoluteString
+    }
+
+    func tempdir() -> String {
+        return self.fm.temporaryDirectory.absoluteString
+    }
+
+    func mkdir(path: String) -> () {
+        do {
+            try self.fm.createDirectory(
+                atPath: path, 
+                withIntermediateDirectories: true, 
+                attributes: nil)
+        } catch {
+            print("Error creating directory: \(error)")
+        }
+    }
+
+    func mkfile(path: String, text: String) -> () {
+        if !self.fm.createFile(atPath: path, contents: text.data(using: .utf8), attributes: [:]) {
+            print("Could not create file at: \(path)")
+        }
+    }
+
+    func copy(src: String, dst: String) -> () {
+        do {
+            try self.fm.copyItem(atPath: src, toPath: dst)
+        } catch {
+            print("could not copy \(src) to \(dst)")
+        }
+    }
+
+    func move(src: String, dst: String) -> () {
+        do {
+            try self.fm.moveItem(atPath: src, toPath: dst)
+        } catch {
+            print("could not move \(src) to \(dst)")
+        }
+    }
+
+    func symlink(src: String, dst: String) -> () {
+        do {
+            try self.fm.createSymbolicLink(atPath: src, withDestinationPath: dst)
+        } catch {
+            print("could not symlink \(src) to \(dst)")
+        }        
+    }
+
+    func exists(path: String) -> Bool {
+        // check if either file or directory exists
+        return self.fm.fileExists(atPath: path)
+    }
+
     func remove(path: String) -> () {
         do {
             try self.fm.removeItem(atPath: path)
@@ -26,6 +96,18 @@ class Shell {
             print("could not remove \(path)")
         }
 
+    }
+
+    func trash(path: String) -> () {
+        guard let url = URL(string: path) else {
+            print("could not convert \(path) to url")
+            return
+        }
+        do {
+            try self.fm.trashItem(at: url, resultingItemURL: nil)
+        } catch {
+            print("could not trash \(path)")
+        }
     }
 
     func walk(path: String) -> [String] {

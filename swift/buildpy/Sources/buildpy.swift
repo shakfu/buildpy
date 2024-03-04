@@ -24,19 +24,25 @@ struct buildpy: ParsableCommand {
     var reset = false
 
     mutating func run() throws {
-        print("""
-            version: \(version)
-            config: \(config)
-            opts: \(opts)
-            pkgs: \(pkgs)
-            debug: \(debug)
-            optimize: \(optimize)
-            reset: \(reset)
-            """
-        )
+        // print("""
+        //     version: \(version)
+        //     config: \(config)
+        //     opts: \(opts)
+        //     pkgs: \(pkgs)
+        //     debug: \(debug)
+        //     optimize: \(optimize)
+        //     reset: \(reset)
+        //     """
+        // )
 
-        let res = execute(exe: "/usr/bin/git", args: "--version")
-        print("output: \(res.out)")
-        print("error: \(res.err)")
+        let shell = Shell()
+        // let res = shell.cmd(exe: "/usr/bin/git", args: "--version")
+        // print("output: \(res.out)")
+        // print("error: \(res.err)")
+
+        // for f in shell.iterdir(path:".") {
+        //     print(f)
+        // }
+        shell.demo()
     }
 }

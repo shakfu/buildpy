@@ -21,6 +21,8 @@ var configCmd = &cobra.Command{
 		name, _ := cmd.Flags().GetString("name")
 
 		log.SetTimeFormat("15:04:05")
+		log.SetLevel(log.DebugLevel)
+
 		fmt.Println("config called")
 
 		cfg := config.NewConfig(name, version)
@@ -39,7 +41,7 @@ var configCmd = &cobra.Command{
 			if write != "" {
 				cfg.WriteSetupLocal(write)
 			} else {
-				cfg.PrintSetupLocal()
+				// cfg.PrintSetupLocal()
 				cfg.WriteSetupLocal("build/src/python/Modules/Setup.local")
 			}
 		}

@@ -323,39 +323,52 @@ func (c *Config) Ver() string {
 	return strings.Join(strings.Split(c.Version, ".")[:2], ".")
 }
 
-func (c *Config) MoveNames(src []string, dst []string, names ...string) {
-	RemoveNames(src, names...)
-	AddNames(dst, names...)
-}
-
 func (c *Config) StaticToShared(names ...string) {
-	c.Static = RemoveNames(c.Static, names...)
-	c.Shared = AddNames(c.Shared, names...)
+	log.Debug("config.StaticToShared", "names", names)
+	c.Static = RemoveNames("static", c.Static, names...)
+	CheckRemoval("static", c.Static, names...)
+	c.Shared = AddNames("shared", c.Shared, names...)
+	CheckAddition("shared", c.Shared, names...)
 }
 
 func (c *Config) SharedToStatic(names ...string) {
-	c.Shared = RemoveNames(c.Shared, names...)
-	c.Static = AddNames(c.Static, names...)
+	log.Debug("config.SharedToStatic", "names", names)
+	c.Shared = RemoveNames("shared", c.Shared, names...)
+	CheckRemoval("shared", c.Shared, names...)
+	c.Static = AddNames("static", c.Static, names...)
+	CheckAddition("static", c.Static, names...)
 }
 
 func (c *Config) StaticToDisabled(names ...string) {
-	c.Static = RemoveNames(c.Static, names...)
-	c.Disabled = AddNames(c.Disabled, names...)
+	log.Debug("config.StaticToDisabled", "names", names)
+	c.Static = RemoveNames("static", c.Static, names...)
+	CheckRemoval("static", c.Static, names...)
+	c.Disabled = AddNames("disabled", c.Disabled, names...)
+	CheckAddition("disabled", c.Disabled, names...)
 }
 
 func (c *Config) SharedToDisabled(names ...string) {
-	c.Static = RemoveNames(c.Static, names...)
-	c.Shared = AddNames(c.Shared, names...)
+	log.Debug("config.SharedToDisabled", "names", names)
+	c.Shared = RemoveNames("shared", c.Shared, names...)
+	CheckRemoval("shared", c.Shared, names...)
+	c.Disabled = AddNames("disabled", c.Disabled, names...)
+	CheckAddition("disabled", c.Disabled, names...)
 }
 
 func (c *Config) DisabledToStatic(names ...string) {
-	c.Disabled = RemoveNames(c.Disabled, names...)
-	c.Static = AddNames(c.Static, names...)
+	log.Debug("config.DisabledToStatic", "names", names)
+	c.Disabled = RemoveNames("disabled", c.Disabled, names...)
+	CheckRemoval("disabled", c.Disabled, names...)
+	c.Static = AddNames("static", c.Static, names...)
+	CheckAddition("static", c.Static, names...)
 }
 
 func (c *Config) DisabledToShared(names ...string) {
-	c.Shared = RemoveNames(c.Shared, names...)
-	c.Static = AddNames(c.Static, names...)
+	log.Debug("config.DisabledToShared", "names", names)
+	c.Disabled = RemoveNames("disabled", c.Disabled, names...)
+	CheckRemoval("disabled", c.Disabled, names...)
+	c.Shared = AddNames("shared", c.Shared, names...)
+	CheckAddition("shared", c.Shared, names...)
 }
 
 func (c *Config) Sort() {
@@ -395,23 +408,23 @@ func (c *Config) Configure() {
 	if c.Ver() == "3.11" {
 
 		if c.Name == "static_max" {
-			log.Debug("config.Configure: 3.11 > static_max")
+			log.Debug("config.Configure: 3.11 -> static_max")
 			if PLATFORM == "linux" {
 				c.StaticToDisabled("_decimal")
 			}
 
 		} else if c.Name == "static_mid" {
-			log.Debug("config.Configure: 3.11 > static_mid")
+			log.Debug("config.Configure: 3.11 -> static_mid")
 			c.StaticToDisabled("_decimal")
 
 		} else if c.Name == "static_min" {
-			log.Debug("config.Configure: 3.11 > static_min")
+			log.Debug("config.Configure: 3.11 -> static_min")
 			c.StaticToDisabled("_bz2", "_decimal", "_csv", "_json",
 				"_lzma", "_scproxy", "_sqlite3", "_ssl", "pyexpat",
 				"readline")
 
 		} else if c.Name == "shared_max" {
-			log.Debug("config.Configure: 3.11 > shared_max")
+			log.Debug("config.Configure: 3.11 -> shared_max")
 			if PLATFORM == "linux" {
 				c.StaticToDisabled("_decimal")
 			} else {
@@ -420,7 +433,7 @@ func (c *Config) Configure() {
 			}
 
 		} else if c.Name == "shared_mid" {
-			log.Debug("config.Configure: 3.11 > shared_mid")
+			log.Debug("config.Configure: 3.11 -> shared_mid")
 			c.StaticToDisabled("_decimal", "_ssl", "_hashlib")
 
 		}
@@ -463,31 +476,34 @@ func (c *Config) Configure() {
 		delete(c.Exts, "_sha256")
 		delete(c.Exts, "_sha512")
 
-		c.Static = append(c.Static, "_sha2")
-		c.Disabled = append(c.Static, "_xxinterpchannels")
+		c.Static = Append(c.Static, "_sha2")
+		c.Disabled = Append(c.Disabled, "_xxinterpchannels")
 
-		c.Static = RemoveNames(c.Static, "_sha256", "_sha512")
+		c.Static = RemoveNames("static", c.Static, "_sha256", "_sha512")
 
 		if c.Name == "static_max" {
-			log.Debug("config.Configure: 3.12 > static_max")
+			log.Debug("config.Configure: 3.12 -> static_max")
 			if PLATFORM == "linux" {
+				log.Debug("config.Configure: 3.12 > static_max > linux")
 				c.StaticToDisabled("_decimal")
 			}
 		} else if c.Name == "static_mid" {
-			log.Debug("config.Configure: 3.12 > static_mid")
+			log.Debug("config.Configure: 3.12 -> static_mid")
 			c.StaticToDisabled("_decimal")
 
 		} else if c.Name == "static_min" {
 			log.Debug("config.Configure: 3.12 > static_min")
-			c.StaticToDisabled("_bz2", "_decimal", "_csv", "_json", "_lzma", "_scproxy", "_sqlite3", "_ssl", "pyexpat", "readline")
+			c.StaticToDisabled("_bz2", "_decimal", "_csv", "_json",
+				"_lzma", "_scproxy", "_sqlite3", "_ssl", "pyexpat",
+				"readline")
 
 		} else if c.Name == "shared_max" {
-			log.Debug("config.Configure: 3.12 > shared_max")
+			log.Debug("config.Configure: 3.12 -> shared_max")
 			c.DisabledToShared("_ctypes")
 			c.StaticToShared("_decimal", "_ssl", "_hashlib")
 
 		} else if c.Name == "shared_mid" {
-			log.Debug("config.Configure: 3.12 > shared_max")
+			log.Debug("config.Configure: 3.12 -> shared_max")
 			c.StaticToDisabled("_decimal", "_ssl", "_hashlib")
 		}
 	}

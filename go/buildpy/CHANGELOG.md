@@ -17,6 +17,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
 
 ## [0.0.1]
 
+- Added additional validation checks during configuration
+
 - Added yaml serialization / deserialization of `config.Config` types
 
 - Added improved configuration cli options

@@ -7,7 +7,7 @@ An ongoing translation of the python `buildpy.py` into golang
 
 ### Tool Dependencies
 
-At first, I though I could code everything in go and just use the standard library, but I opted to use thirdparty executables instead:
+At first, I though I could code everything in go and just use the standard library, but I opted to use check if thirdparty executables are avalable on the system and use them if they are found:
 
 ```golang
 "git" 				// downloading code from git repos
@@ -32,5 +32,5 @@ This can be reduced to the essentials
 
 - [archiver](https://github.com/mholt/archiver/) to maybe address the compression
 
-- [copier](https://github.com/jinzhu/copier) for flexible object copying
+- [sliver](https://github.com/leaanthony/slicer) slice mgmt
 

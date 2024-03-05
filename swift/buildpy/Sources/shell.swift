@@ -1,32 +1,39 @@
 import Foundation
-
-
-
-
+import Logging
 
 class Shell {
-    
+
     let fm: FileManager
+    let log: Logger
 
     init() {
         self.fm = FileManager.default
+        self.log = Logger(label: "pybuild.Shell") { _ in
+            return Handler(
+                formatter: BasicFormatter.buildpy,
+                pipe: LoggerTextOutputStreamPipe.standardOutput
+            )
+        }
     }
-    
+
     // var cwd: String {
     //     return self.fm.currentDirectoryPath
     // }
 
     func cwd() -> String {
-        return self.fm.currentDirectoryPath
+        let _cwd = self.fm.currentDirectoryPath
+        self.log.info("\(_cwd)")
+        return _cwd
     }
 
-    func chdir(path: String) -> () {
+    func chdir(path: String) {
         if !self.fm.changeCurrentDirectoryPath(path) {
-            print("Could not change working diectory to \(path)")            
+            print("Could not change working diectory to \(path)")
         }
     }
 
     func iterdir(path: String) -> [String] {
+        self.log.info("iterating over: \(path)")
         do {
             let paths = try self.fm.contentsOfDirectory(atPath: path)
             return paths
@@ -43,24 +50,24 @@ class Shell {
         return self.fm.temporaryDirectory.absoluteString
     }
 
-    func mkdir(path: String) -> () {
+    func mkdir(path: String) {
         do {
             try self.fm.createDirectory(
-                atPath: path, 
-                withIntermediateDirectories: true, 
+                atPath: path,
+                withIntermediateDirectories: true,
                 attributes: nil)
         } catch {
             print("Error creating directory: \(error)")
         }
     }
 
-    func mkfile(path: String, text: String) -> () {
+    func mkfile(path: String, text: String) {
         if !self.fm.createFile(atPath: path, contents: text.data(using: .utf8), attributes: [:]) {
             print("Could not create file at: \(path)")
         }
     }
 
-    func copy(src: String, dst: String) -> () {
+    func copy(src: String, dst: String) {
         do {
             try self.fm.copyItem(atPath: src, toPath: dst)
         } catch {
@@ -68,7 +75,7 @@ class Shell {
         }
     }
 
-    func move(src: String, dst: String) -> () {
+    func move(src: String, dst: String) {
         do {
             try self.fm.moveItem(atPath: src, toPath: dst)
         } catch {
@@ -76,12 +83,12 @@ class Shell {
         }
     }
 
-    func symlink(src: String, dst: String) -> () {
+    func symlink(src: String, dst: String) {
         do {
             try self.fm.createSymbolicLink(atPath: src, withDestinationPath: dst)
         } catch {
             print("could not symlink \(src) to \(dst)")
-        }        
+        }
     }
 
     func exists(path: String) -> Bool {
@@ -89,7 +96,7 @@ class Shell {
         return self.fm.fileExists(atPath: path)
     }
 
-    func remove(path: String) -> () {
+    func remove(path: String) {
         do {
             try self.fm.removeItem(atPath: path)
         } catch {
@@ -98,7 +105,7 @@ class Shell {
 
     }
 
-    func trash(path: String) -> () {
+    func trash(path: String) {
         guard let url = URL(string: path) else {
             print("could not convert \(path) to url")
             return
@@ -132,12 +139,12 @@ class Shell {
             try task.run()
             let outputData = outputPipe.fileHandleForReading.readDataToEndOfFile()
             let errorData = errorPipe.fileHandleForReading.readDataToEndOfFile()
-            let output = String(decoding: outputData, as: UTF8.self)        
+            let output = String(decoding: outputData, as: UTF8.self)
             let error = String(decoding: errorData, as: UTF8.self)
             return (out: output, err: error)
         } catch {
             print("ERROR")
         }
-        return (out:"", err: "FAILURE: exe: \(exe) args: \(args)")
+        return (out: "", err: "FAILURE: exe: \(exe) args: \(args)")
     }
 }

@@ -1,7 +1,7 @@
 
 
 
-.PHONY: all, build, run, release, clean
+.PHONY: all, build, run, release, clean, format, lint
 
 
 all: build
@@ -18,3 +18,10 @@ release:
 clean:
 	@rm -rf .build
 
+
+fmt:
+	@swift-format --recursive -i  Sources
+
+
+lint:
+	@swift-format lint --recursive Sources

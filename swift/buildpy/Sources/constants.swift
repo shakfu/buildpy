@@ -1,4 +1,3 @@
-
 var extensions = [
     "_abc": ["_abc.c"],
     "_asyncio": ["_asynciomodule.c"],
@@ -173,7 +172,7 @@ var extensions = [
     "zlib": ["zlibmodule.c", "-lz"],
 ]
 
-var base_cfg = [
+var baseCfg = [
     "header": [
         "DESTLIB=$(LIBDEST)",
         "MACHDESTLIB=$(BINLIBDEST)",

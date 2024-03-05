@@ -1,30 +1,31 @@
 import ArgumentParser
 
 @main
-struct buildpy: ParsableCommand {
-    @Option(help: "python version") 
+struct Buildpy: ParsableCommand {
+    @Option(help: "python version")
     var version: String = "3.11.7"
 
     @Option(help: "name of build config")
     var config: String = "static.max"
-    
+
     @Option(help: "configure options")
-    var opts: [String] = []  
-    
+    var opts: [String] = []
+
     @Option(help: "python packages to install")
     var pkgs: [String] = []
-    
+
     @Flag(help: "build debug python")
     var debug = false
-    
+
     @Flag(help: "optimize build")
     var optimize = false
-    
+
     @Flag(help: "reset build")
     var reset = false
 
     mutating func run() throws {
-        print("""
+        print(
+            """
             version: \(version)
             config: \(config)
             opts: \(opts)
@@ -37,13 +38,15 @@ struct buildpy: ParsableCommand {
 
         let shell = Shell()
         let res = shell.cmd(exe: "/usr/bin/git", args: "--version")
+        let cwd = shell.cwd()
+        print(cwd)
         print("output: \(res.out)")
-        print("error: \(res.err)")
+        // print("error: \(res.err)")
 
-        for f in shell.iterdir(path:".") {
-            print(f)
-        }
+        // for f in shell.iterdir(path: ".") {
+        //     print(f)
+        // }
 
-        print("userdir: \(shell.userdir())")
+        // print("userdir: \(shell.userdir())")
     }
 }

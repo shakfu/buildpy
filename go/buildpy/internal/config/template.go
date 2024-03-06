@@ -10,7 +10,8 @@ const Template string = `# -*- makefile -*-
 {{- end }}
 
 # core
-{{ range $_, $key := .Core}}
+
+{{- range $_, $key := .Core}}
 {{ $key }} {{ join (index $.Exts $key) " " -}}
 {{- end }}
 
@@ -18,7 +19,7 @@ const Template string = `# -*- makefile -*-
 *static* 
 {{ else }} 
 {{ end }}
-{{ range $_, $key := .Static}}
+{{ range $key, $value := .Static}}
 {{ $key }} {{ join (index $.Exts $key) " " -}}
 {{- end }}
 
@@ -26,13 +27,14 @@ const Template string = `# -*- makefile -*-
 *shared*
 {{ else }} 
 {{ end }}
-{{ range $_, $key := .Shared}}
+{{ range $key, $value := .Shared}}
 {{ $key }} {{ join (index $.Exts $key) " " -}}
 {{- end }}
 
 *disabled*
-{{ range $key, $value := .Disabled}}
-{{ $value -}}
+
+{{- range $key, $value := .Disabled}}
+{{ $key -}}
 {{- end }}
 
 # end

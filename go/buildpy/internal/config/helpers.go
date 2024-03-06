@@ -61,3 +61,22 @@ func CheckAddition(to string, s []string, names ...string) {
 func ToVer(version string) string {
 	return strings.Join(strings.Split(version, ".")[:2], ".")
 }
+
+func GetKeys(m map[string]bool) []string {
+	keys := make([]string, len(m))
+	i := 0
+	for k := range m {
+	    keys[i] = k
+	    i++
+	}
+	return keys
+}
+
+func SliceToMap(s []string) map[string]bool {
+	m := make(map[string]bool, len(s))
+	for _, k := range s {
+		m[k] = true
+	}
+	return m
+}
+

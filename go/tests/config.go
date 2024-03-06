@@ -3,10 +3,8 @@ package config
 import (
 	"os"
 	"runtime"
-	"strings"
-	"slices"
 	"sort"
-	"maps"
+	"strings"
 	"text/template"
 
 	"github.com/charmbracelet/log"
@@ -15,19 +13,7 @@ import (
 
 const PLATFORM = runtime.GOOS
 
-
 type Config struct {
-	Name     string
-	Version  string
-	Headers  []string
-	Exts     map[string][]string
-	Core     []string
-	Static   map[string]bool
-	Shared   map[string]bool
-	Disabled map[string]bool
-}
-
-type ConfigFile struct {
 	Name     string
 	Version  string
 	Headers  []string
@@ -253,82 +239,82 @@ func NewConfig(name string, version string) *Config {
 			"time",
 		},
 
-		Static: map[string]bool{
-			"_asyncio":         true,
-			"_bisect":          true,
-			"_blake2":          true,
-			"_bz2":             true,
-			"_contextvars":     true,
-			"_csv":             true,
-			"_datetime":        true,
-			"_decimal":         true,
-			"_elementtree":     true,
-			"_hashlib":         true,
-			"_heapq":           true,
-			"_json":            true,
-			"_lsprof":          true,
-			"_lzma":            true,
-			"_md5":             true,
-			"_multibytecodec":  true,
-			"_multiprocessing": true,
-			"_opcode":          true,
-			"_pickle":          true,
-			"_posixshmem":      true,
-			"_posixsubprocess": true,
-			"_queue":           true,
-			"_random":          true,
-			"_sha1":            true,
-			"_sha256":          true,
-			"_sha3":            true,
-			"_sha512":          true,
-			"_socket":          true,
-			"_sqlite3":         true,
-			"_ssl":             true,
-			"_statistics":      true,
-			"_struct":          true,
-			"_typing":          true,
-			"_uuid":            true,
-			"_zoneinfo":        true,
-			"array":            true,
-			"binascii":         true,
-			"cmath":            true,
-			"fcntl":            true,
-			"grp":              true,
-			"math":             true,
-			"mmap":             true,
-			"pyexpat":          true,
-			"readline":         true,
-			"select":           true,
-			"unicodedata":      true,
-			"zlib":             true,
+		Static: []string{
+			"_asyncio",
+			"_bisect",
+			"_blake2",
+			"_bz2",
+			"_contextvars",
+			"_csv",
+			"_datetime",
+			"_decimal",
+			"_elementtree",
+			"_hashlib",
+			"_heapq",
+			"_json",
+			"_lsprof",
+			"_lzma",
+			"_md5",
+			"_multibytecodec",
+			"_multiprocessing",
+			"_opcode",
+			"_pickle",
+			"_posixshmem",
+			"_posixsubprocess",
+			"_queue",
+			"_random",
+			"_sha1",
+			"_sha256",
+			"_sha3",
+			"_sha512",
+			"_socket",
+			"_sqlite3",
+			"_ssl",
+			"_statistics",
+			"_struct",
+			"_typing",
+			"_uuid",
+			"_zoneinfo",
+			"array",
+			"binascii",
+			"cmath",
+			"fcntl",
+			"grp",
+			"math",
+			"mmap",
+			"pyexpat",
+			"readline",
+			"select",
+			"unicodedata",
+			"zlib",
 		},
 
-		Shared: map[string]bool{},
+		Shared: []string{},
 
-		Disabled: map[string]bool{
-			"_codecs_cn":         true,
-			"_codecs_hk":         true,
-			"_codecs_iso2022":    true,
-			"_codecs_jp":         true,
-			"_codecs_kr":         true,
-			"_codecs_tw":         true,
-			"_crypt":             true,
-			"_ctypes":            true,
-			"_curses":            true,
-			"_curses_panel":      true,
-			"_dbm":               true,
-			"_scproxy":           true,
-			"_tkinter":           true,
-			"_xxsubinterpreters": true,
-			"audioop":            true,
-			"nis":                true,
-			"ossaudiodev":        true,
-			"resource":           true,
-			"spwd":               true,
-			"syslog":             true,
-			"termios":            true,
-			"xxlimited":          true,
-			"xxlimited_35":       true,
+		Disabled: []string{
+			"_codecs_cn",
+			"_codecs_hk",
+			"_codecs_iso2022",
+			"_codecs_jp",
+			"_codecs_kr",
+			"_codecs_tw",
+			"_crypt",
+			"_ctypes",
+			"_curses",
+			"_curses_panel",
+			"_dbm",
+			"_scproxy",
+			"_tkinter",
+			"_xxsubinterpreters",
+			"audioop",
+			"nis",
+			"ossaudiodev",
+			"resource",
+			"spwd",
+			"syslog",
+			"termios",
+			"xxlimited",
+			"xxlimited_35",
 		},
 	}
 }
@@ -339,53 +325,57 @@ func (c *Config) Ver() string {
 
 func (c *Config) StaticToShared(names ...string) {
 	log.Debug("config.StaticToShared", "names", names)
-	for _, name := range names {
-		delete(c.Static, name)
-		c.Shared[name] = true
-	}
+	c.Static = RemoveNames("static", c.Static, names...)
+	CheckRemoval("static", c.Static, names...)
+	c.Shared = AddNames("shared", c.Shared, names...)
+	CheckAddition("shared", c.Shared, names...)
 }
 
 func (c *Config) SharedToStatic(names ...string) {
 	log.Debug("config.SharedToStatic", "names", names)
-	for _, name := range names {
-		delete(c.Shared, name)
-		c.Static[name] = true
-	}
+	c.Shared = RemoveNames("shared", c.Shared, names...)
+	CheckRemoval("shared", c.Shared, names...)
+	c.Static = AddNames("static", c.Static, names...)
+	CheckAddition("static", c.Static, names...)
 }
 
 func (c *Config) StaticToDisabled(names ...string) {
 	log.Debug("config.StaticToDisabled", "names", names)
-	for _, name := range names {
-		delete(c.Static, name)
-		c.Disabled[name] = true
-	}
+	c.Static = RemoveNames("static", c.Static, names...)
+	CheckRemoval("static", c.Static, names...)
+	c.Disabled = AddNames("disabled", c.Disabled, names...)
+	CheckAddition("disabled", c.Disabled, names...)
 }
 
 func (c *Config) SharedToDisabled(names ...string) {
 	log.Debug("config.SharedToDisabled", "names", names)
-	for _, name := range names {
-		delete(c.Shared, name)
-		c.Disabled[name] = true
-	}
+	c.Shared = RemoveNames("shared", c.Shared, names...)
+	CheckRemoval("shared", c.Shared, names...)
+	c.Disabled = AddNames("disabled", c.Disabled, names...)
+	CheckAddition("disabled", c.Disabled, names...)
 }
 
 func (c *Config) DisabledToStatic(names ...string) {
 	log.Debug("config.DisabledToStatic", "names", names)
-	for _, name := range names {
-		delete(c.Disabled, name)
-		c.Static[name] = true
-	}
+	c.Disabled = RemoveNames("disabled", c.Disabled, names...)
+	CheckRemoval("disabled", c.Disabled, names...)
+	c.Static = AddNames("static", c.Static, names...)
+	CheckAddition("static", c.Static, names...)
 }
-
 
 func (c *Config) DisabledToShared(names ...string) {
 	log.Debug("config.DisabledToShared", "names", names)
-	for _, name := range names {
-		delete(c.Disabled, name)
-		c.Shared[name] = true
-	}
+	c.Disabled = RemoveNames("disabled", c.Disabled, names...)
+	CheckRemoval("disabled", c.Disabled, names...)
+	c.Shared = AddNames("shared", c.Shared, names...)
+	CheckAddition("shared", c.Shared, names...)
 }
 
+func (c *Config) Sort() {
+	sort.Strings(c.Static)
+	sort.Strings(c.Shared)
+	sort.Strings(c.Disabled)
+}
 
 func (c *Config) Configure() {
 
@@ -486,11 +476,10 @@ func (c *Config) Configure() {
 		delete(c.Exts, "_sha256")
 		delete(c.Exts, "_sha512")
 
-		c.Static["_sha2"] = true
-		c.Disabled["_xxinterpchannels"] = true
+		c.Static = Append(c.Static, "_sha2")
+		c.Disabled = Append(c.Disabled, "_xxinterpchannels")
 
-		delete(c.Static, "_sha256")
-		delete(c.Static, "_sha51")
+		c.Static = RemoveNames("static", c.Static, "_sha256", "_sha512")
 
 		if c.Name == "static_max" {
 			log.Debug("config.Configure: 3.12 -> static_max")
@@ -521,7 +510,7 @@ func (c *Config) Configure() {
 }
 
 func (c *Config) ToSetupLocal() *template.Template {
-
+	c.Sort()
 	funcMap := template.FuncMap{
 		"join": strings.Join,
 	}
@@ -555,50 +544,22 @@ func (c *Config) WriteSetupLocal(path string) {
 	}
 }
 
-func (c *Config) ToConfigFile() *ConfigFile {
-	cf := ConfigFile {
-		Name: c.Name,
-		Version: c.Version,
-		Headers: slices.Clone(c.Headers),
-		Exts: maps.Clone(c.Exts),
-		Core: slices.Clone(c.Core),
-		Static: GetKeys(c.Static),
-		Shared: GetKeys(c.Shared),
-		Disabled: GetKeys(c.Disabled),
-	}
-	sort.Strings(cf.Static)
-	sort.Strings(cf.Shared)
-	sort.Strings(cf.Disabled)
-	return &cf
-}
-
-func (c *Config) FromConfigFile(cf *ConfigFile) {
-	c.Name = cf.Name
-	c.Version = cf.Version
-	c.Headers = slices.Clone(cf.Headers)
-	c.Exts = maps.Clone(cf.Exts)
-	c.Core = slices.Clone(cf.Core)
-	c.Static = SliceToMap(cf.Static)
-	c.Shared = SliceToMap(cf.Shared)
-	c.Disabled = SliceToMap(cf.Disabled)
-}
-
 func (c *Config) FromYaml(path string) {
+
 	data, err := os.ReadFile(path)
 	if err != nil {
 		log.Fatal(err)
 	}
-	var cf = ConfigFile{}
-	err = yaml.Unmarshal(data, &cf)
+
+	err = yaml.Unmarshal(data, c)
 	if err != nil {
 		log.Fatal(err)
 	}
-	c.FromConfigFile(&cf)
 }
 
 func (c *Config) ToYaml() string {
-	cf := c.ToConfigFile()
-	data, err := yaml.Marshal(&cf)
+	c.Sort()
+	data, err := yaml.Marshal(&c)
 	if err != nil {
 		log.Fatalf("error: %v", err)
 	}
@@ -612,6 +573,7 @@ func (c *Config) PrintYaml() {
 
 func (c *Config) WriteYaml(path string) {
 	data := c.ToYaml()
+
 	f, err := os.Create(path)
 	if err != nil {
 		log.Fatal(err)

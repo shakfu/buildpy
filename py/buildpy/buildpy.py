@@ -1210,6 +1210,7 @@ class PythonBuilder(Builder):
         optimize: bool = False,
         pkgs: Optional[list[str]] = None,
         cfg_opts: Optional[list[str]] = None,
+        jobs: int = 1,
     ):
 
         super().__init__(version, project)
@@ -1217,6 +1218,7 @@ class PythonBuilder(Builder):
         self.optimize = optimize
         self.pkgs = pkgs or []
         self.cfg_opts = cfg_opts or []
+        self.jobs = jobs
         self.log = logging.getLogger(self.__class__.__name__)
 
     def get_config(self):
@@ -1299,7 +1301,7 @@ class PythonBuilder(Builder):
 
     def build(self):
         """main build process"""
-        self.cmd("make", cwd=self.src_path)
+        self.cmd(f"make -j{self.jobs}", cwd=self.src_path)
 
     def install(self):
         """install to prefix"""
@@ -1436,6 +1438,7 @@ if __name__ == "__main__":
     opt("-r", "--reset", help="reset build", action="store_true")
     opt("-v", "--version", default=DEFAULT_PY_VERSION, help="python version (default: %(default)s)")
     opt("-w", "--write", help="write configuration", action="store_true")
+    opt("-j", "--jobs", help="# of build jobs (default: %(default)s)", type=int, default=4)
 
     args = parser.parse_args()
     python_builder_class = PythonBuilder
@@ -1447,6 +1450,7 @@ if __name__ == "__main__":
         optimize=args.optimize,
         pkgs=args.pkgs,
         cfg_opts=args.cfg_opts,
+        jobs=args.jobs,
     )
     if args.write:
         patch_dir = Path.cwd() / "patch"

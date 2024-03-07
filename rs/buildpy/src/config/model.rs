@@ -1,6 +1,14 @@
 use std::collections::HashMap;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug)]
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Person {
+	pub name: String,
+	pub age: i32,
+}
+
+#[derive(Serialize, Debug)]
 pub struct Config<'a> {
 	pub name: String,
 	pub version: String,

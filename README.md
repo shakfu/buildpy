@@ -1,6 +1,26 @@
 # pybuild - a bunch of python builders
 
-This project contains several python builders from source (3 using python) and another in development using golang.
+This project explorers how to build python from source.
+
+It started from a concrete requirement in one [external project](https://github.com/shakfu/py-js) which led to the first python `builder`, this was then simplified into `pybuilder`, and finally producing `buildpy`, the latest iteration of this sequence.
+
+A golang implementation of `buildpy` followed which is reasonably complete, and recently, rust and swift variants have been started.
+
+The subprojects are (in order of decreasing maturity):
+
+- python
+  - builder
+  - pybuild
+  - buildpy
+
+- go
+  - buildpy
+
+- swift
+  - buildpy
+
+- rust
+  - buildpy
 
 
 ## python builds python
@@ -115,7 +135,14 @@ A golang version of `buildpy`. (Hey, Why not?!)
 
 Mostly mirrors the python version except for the following:
 
-- Can convert configuration into yaml
+- Round-trip serialization/deserialization from/to yaml
+
+
+## rust
+
+### buildpy (rust-edition)
+
+
 
 
 ## swift

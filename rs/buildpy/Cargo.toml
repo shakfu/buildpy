@@ -7,11 +7,12 @@ edition = "2021"
 
 [dependencies]
 command-run = "1.1.1"
+clap = "4.5.2"
 downloader = "0.2.7"
 flate2 = "1.0.28"
 indicatif = "0.17.8"
+indicatif-log-bridge = "0.2.2"
 simplelog = { version = "^0.12.2", features = ["paris"] }
-xshell = "0.2.5"
 serde = { version = "1.0", features = ["derive"] }
 serde_yaml = "0.9"
-
+xshell = "0.2.5"

@@ -20,5 +20,5 @@ fn main() {
     cfg.static_to_disabled(vec!["_decimal"]);
     println!("bye..");
 
-    shell::cmd("pytho", vec!["--version", "hello", "GREAT!"], ".")
+    shell::cmd("pytho", vec!["--version", "hello", "GREAT!"], ".");
 }

@@ -1,6 +1,4 @@
-use std::{path::Path, process::Command};
 use std::fmt;
-
 
 
 
@@ -17,14 +15,18 @@ impl fmt::Display for ShowArgs {
 }
 
 
+// pub fn shellcmd() {
+//     let _ = command_run::Command::with_args("touch", &["hello"])
+//         .run();
+// }
 
 
 pub fn cmd<P>(exec: &str, args: Vec<&str>, cwd: P) 
 where
-    P: AsRef<Path>
+    P: AsRef<std::path::Path>
 {
     let parts: Vec<String> = (args).iter().map(|v| v.to_string()).collect();
-    Command::new(exec)
+    std::process::Command::new(exec)
         .args(args)
         .current_dir(cwd)
         .spawn()

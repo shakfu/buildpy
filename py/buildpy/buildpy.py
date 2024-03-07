@@ -1291,7 +1291,7 @@ class PythonBuilder(Builder):
             for cfg_opt in self.cfg_opts:
                 cfg_opt = cfg_opt.replace('_', '-')
                 cfg_opt = '--' + cfg_opt
-                if not cfg_opt in self.config_options:
+                if cfg_opt not in self.config_options:
                      self.config_options.append(cfg_opt)
 
         config.write(self.config, to=self.src_path / "Modules" / "Setup.local")

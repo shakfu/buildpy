@@ -12,7 +12,7 @@ pub struct Config<'a> {
 	pub disabled: Vec<&'a str>,
 }
 
-impl Config<'_> {
+impl<'a> Config<'a> {
     pub fn new(name: String, version: String) -> Self {
         Self {
 	        name: name.clone(),
@@ -304,10 +304,45 @@ impl Config<'_> {
         }
     }
 
-    pub fn disable_static(&mut self, names: Vec<&str>) {
+    pub fn static_to_shared(&mut self, names: Vec<&'a str>) {
     	for name in names {
-    		// self.disabled.push(name.clone());
  		   	self.statik.retain(|&x| x != name);
+     		self.shared.push(name);
+    	}
+    }
+
+    pub fn shared_to_static(&mut self, names: Vec<&'a str>) {
+    	for name in names {
+ 		   	self.shared.retain(|&x| x != name);
+     		self.statik.push(name);
+    	}
+    }
+
+    pub fn static_to_disabled(&mut self, names: Vec<&'a str>) {
+    	for name in names {
+ 		   	self.statik.retain(|&x| x != name);
+     		self.disabled.push(name);
+    	}
+    }
+
+    pub fn disabled_to_static(&mut self, names: Vec<&'a str>) {
+    	for name in names {
+ 		   	self.disabled.retain(|&x| x != name);
+     		self.statik.push(name);
+    	}
+    }
+
+    pub fn shared_to_disabled(&mut self, names: Vec<&'a str>) {
+    	for name in names {
+ 		   	self.shared.retain(|&x| x != name);
+     		self.disabled.push(name);
+    	}
+    }
+
+    pub fn disabled_to_shared(&mut self, names: Vec<&'a str>) {
+    	for name in names {
+ 		   	self.disabled.retain(|&x| x != name);
+     		self.shared.push(name);
     	}
     }
 }

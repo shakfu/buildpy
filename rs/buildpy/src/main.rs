@@ -1,3 +1,5 @@
+#[allow(dead_code)]
+
 mod config;
 
 
@@ -10,6 +12,6 @@ fn main() {
     for key in cfg.exts.keys() {
         println!("{key}");
     }
-    cfg.disable_static(vec!["_decimal"]);
+    cfg.static_to_disabled(vec!["_decimal"]);
     println!("bye..");
 }

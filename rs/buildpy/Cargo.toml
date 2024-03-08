@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 command-run = "1.1.1"
-clap = "4.5.2"
+clap = { version = "4.5.2", features = ["derive"] }
 downloader = "0.2.7"
 flate2 = "1.0.28"
 indicatif = "0.17.8"

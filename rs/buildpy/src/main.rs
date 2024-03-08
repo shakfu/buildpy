@@ -2,13 +2,13 @@
 mod config;
 mod core;
 mod ops;
+use ops::log as log;
 
 use clap::Parser;
-
-// extern crate simplelog;
 use std::env;
 
-// use crate::core::Dependency;
+// extern crate simplelog;
+//pub use simplelog::{info,debug,warn,error};
 
 /// Simple program to greet a person
 #[derive(Parser, Debug)]
@@ -24,6 +24,8 @@ struct Args {
 }
 
 fn main() {
+    log::init_logging();
+
     let _args = Args::parse();
 
     let cfg = config::Config::new("static_max".to_string(), "3.12.2".to_string());
@@ -49,24 +51,12 @@ fn main() {
 
     ops::cmd("python3", vec!["--version"], ".");
 
-    simplelog::CombinedLogger::init(vec![
-        simplelog::TermLogger::new(
-            simplelog::LevelFilter::Debug,
-            simplelog::Config::default(),
-            simplelog::TerminalMode::Mixed,
-            simplelog::ColorChoice::Auto,
-        ),
-        simplelog::WriteLogger::new(
-            simplelog::LevelFilter::Info,
-            simplelog::Config::default(),
-            std::fs::File::create("my_rust_binary.log").unwrap(),
-        ),
-    ])
-    .unwrap();
 
     println!("{}", env::consts::OS); // Prints the current OS.
 
-    simplelog::error!("Bright red error");
-    simplelog::info!("This only appears in the log file");
-    simplelog::debug!("This level is currently not enabled for any logger");
+    log::debug!("This level is currently not enabled for any logger");
+    log::info!("This only appears in the log file");
+    log::warn!("This is a warning");
+    log::error!("Bright red error");
+
 }

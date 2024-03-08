@@ -1,4 +1,4 @@
-// use crate::core::api;
+use crate::core::api;
 
 pub struct Dependency {
     pub name: String,
@@ -21,8 +21,8 @@ impl Dependency {
     }
 }
 
-// impl api::Buildable for Dependency {
-//     fn build(&mut self) {
-//         println!("building...{} {}", self.name, self.version);
-//     }
-// }
+impl api::Buildable for Dependency {
+    fn build(&mut self) {
+        println!("building...{} {}", self.name, self.version);
+    }
+}

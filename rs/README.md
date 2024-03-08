@@ -2,7 +2,6 @@
 
 Approach is to use a number of mature crates from rust's rich ecosystem
 
-
 ## Crate Dependencies
 
 ```toml
@@ -20,7 +19,6 @@ serde_yaml = "0.9"
 ## clap - commandline parsing
 
 - [clap](https://crates.io/crates/clap)
-
 
 ## indicatif - progressbar
 
@@ -46,7 +44,6 @@ for i in (0..10) {
 pg.finish();
 multi.remove(&pg);
 ```
-
 
 ## simplelog - logging
 
@@ -74,8 +71,6 @@ fn main() {
 }
 ```
 
-
-
 ## command-run - process execution
 
 - [command-run](https://crates.io/crates/command-run)
@@ -88,8 +83,6 @@ let output = Command::with_args("echo", &["hello", "world"])
     .run()?;
 assert_eq!(output.stdout_string_lossy(), "hello world\n");
 ```
-
-
 
 ## flate2 - compression/decompression
 
@@ -109,7 +102,6 @@ fn main() {
     let compressed_bytes = e.finish();
 }
 ```
-
 
 ```rust
 // decompression
@@ -165,7 +157,6 @@ fn main() {
     }
 }
 ```
-
 
 ### xshell - shell scripting
 

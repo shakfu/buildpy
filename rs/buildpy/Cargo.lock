@@ -114,6 +114,7 @@ dependencies = [
  "flate2",
  "indicatif",
  "indicatif-log-bridge",
+ "log",
  "serde",
  "serde_yaml",
  "simplelog",

@@ -12,10 +12,10 @@ impl fmt::Display for ShowArgs {
     }
 }
 
-// pub fn shellcmd() {
-//     let _ = command_run::Command::with_args("touch", &["hello"])
-//         .run();
-// }
+pub fn run(exec: &str, args: &[&str]) {
+    let _ = command_run::Command::with_args(exec, args)
+        .run();
+}
 
 pub fn cmd<P>(exec: &str, args: Vec<&str>, cwd: P)
 where
@@ -26,5 +26,5 @@ where
         .args(args)
         .current_dir(cwd)
         .spawn()
-        .expect(&format!("exe: {exec} {} command failed", ShowArgs(parts)));
+        .unwrap_or_else(|_| panic!("exe: {exec} {} command failed", ShowArgs(parts)));
 }

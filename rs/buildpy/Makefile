@@ -1,5 +1,5 @@
 
-.PHONY: all build release run clean
+.PHONY: all build release fmt run clean
 
 all: build
 
@@ -14,4 +14,8 @@ run:
 	@cargo run
 
 fmt:
-	@rustfmt *.rs src/**/*.rs
+	@cargo fmt -- --emit=files
+	# @rustfmt src/**/*.rs
+
+clean:
+	@cargo clean

@@ -1,3 +1,5 @@
+#![allow(clippy::vec_init_then_push)]
+
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -59,7 +61,7 @@ impl Config {
                 "BZIP2=$(srcdir)/../../install/bzip2",
                 "LZMA=$(srcdir)/../../install/xz"
             ],
-            exts: hashmaps!{
+            exts: hashmaps! {
                 "name" => vecs!["name", "dest"],
                 "_abc" => vecs!["_abc.c"],
                 "_asyncio" => vecs!["_asynciomodule.c"],

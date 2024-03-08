@@ -22,18 +22,17 @@ The subprojects are (in order of decreasing maturity):
 - rust
   - buildpy
 
-
 ## python builds python
 
-3 ways of building python from source using python: 
+3 ways of building python from source using python:
 
-1. `builder`: the original, a package extracted from another large project.. has a kitchen-sink approach 
+1. `builder`: the original, a package extracted from another large project.. has a kitchen-sink approach
 
 2. `pybuild`: a subsequent attempt at a lighter-weight package, extracted from (1) with only the build features.
 
 3. `buildpy`: lightest-weight single script/module, a 'modern' rewrite given collective experience of (1) and (2): the future.
 
-Ideally one should end up with 1 or maybe even 2 ways. 
+Ideally one should end up with 1 or maybe even 2 ways.
 
 (refactoring/consolidation-in-progress)
 
@@ -46,9 +45,7 @@ Needs quite a bit of cleanup and refactoring to make it a general tool.
 Either use `make` interface:
 
 ```bash
-
 make python-shared
-
 ```
 
 or the package's argparse interface:
@@ -137,21 +134,12 @@ Mostly mirrors the python version except for the following:
 
 - Round-trip serialization/deserialization from/to yaml
 
-
 ## rust
 
 ### buildpy (rust-edition)
-
-
-
 
 ## swift
 
 ### buildpy (swift-edition)
 
 A beginnings of a swift edition..
-
-
-
-
-

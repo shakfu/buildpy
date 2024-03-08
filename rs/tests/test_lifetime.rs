@@ -1,5 +1,3 @@
-
-
 #[derive(Debug)]
 pub struct Config<'a> {
     pub name: String,
@@ -33,18 +31,11 @@ impl<'a> Config<'a> {
     }
 }
 
-
-
-
 fn main() {
-    let mut cfg = Config::new(
-        "foo".to_string(), 
-        "1.1.0".to_string()
-    );
+    let mut cfg = Config::new("foo".to_string(), "1.1.0".to_string());
     println!("cfg before is {:?}", cfg);
     cfg.disable(vec!["a", "c"]);
     println!("\ncfg after is {:?}", cfg);
-    cfg.enable(vec!{"a"});
+    cfg.enable(vec!["a"]);
     println!("\nfinally: {:?}", cfg);
 }
-

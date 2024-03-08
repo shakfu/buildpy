@@ -26,6 +26,7 @@ ShellCmd
 """
 
 import datetime
+import json
 import logging
 import os
 import platform
@@ -501,6 +502,12 @@ class Config:
         with open(to, "w", encoding='utf8') as f:
             self.out.append("# end \n")
             f.write("\n".join(self.out))
+    
+    def write_json(self, method: str, to: Pathlike):
+        self.log.info("write method '%s' to json: %s", method, to)
+        getattr(self, method)()
+        with open(to, 'w') as f:
+            json.dump(self.cfg, f, indent=4)
 
 
 class PythonConfig311(Config):
@@ -1439,6 +1446,7 @@ if __name__ == "__main__":
     opt("-v", "--version", default=DEFAULT_PY_VERSION, help="python version (default: %(default)s)")
     opt("-w", "--write", help="write configuration", action="store_true")
     opt("-j", "--jobs", help="# of build jobs (default: %(default)s)", type=int, default=4)
+    opt("-s", "--json", help="serialize config to json file")
 
     args = parser.parse_args()
     python_builder_class = PythonBuilder
@@ -1453,12 +1461,15 @@ if __name__ == "__main__":
         jobs=args.jobs,
     )
     if args.write:
-        patch_dir = Path.cwd() / "patch"
-        if not patch_dir.exists():
-            patch_dir.mkdir()
-        cfg_file = patch_dir / args.config.replace("_", ".")
-        builder.get_config().write(args.config, to=cfg_file)
-        sys.exit()
+        if not args.json:
+            patch_dir = Path.cwd() / "patch"
+            if not patch_dir.exists():
+                patch_dir.mkdir()
+            cfg_file = patch_dir / args.config.replace("_", ".")
+            builder.get_config().write(args.config, to=cfg_file)
+        else:
+            builder.get_config().write_json(args.config, to=args.json)
+            sys.exit()
 
     if args.reset:
         builder.remove("build")

@@ -1,7 +1,5 @@
 use std::fmt;
 
-
-
 struct ShowArgs(Vec<String>);
 
 impl fmt::Display for ShowArgs {
@@ -14,16 +12,14 @@ impl fmt::Display for ShowArgs {
     }
 }
 
-
 // pub fn shellcmd() {
 //     let _ = command_run::Command::with_args("touch", &["hello"])
 //         .run();
 // }
 
-
-pub fn cmd<P>(exec: &str, args: Vec<&str>, cwd: P) 
+pub fn cmd<P>(exec: &str, args: Vec<&str>, cwd: P)
 where
-    P: AsRef<std::path::Path>
+    P: AsRef<std::path::Path>,
 {
     let parts: Vec<String> = (args).iter().map(|v| v.to_string()).collect();
     std::process::Command::new(exec)
@@ -32,4 +28,3 @@ where
         .spawn()
         .expect(&format!("exe: {exec} {} command failed", ShowArgs(parts)));
 }
-

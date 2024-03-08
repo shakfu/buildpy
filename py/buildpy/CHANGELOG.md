@@ -17,6 +17,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
 
 ## [0.0.1]
 
+- Adde `write_json` options
+
 - Added `make_relocatable` feature for `framework-*` build variants on macOS to make the installed prefix relocatable
 
 - Added `framework` build-type for macOS

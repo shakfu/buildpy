@@ -1,14 +1,9 @@
 #[allow(dead_code)]
-
 mod config;
 mod shell;
 
-
 fn main() {
-    let mut cfg = config::Config::new(
-        "static_max".to_string(), 
-        "3.12.2".to_string()
-    );
+    let mut cfg = config::Config::new("static_max".to_string(), "3.12.2".to_string());
 
     let serialized = serde_yaml::to_string(&cfg).unwrap();
     println!("{serialized}");

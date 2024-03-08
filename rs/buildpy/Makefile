@@ -12,3 +12,6 @@ release:
 
 run:
 	@cargo run
+
+fmt:
+	@rustfmt *.rs src/**/*.rs

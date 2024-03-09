@@ -1,6 +1,7 @@
 // use crate::core::api;
 // use crate::core::deps;
 use crate::ops;
+use crate::ops::log as log;
 use super::Dependency;
 
 pub struct Builder {
@@ -16,17 +17,12 @@ impl Builder {
             name: String::from("Python"),
             version: String::from("3.11.8"),
             repo: String::from("https://github.com/python/cpython.git"),
-            archive: String::from("https://github.com/python/cpython/archive/refs/tags/v{}.tar.gz"),
+            archive: String::from("https://github.com/python/cpython/archive/refs/tags/v<VERSION>.tar.gz"),
     	}
     }
     pub fn setup(&self) {
-        // let target = format!(
-        //     self.archive, 
-        //     self.version);
-
-        let target = format!(
-            "https://github.com/python/cpython/archive/refs/tags/v{}.tar.gz", 
-            self.version);
+        let target = self.archive.replace("<VERSION>", &self.version);
+        log::info!("downloading: {}", target);
         ops::download::download_file(&target);
     }
 
@@ -35,7 +31,7 @@ impl Builder {
             "bz2", 
             "0.0.1",
             "https://github.com/shakfu/bzr.git",
-            "https://github.com/shakfu/bzr.git",
+            "https://github.com/shakfu/bzr/releases/bzr.tgz",
         );
         _deps.build();
     }

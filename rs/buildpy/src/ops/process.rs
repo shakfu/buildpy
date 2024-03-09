@@ -1,3 +1,5 @@
+// use crate::ops::log as log;
+
 use std::fmt;
 
 struct ShowArgs(Vec<String>);
@@ -22,9 +24,11 @@ where
     P: AsRef<std::path::Path>,
 {
     let parts: Vec<String> = (args).iter().map(|v| v.to_string()).collect();
+    let msg = formatx::formatx!("exe: {exec} args: {:?} command failed ", exec, parts.join(" "));
     std::process::Command::new(exec)
         .args(args)
         .current_dir(cwd)
-        .spawn()
-        .unwrap_or_else(|_| panic!("exe: {exec} {} command failed", ShowArgs(parts)));
+        .status()
+        .unwrap_or_else(|_| { panic!("{}", msg.unwrap()) });
+        // .spawn()
 }

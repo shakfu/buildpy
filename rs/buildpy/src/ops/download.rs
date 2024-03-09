@@ -1,4 +1,4 @@
-
+use std::path::Path;
 use downloader::Downloader;
 
 pub fn download_file(target: &str) {
@@ -18,5 +18,13 @@ pub fn download_file(target: &str) {
             Err(e) => print!("Error occurred! {}", e),
             Ok(s) => print!("Success: {}", &s),
         };
+    }
+}
+
+pub fn git_clone(url: &str, branch: &str, to_dir: &str) {
+    if let Some(stem) = Path::new(url).file_stem() {
+        if let Some(target) = Path::new(to_dir).join(stem).into_os_string().to_str() {
+            super::run("git", &[url, "-b", branch, target]);
+        }
     }
 }

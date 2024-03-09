@@ -31,6 +31,10 @@ struct Cli {
     #[arg(short, long)]
     opts: Option<Vec<String>>,
 
+    /// Demo options
+    #[arg(short, long, action)]
+    demo: bool,
+
 
     // version, _ := cmd.Flags().GetString("version")
     // config, _ := cmd.Flags().GetString("config")
@@ -44,7 +48,7 @@ struct Cli {
 
 }
 
-fn demo() {
+fn run_demo() {
     let cfg = config::Config::new("static_max".to_string(), "3.12.2".to_string());
 
     let _proj = core::Project::new();
@@ -66,7 +70,7 @@ fn demo() {
     // // cfg.static_to_disabled(vecs!["_decimal"]);
     // println!("bye..");
 
-    ops::cmd("python3", vec!["--version"], ".");
+    ops::cmd("python2", vec!["--version"], ".");
 
 
     println!("{}", env::consts::OS); // Prints the current OS.
@@ -83,18 +87,23 @@ fn main() {
     let args = Cli::parse();
 
     // if let Some(name) = args.name.as_deref() {
-    //     log::info!("Value for name: {name}");
+    //     log::info!("name: {name}");
     // }
 
     if let Some(ver) = args.pyversion.as_deref() {
-        log::info!("Value for pyversion: {ver}");        
+        log::info!("pyversion: {ver}");        
     }
 
     if let Some(cfg) = args.config.as_deref() {
-        log::info!("Value for config: {cfg}");        
+        log::info!("config: {cfg}");        
     }
 
     if let Some(opts) = args.opts.as_deref() {
-        log::info!("Value for opts: {opts:?}");        
+        log::info!("opts: {opts:?}");        
+    }
+
+    if args.demo {
+        log::info!("run demo: {}", args.demo);    
+        run_demo();
     }
 }

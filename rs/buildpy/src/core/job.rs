@@ -1,6 +1,5 @@
-
 pub struct PythonJobConfig {
-	pub name: String,
+    pub name: String,
     pub version: String,
     pub download_url: String,
     pub repo_url: String,
@@ -18,7 +17,6 @@ pub struct PythonJobConfig {
     pub parallel: i16, // n workers
     pub duration: i16, // seconds
 }
-
 
 pub struct DepJob {
     pub name: String,

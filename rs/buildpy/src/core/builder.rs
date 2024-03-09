@@ -1,11 +1,11 @@
 // use crate::core::api;
 // use crate::core::deps;
-use crate::ops;
-use crate::ops::log as log;
 use super::Dependency;
+use crate::ops;
+use crate::ops::log;
 
 pub struct Builder {
-	pub name: String,
+    pub name: String,
     pub version: String,
     pub download_url: String,
     pub repo_url: String,
@@ -25,18 +25,20 @@ impl Builder {
         Self {
             name: String::from("Python"),
             version: String::from("3.11.8"),
-            download_url: String::from("https://github.com/python/cpython/archive/refs/tags/v<VERSION>.tar.gz"),
+            download_url: String::from(
+                "https://github.com/python/cpython/archive/refs/tags/v<VERSION>.tar.gz",
+            ),
             repo_url: String::from("https://github.com/python/cpython.git"),
             repo_branch: String::from("v<VERSION>"),
             config_options: vec![],
             packages: vec![],
             staticlibs: vec![],
             remove_patterns: vec![],
-            optimize: false, 
+            optimize: false,
             use_git: true,
             parallel: 4,
             duration: 0,
-    	}
+        }
     }
     pub fn setup(&self) {
         if self.use_git {
@@ -45,13 +47,13 @@ impl Builder {
         } else {
             let target = self.download_url.replace("<VERSION>", &self.version);
             log::info!("downloading: {}", target);
-            ops::download_file(&target);    
+            ops::download_file(&target);
         }
     }
 
     pub fn install_dependencies(&self) {
         let mut _deps: Dependency = Dependency::new(
-            "bz2", 
+            "bz2",
             "0.0.1",
             "https://github.com/shakfu/bzr.git",
             "https://github.com/shakfu/bzr/releases/bzr.tgz",
@@ -68,7 +70,4 @@ impl Builder {
         self.install_dependencies();
         self.build();
     }
-
-
 }
-

@@ -1,8 +1,9 @@
 pub mod api;
-pub mod project;
 pub mod builder;
 pub mod deps;
 pub mod job;
-pub use project::Project;
+pub mod project;
+
 pub use builder::Builder;
 pub use deps::Dependency;
+pub use project::Project;

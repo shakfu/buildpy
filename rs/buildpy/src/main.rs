@@ -1,11 +1,14 @@
 #![allow(dead_code)]
+
 mod config;
 mod core;
 mod ops;
-use ops::log as log;
+
+use ops::log;
 
 use clap::Parser;
 use std::env;
+
 // use std::path::PathBuf;
 
 // extern crate simplelog;
@@ -15,7 +18,6 @@ use std::env;
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 struct Cli {
-
     /// Optional name to operate on
     // name: Option<String>,
 
@@ -34,8 +36,6 @@ struct Cli {
     /// Demo options
     #[arg(short, long, action)]
     demo: bool,
-
-
     // version, _ := cmd.Flags().GetString("version")
     // config, _ := cmd.Flags().GetString("config")
     // pkgs, _ := cmd.Flags().GetStringSlice("pkgs")
@@ -45,7 +45,6 @@ struct Cli {
     // reset, _ := cmd.Flags().GetBool("reset")
     // debug, _ := cmd.Flags().GetBool("debug")
     // git, _ := cmd.Flags().GetBool("git")
-
 }
 
 fn run_demo() {
@@ -72,7 +71,6 @@ fn run_demo() {
 
     ops::cmd("python2", vec!["--version"], ".");
 
-
     println!("{}", env::consts::OS); // Prints the current OS.
 
     log::debug!("This level is currently not enabled for any logger");
@@ -91,19 +89,19 @@ fn main() {
     // }
 
     if let Some(ver) = args.pyversion.as_deref() {
-        log::info!("pyversion: {ver}");        
+        log::info!("pyversion: {ver}");
     }
 
     if let Some(cfg) = args.config.as_deref() {
-        log::info!("config: {cfg}");        
+        log::info!("config: {cfg}");
     }
 
     if let Some(opts) = args.opts.as_deref() {
-        log::info!("opts: {opts:?}");        
+        log::info!("opts: {opts:?}");
     }
 
     if args.demo {
-        log::info!("run demo: {}", args.demo);    
+        log::info!("run demo: {}", args.demo);
         run_demo();
     }
 }

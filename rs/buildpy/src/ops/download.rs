@@ -1,5 +1,5 @@
-use std::path::Path;
 use downloader::Downloader;
+use std::path::Path;
 
 pub fn download_file(target: &str) {
     let mut downloader = Downloader::builder()

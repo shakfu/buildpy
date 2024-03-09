@@ -15,8 +15,7 @@ impl fmt::Display for ShowArgs {
 }
 
 pub fn run(exec: &str, args: &[&str]) {
-    let _ = command_run::Command::with_args(exec, args)
-        .run();
+    let _ = command_run::Command::with_args(exec, args).run();
 }
 
 pub fn cmd<P>(exec: &str, args: Vec<&str>, cwd: P)
@@ -24,11 +23,15 @@ where
     P: AsRef<std::path::Path>,
 {
     let parts: Vec<String> = (args).iter().map(|v| v.to_string()).collect();
-    let msg = formatx::formatx!("exe: {exec} args: {:?} command failed ", exec, parts.join(" "));
+    let msg = formatx::formatx!(
+        "exe: {exec} args: {:?} command failed ",
+        exec,
+        parts.join(" ")
+    );
     std::process::Command::new(exec)
         .args(args)
         .current_dir(cwd)
         .status()
-        .unwrap_or_else(|_| { panic!("{}", msg.unwrap()) });
-        // .spawn()
+        .unwrap_or_else(|_| panic!("{}", msg.unwrap()));
+    // .spawn()
 }

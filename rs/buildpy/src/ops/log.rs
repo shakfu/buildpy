@@ -1,4 +1,4 @@
-pub use simplelog::{info,debug,warn,error};
+pub use simplelog::{debug, error, info, warn};
 
 pub fn init_logging() {
     simplelog::CombinedLogger::init(vec![

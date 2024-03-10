@@ -52,8 +52,7 @@ fn run_demo() {
     let _proj = core::Project::new();
     println!("project cwd: {:?}", _proj.cwd);
 
-    let mut _builder = core::Builder::new();
-    _builder.process();
+    run_builder();
 
     let _serialized = serde_yaml::to_string(&cfg).unwrap();
 
@@ -80,6 +79,12 @@ fn run_demo() {
     // ops::cmd("python2", &["--version"], ".");
 }
 
+fn run_builder() {
+    let mut _builder = core::Builder::new();
+    _builder.process();    
+}
+
+
 fn main() {
     log::init_logging();
 
@@ -103,6 +108,6 @@ fn main() {
 
     if args.demo {
         log::info!("run demo: {}", args.demo);
-        run_demo();
+        run_builder();
     }
 }

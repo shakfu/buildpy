@@ -43,9 +43,10 @@ impl Builder {
         }
     }
     pub fn setup(&self) {
+        self.project.setup();
         if self.use_git {
             let branch = self.repo_branch.replace("<VERSION>", &self.version);
-            ops::git_clone(&self.repo_url, &branch, ".", false);
+            ops::git_clone(&self.repo_url, &branch, &self.project.downloads, false);
         } else {
             let target = self.download_url.replace("<VERSION>", &self.version);
             log::info!("downloading: {}", target);
@@ -68,7 +69,7 @@ impl Builder {
     }
 
     pub fn process(&mut self) {
-        // self.setup();
+        self.setup();
         self.install_dependencies();
         self.build();
     }

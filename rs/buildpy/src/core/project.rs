@@ -1,11 +1,11 @@
 use std::env;
-use std::path::{Path,PathBuf};
+use std::path::PathBuf;
 
 #[derive(Debug)]
 pub struct Project {
     pub cwd: PathBuf,
     pub build: PathBuf,
-    pub download: PathBuf,
+    pub downloads: PathBuf,
     pub src: PathBuf,
     pub install: PathBuf,
 }
@@ -17,7 +17,7 @@ impl Project {
         Self {
             cwd: _cwd,
             build: _build.clone(),
-            download: _build.join("download"),
+            downloads: _build.join("download"),
             src: _build.join("src"),
             install: _build.join("install"),
         }
@@ -26,7 +26,7 @@ impl Project {
     pub fn setup(&self) {
         for p in &[
             self.build.as_path(),
-            self.download.as_path(),
+            self.downloads.as_path(),
             self.src.as_path(),
             self.install.as_path(),
         ] {
@@ -37,11 +37,17 @@ impl Project {
         }
     }
 
-    // pub fn clean(&self) {
-    //     os.RemoveAll(p.Src)
-    // }
+    pub fn clean(&self) {
+        match std::fs::remove_dir_all(self.src.as_path()) {
+            Ok(_) => log::info!("remove: {}", self.src.display()),
+            Err(e) => log::error!("failure: {e}"),
+        };
+    }
 
-    // pub fn reset(&self) {
-    //     os.RemoveAll(p.Build)
-    // }
+    pub fn reset(&self) {
+        match std::fs::remove_dir_all(self.build.as_path()) {
+            Ok(_) => log::info!("remove: {}", self.build.display()),
+            Err(e) => log::error!("failure: {e}"),
+        };
+    }
 }

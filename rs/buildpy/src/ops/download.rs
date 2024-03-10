@@ -26,12 +26,11 @@ pub fn download_file(target: &str) {
 }
 
 pub fn git_clone(url: &str, branch: &str, to_dir: &str, recurse: bool) {
-    let mut args = vec!["clone", url, "-b", branch,  "--depth=1"];
+    let mut args = vec!["clone", url, "-b", branch, "--depth=1"];
     if let Some(stem) = Path::new(url).file_stem() {
         if let Some(target) = Path::new(to_dir).join(stem).into_os_string().to_str() {
             if recurse {
-                args.extend_from_slice(
-                    &["--recurse-submodules", "--shallow-submodules", target])
+                args.extend_from_slice(&["--recurse-submodules", "--shallow-submodules", target])
             } else {
                 args.push(target)
             }

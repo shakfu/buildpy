@@ -1,6 +1,5 @@
 use crate::ops::log;
 
-
 pub fn cmd(exec: &str, args: Vec<&str>, cwd: &str) -> () {
     match std::process::Command::new(exec)
         .args(args.clone())

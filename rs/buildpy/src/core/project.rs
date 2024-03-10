@@ -1,14 +1,12 @@
-use std::path::PathBuf;
 use std::env;
-
-use crate::ops::shell;
+use std::path::{Path,PathBuf};
 
 #[derive(Debug)]
 pub struct Project {
     pub cwd: PathBuf,
     pub build: PathBuf,
-    pub download: PathBuf, 
-    pub src: PathBuf, 
+    pub download: PathBuf,
+    pub src: PathBuf,
     pub install: PathBuf,
 }
 
@@ -26,21 +24,24 @@ impl Project {
     }
 
     pub fn setup(&self) {
-        for p in &[self.build.to_str(), self.download.to_str(), self.src.to_str(), self.install.to_str()] {
-            if let Some(_p) = p {
-                shell::makedirs(_p);
-            }
+        for p in &[
+            self.build.as_path(),
+            self.download.as_path(),
+            self.src.as_path(),
+            self.install.as_path(),
+        ] {
+            match std::fs::create_dir_all(p) {
+                Ok(_) => log::info!("created: {}", p.display()),
+                Err(e) => log::error!("failure: {e}"),
+            };
         }
     }
-    
+
     // pub fn clean(&self) {
     //     os.RemoveAll(p.Src)
     // }
-    
+
     // pub fn reset(&self) {
     //     os.RemoveAll(p.Build)
     // }
-    
-
-
 }

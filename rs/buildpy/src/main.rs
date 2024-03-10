@@ -68,7 +68,6 @@ fn run_demo() {
     cfg.static_to_disabled(config::macros::vecs!["_decimal"]);
     println!("bye..");
 
-
     println!("{}", env::consts::OS); // Prints the current OS.
 
     log::debug!("This level is currently not enabled for any logger");

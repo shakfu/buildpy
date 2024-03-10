@@ -11,7 +11,7 @@ pub fn init_logging() {
         simplelog::WriteLogger::new(
             simplelog::LevelFilter::Info,
             simplelog::Config::default(),
-            std::fs::File::create("my_rust_binary.log").unwrap(),
+            std::fs::File::create("buildpy.log").unwrap(),
         ),
     ])
     .unwrap();

@@ -1,7 +1,12 @@
-use downloader::Downloader;
 use std::path::Path;
 
+use downloader::Downloader;
+
+use crate::ops::log;
+use crate::ops::process;
+
 pub fn download_file(target: &str) {
+    log::info!("downloading {}", target);
     let mut downloader = Downloader::builder()
         .download_folder(std::path::Path::new("/tmp"))
         .parallel_requests(1)
@@ -14,17 +19,23 @@ pub fn download_file(target: &str) {
 
     for r in result {
         match r {
-            // Err(e) => print!("Error occurred! {}", e.to_string()),
-            Err(e) => print!("Error occurred! {}", e),
-            Ok(s) => print!("Success: {}", &s),
+            Err(e) => log::error!("Error occurred! {}", e),
+            Ok(s) => log::info!("Success: {}", &s),
         };
     }
 }
 
-pub fn git_clone(url: &str, branch: &str, to_dir: &str) {
+pub fn git_clone(url: &str, branch: &str, to_dir: &str, recurse: bool) {
+    let mut args = vec!["clone", url, "-b", branch,  "--depth=1"];
     if let Some(stem) = Path::new(url).file_stem() {
         if let Some(target) = Path::new(to_dir).join(stem).into_os_string().to_str() {
-            super::run("git", &[url, "-b", branch, target]);
+            if recurse {
+                args.extend_from_slice(
+                    &["--recurse-submodules", "--shallow-submodules", target])
+            } else {
+                args.push(target)
+            }
+            process::cmd("git", args, ".");
         }
     }
 }

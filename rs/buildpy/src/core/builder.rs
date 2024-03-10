@@ -1,7 +1,7 @@
 // use crate::core::api;
 // use crate::core::deps;
 use super::Dependency;
-use crate::ops;
+use crate::ops::download;
 use crate::ops::log;
 
 pub struct Builder {
@@ -43,11 +43,11 @@ impl Builder {
     pub fn setup(&self) {
         if self.use_git {
             let branch = self.repo_branch.replace("<VERSION>", &self.version);
-            ops::git_clone(&self.repo_url, &branch, ".");
+            download::git_clone(&self.repo_url, &branch, ".", false);
         } else {
             let target = self.download_url.replace("<VERSION>", &self.version);
             log::info!("downloading: {}", target);
-            ops::download_file(&target);
+            download::download_file(&target);
         }
     }
 

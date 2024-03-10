@@ -4,15 +4,13 @@ mod config;
 mod core;
 mod ops;
 
-use ops::log;
+use crate::ops::log;
+use crate::ops::process;
 
 use clap::Parser;
 use std::env;
 
 // use std::path::PathBuf;
-
-// extern crate simplelog;
-//pub use simplelog::{info,debug,warn,error};
 
 /// Builds python from source
 #[derive(Parser, Debug)]
@@ -47,8 +45,9 @@ struct Cli {
     // git, _ := cmd.Flags().GetBool("git")
 }
 
+/// run a demo
 fn run_demo() {
-    let cfg = config::Config::new("static_max".to_string(), "3.12.2".to_string());
+    let mut cfg = config::Config::new("static_max".to_string(), "3.12.2".to_string());
 
     let _proj = core::Project::new();
     println!("project cwd: {:?}", _proj.cwd);
@@ -58,18 +57,17 @@ fn run_demo() {
 
     let _serialized = serde_yaml::to_string(&cfg).unwrap();
 
-    ops::run("python3", &["-c", "print('ok')"]);
+    process::cmd("python3", vec!["-c", "print('ok')"], ".");
 
-    // println!("{serialized}");
+    println!("{_serialized}");
 
-    // // println!("cfg is {:?}", cfg);
-    // for key in cfg.exts.keys() {
-    //     println!("{key}");
-    // }
-    // // cfg.static_to_disabled(vecs!["_decimal"]);
-    // println!("bye..");
+    println!("cfg is {:?}", cfg);
+    for key in cfg.exts.keys() {
+        println!("{key}");
+    }
+    cfg.static_to_disabled(config::macros::vecs!["_decimal"]);
+    println!("bye..");
 
-    ops::cmd("python2", vec!["--version"], ".");
 
     println!("{}", env::consts::OS); // Prints the current OS.
 
@@ -77,6 +75,10 @@ fn run_demo() {
     log::info!("This only appears in the log file");
     log::warn!("This is a warning");
     log::error!("Bright red error");
+
+    println!("this should fail end exit:");
+    process::cmd("python2", vec!["--version"], ".");
+    // ops::cmd("python2", &["--version"], ".");
 }
 
 fn main() {

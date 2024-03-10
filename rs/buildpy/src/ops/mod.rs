@@ -3,6 +3,5 @@ pub mod log;
 pub mod process;
 pub mod shell;
 
-pub use download::{download_file, git_clone};
-pub use process::{cmd, run};
-// pub use download::{download_file};
+// pub use download::{download_file, git_clone};
+// pub use process::{cmd};

@@ -1,7 +1,7 @@
 // use crate::core::api;
 // use crate::core::deps;
-use super::Dependency;
-use crate::ops::download;
+use super::{Dependency, Project};
+use crate::ops;
 use crate::ops::log;
 
 pub struct Builder {
@@ -18,6 +18,7 @@ pub struct Builder {
     pub use_git: bool,
     pub parallel: i16, // n workers
     pub duration: i16, // seconds
+    pub project: Project,
 }
 
 impl Builder {
@@ -38,16 +39,17 @@ impl Builder {
             use_git: true,
             parallel: 4,
             duration: 0,
+            project: Project::new(),
         }
     }
     pub fn setup(&self) {
         if self.use_git {
             let branch = self.repo_branch.replace("<VERSION>", &self.version);
-            download::git_clone(&self.repo_url, &branch, ".", false);
+            ops::git_clone(&self.repo_url, &branch, ".", false);
         } else {
             let target = self.download_url.replace("<VERSION>", &self.version);
             log::info!("downloading: {}", target);
-            download::download_file(&target);
+            ops::download_file(&target);
         }
     }
 

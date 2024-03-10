@@ -26,3 +26,11 @@ impl api::Buildable for Dependency {
         println!("building...{} {}", self.name, self.version);
     }
 }
+
+
+
+pub fn install_bzr() {}
+
+pub fn install_ssl() {}
+
+pub fn install_xz() {}

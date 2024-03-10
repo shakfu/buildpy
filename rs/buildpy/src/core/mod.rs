@@ -5,5 +5,4 @@ pub mod job;
 pub mod project;
 
 pub use builder::Builder;
-pub use deps::Dependency;
 pub use project::Project;

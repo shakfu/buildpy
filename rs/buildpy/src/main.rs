@@ -16,9 +16,6 @@ use std::env;
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 struct Cli {
-    /// Optional name to operate on
-    // name: Option<String>,
-
     /// Python version
     #[arg(short, long, default_value = "3.11.8")]
     pyversion: Option<String>,
@@ -31,7 +28,7 @@ struct Cli {
     #[arg(short, long)]
     opts: Option<Vec<String>>,
 
-    /// Demo options
+    /// Run Demo
     #[arg(short, long, action)]
     demo: bool,
     // version, _ := cmd.Flags().GetString("version")
@@ -48,11 +45,6 @@ struct Cli {
 /// run a demo
 fn run_demo() {
     let mut cfg = config::Config::new("static_max".to_string(), "3.12.2".to_string());
-
-    let _proj = core::Project::new();
-    println!("project cwd: {:?}", _proj.cwd);
-
-    run_builder();
 
     let _serialized = serde_yaml::to_string(&cfg).unwrap();
 
@@ -79,10 +71,10 @@ fn run_demo() {
     // ops::cmd("python2", &["--version"], ".");
 }
 
-fn run_builder() {
-    let mut _builder = core::Builder::new();
-    _builder.process();    
-}
+// fn run_builder() {
+//     let mut _builder = core::Builder::new();
+//     _builder.process();    
+// }
 
 
 fn main() {
@@ -93,21 +85,32 @@ fn main() {
     // if let Some(name) = args.name.as_deref() {
     //     log::info!("name: {name}");
     // }
-
-    if let Some(ver) = args.pyversion.as_deref() {
-        log::info!("pyversion: {ver}");
-    }
-
-    if let Some(cfg) = args.config.as_deref() {
-        log::info!("config: {cfg}");
-    }
-
-    if let Some(opts) = args.opts.as_deref() {
-        log::info!("opts: {opts:?}");
-    }
-
     if args.demo {
         log::info!("run demo: {}", args.demo);
-        run_builder();
+        run_demo();
+    } else {
+        if let Some(version) = args.pyversion.as_deref() {
+            if let Some(cfg) = args.config.as_deref() {
+                log::info!("pyversion: {version} config: {cfg}");
+                let mut builder = core::Builder::new(cfg, version);
+                builder.process();
+            }
+        }
+        // let version = args.pyversion.as_deref().unwrap();
+        // let cfg =  args.config.as_deref().unwrap();
     }
+
+    // if let Some(ver) = args.pyversion.as_deref() {
+    //     log::info!("pyversion: {ver}");
+    // }
+
+    // if let Some(cfg) = args.config.as_deref() {
+    //     log::info!("config: {cfg}");
+    // }
+
+    // if let Some(opts) = args.opts.as_deref() {
+    //     log::info!("opts: {opts:?}");
+    // }
+
+
 }

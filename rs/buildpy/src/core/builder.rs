@@ -1,10 +1,8 @@
-// use crate::core::api;
-// use crate::core::deps;
 use super::Project;
+use crate::core::deps;
 use crate::ops;
 use crate::ops::log;
 use crate::ops::process;
-use crate::core::deps;
 
 pub struct Builder {
     pub name: String,
@@ -28,11 +26,11 @@ impl Builder {
     pub fn new(cfg: &str, version: &str) -> Self {
         Self {
             name: String::from("Python"),
-            config:  String::from(cfg),
+            config: String::from(cfg),
             version: String::from(version),
-            download_url: String::from(
-                format!("https://github.com/python/cpython/archive/refs/tags/v{version}.tar.gz")
-            ),
+            download_url: String::from(format!(
+                "https://github.com/python/cpython/archive/refs/tags/v{version}.tar.gz"
+            )),
             repo_url: String::from("https://github.com/python/cpython.git"),
             repo_branch: String::from(format!("v{version}")),
             config_options: vec![],
@@ -48,7 +46,13 @@ impl Builder {
     }
 
     pub fn git_clone(&self) {
-        let mut args = vec!["clone", &self.repo_url, "-b", &self.repo_branch, "--depth=1"];
+        let mut args = vec![
+            "clone",
+            &self.repo_url,
+            "-b",
+            &self.repo_branch,
+            "--depth=1",
+        ];
         let name = self.name.to_lowercase();
         if let Some(target) = self.project.src.join(name).into_os_string().to_str() {
             args.push(target);
@@ -72,7 +76,7 @@ impl Builder {
     }
 
     pub fn install_dependencies(&self) {
-        deps::install_bzr();
+        deps::install_bz2();
         deps::install_ssl();
         deps::install_xz();
     }

@@ -73,9 +73,8 @@ fn run_demo() {
 
 // fn run_builder() {
 //     let mut _builder = core::Builder::new();
-//     _builder.process();    
+//     _builder.process();
 // }
-
 
 fn main() {
     log::init_logging();
@@ -111,6 +110,4 @@ fn main() {
     // if let Some(opts) = args.opts.as_deref() {
     //     log::info!("opts: {opts:?}");
     // }
-
-
 }

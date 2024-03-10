@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use super::Project;
 use crate::core::deps;
 use crate::ops;
@@ -71,8 +73,12 @@ impl Builder {
         }
     }
 
-    pub fn prefix(&self) -> String {
-        return self.name.to_lowercase();
+    pub fn prefix(&self) -> PathBuf {
+        return self.project.install.join(self.name.to_lowercase());
+    }
+
+    pub fn srcdir(&self) -> PathBuf {
+        return self.project.src.join(self.name.to_lowercase());
     }
 
     pub fn install_dependencies(&self) {
@@ -82,12 +88,24 @@ impl Builder {
     }
 
     pub fn build(&mut self) {
-        println!("building...{}", self.version);
+        log::info!("building...{}-{}", self.name, self.version);
+        let prefixopt = format!("--prefix={}", self.prefix().display());
+        process::cmd(
+            "bash",
+            vec!["./configure", "--disable-test-modules", "--enable-shared", "--without-static-libpython", &prefixopt],
+            self.srcdir(),
+        );
+        let jobs = format!("-j{}", self.parallel);
+        process::cmd(
+            "make",
+            vec!["install", &jobs],
+            self.srcdir(),
+        );
     }
 
     pub fn process(&mut self) {
         self.setup();
-        self.install_dependencies();
+        // self.install_dependencies();
         self.build();
     }
 }

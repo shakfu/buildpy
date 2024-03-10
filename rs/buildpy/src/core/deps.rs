@@ -102,6 +102,37 @@ pub fn install_bz2() {
     }
 }
 
-pub fn install_ssl() {}
+
+pub fn install_ssl() {
+    let ssl = Dependency::new(
+        "openssl",
+        "1.1.1w",
+        "https://www.openssl.org/source/old/1.1.1/openssl-1.1.1w.tar.gz",
+        "https://github.com/openssl/openssl.git",
+        "OpenSSL_1_1_1w",
+        vec![],
+        vec!["libssl.a".to_string(), "libcrypto.a".to_string()],
+    );
+    if !ssl.staticlibs_exist() {
+        ssl.project.setup();
+        ssl.git_clone();
+        let prefixopt = format!("--prefix={}", ssl.prefix().display());
+        process::cmd(
+            "bash",
+            vec!["./config", "no-shared", "no-tests", &prefixopt],
+            ssl.srcdir(),
+        );
+        process::cmd(
+            "make",
+            vec!["install_sw"],
+            ssl.srcdir(),
+        );
+        if !ssl.staticlibs_exist() {
+            log::error!("could not build ssl");
+            std::process::exit(1);
+        }
+    }
+}
+
 
 pub fn install_xz() {}

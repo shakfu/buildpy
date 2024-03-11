@@ -4,6 +4,25 @@ use crate::ops::process;
 use std::collections::HashMap;
 use std::path::Path;
 
+use walkdir::WalkDir;
+
+use globset::{Glob, GlobSetBuilder};
+
+pub fn recursive_remove(dir: &Path, patterns: &[&str]) {
+    // setup globset
+    let mut builder = GlobSetBuilder::new();
+    for pat in patterns {
+        builder.add(Glob::new(pat).unwrap());
+    }
+    let set = builder.build().unwrap();
+    for entry in WalkDir::new(dir) {
+        let entry = entry.unwrap();
+        if set.is_match(entry.path()) {
+            println!("{}", entry.path().display());
+        }
+    }
+}
+
 pub fn makedirs(path: &str) {
     log::info!("makedirs {path}");
     match std::fs::create_dir_all(std::path::Path::new(path)) {
@@ -16,7 +35,7 @@ pub fn makedirs(path: &str) {
 }
 
 pub fn mv(src: &str, dst: &str) {
-    std::fs::rename(src, dst).expect(&format!("failed to move {} to {}", src, dst));
+    std::fs::rename(src, dst).unwrap_or_else(|_| panic!("failed to move {} to {}", src, dst));
 }
 
 pub fn remove<P>(path: P)
@@ -24,16 +43,9 @@ where
     P: AsRef<Path> + std::fmt::Debug + Copy,
 {
     if path.as_ref().exists() {
-        std::fs::remove_dir_all(path).expect(&format!("failed to remove {:?}", path));
+        std::fs::remove_dir_all(path).unwrap_or_else(|_| panic!("failed to remove {:?}", path));
     }
 }
-
-// pub fn remove<P: AsRef<Path> + std::fmt::Debug>(path: P) {
-//     match std::fs::remove_dir_all(path) {
-//         Ok(_) => log::info!("remove: {:?}", path),
-//         Err(e) => log::error!("failure: {e}"),
-//     };
-// }
 
 pub fn cmake_configure(src_dir: &str, build_dir: &str, opts: Vec<&str>) {
     let mut args = vec!["S", src_dir, "-B", build_dir];

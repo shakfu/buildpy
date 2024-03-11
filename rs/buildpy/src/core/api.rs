@@ -13,6 +13,6 @@ impl Buildable for Person {
     }
 
     fn speak(&mut self, x: String) -> String {
-        return x.clone();
+        x.clone()
     }
 }

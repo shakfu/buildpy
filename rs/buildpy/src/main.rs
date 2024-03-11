@@ -12,6 +12,7 @@ use clap::Parser;
 
 use crate::ops::log;
 use crate::ops::process;
+// use crate::ops::shell;
 
 /// Builds python from source
 #[derive(Parser, Debug)]
@@ -55,8 +56,16 @@ struct Cli {
     // debug, _ := cmd.Flags().GetBool("debug")
 }
 
+pub fn printit(d: &std::fs::DirEntry) {
+    println!("{}", d.path().display());
+}
+
 /// run a demo
 fn run_demo() {
+    // let p = std::path::Path::new(".");
+
+    // shell::visit_dirs(&p, &printit).expect("works");
+
     let mut cfg = config::Config::new("static_max".to_string(), "3.12.2".to_string());
 
     let _serialized = serde_json::to_string(&cfg).unwrap();

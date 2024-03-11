@@ -77,7 +77,7 @@ impl Dependency {
 
     pub fn staticlibs_exist(&self) -> bool {
         for lib in &self.staticlibs {
-            if !self.prefix().join("lib").join(&lib).exists() {
+            if !self.prefix().join("lib").join(lib).exists() {
                 return false;
             }
         }

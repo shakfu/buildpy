@@ -105,6 +105,7 @@ class Shell {
 
     }
 
+#if os(macOS)
     func trash(path: String) {
         guard let url = URL(string: path) else {
             print("could not convert \(path) to url")
@@ -116,6 +117,7 @@ class Shell {
             print("could not trash \(path)")
         }
     }
+#endif
 
     func walk(path: String) -> [String] {
         if let paths = self.fm.subpaths(atPath: path) {

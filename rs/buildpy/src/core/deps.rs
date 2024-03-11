@@ -1,7 +1,9 @@
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
+use std::collections::HashMap;
 
 use super::Project;
 use crate::ops::process;
+use crate::ops::shell;
 
 pub struct Dependency {
     pub name: String,
@@ -65,17 +67,21 @@ impl Dependency {
         self.project.install.join(self.name.to_lowercase())
     }
 
-    pub fn srcdir(&self) -> PathBuf {
+    pub fn src_dir(&self) -> PathBuf {
         self.project.src.join(self.name.to_lowercase())
+    }
+
+    pub fn build_dir(&self) -> PathBuf {
+        self.src_dir().join("build")
     }
 
     pub fn staticlibs_exist(&self) -> bool {
         for lib in &self.staticlibs {
-            if !Path::new(&lib).exists() {
+            if !self.prefix().join("lib").join(&lib).exists() {
                 return false;
             }
         }
-        return true;
+        true
     }
 }
 
@@ -97,7 +103,7 @@ pub fn install_bz2() {
         process::cmd(
             "make",
             vec!["install", &prefixopt, "CFLAGS='-fPIC'"],
-            bz2.srcdir(),
+            bz2.src_dir(),
         );
         if !bz2.staticlibs_exist() {
             log::error!("could not build bz2");
@@ -123,9 +129,9 @@ pub fn install_ssl() {
         process::cmd(
             "bash",
             vec!["./config", "no-shared", "no-tests", &prefixopt],
-            ssl.srcdir(),
+            ssl.src_dir(),
         );
-        process::cmd("make", vec!["install_sw"], ssl.srcdir());
+        process::cmd("make", vec!["install_sw"], ssl.src_dir());
         if !ssl.staticlibs_exist() {
             log::error!("could not build ssl");
             std::process::exit(1);
@@ -133,4 +139,35 @@ pub fn install_ssl() {
     }
 }
 
-pub fn install_xz() {}
+
+pub fn install_xz() {
+    let xz = Dependency::new(
+        "xz",
+        "5.6.0",
+        "https://github.com/tukaani-project/xz/releases/download/v5.6.0/xz-5.6.0.tar.gz",
+        "https://github.com/tukaani-project/xz.git",
+        "v5.6.0",
+        vec![],
+        vec!["liblzma.a".to_string()],
+    );
+    if !xz.staticlibs_exist() {
+        xz.project.setup();
+        xz.git_clone();
+        let envs = HashMap::from([("CFLAGS".to_string(), "-fPIC".to_string())]);
+        let opts = vec!["-DBUILD_SHARED_LIBS=OFF", "-DENABLE_NLS=OFF", "-DENABLE_SMALL=ON",
+        "-DCMAKE_BUILD_TYPE=MinSizeRel"];
+        if let Some(sdir) = xz.src_dir().to_str() {
+            if let Some(bdir) = xz.build_dir().to_str() {
+                if let Some(pdir) = xz.prefix().to_str() {
+                    shell::cmake_configure_env(sdir, bdir, opts, envs.clone());
+                    shell::cmake_build_env(bdir, true, envs);
+                    shell::cmake_install(bdir, pdir);
+                    if !xz.staticlibs_exist() {
+                        log::error!("could not build xz");
+                        std::process::exit(1);
+                    }
+                }
+            }
+        }
+    }   
+}

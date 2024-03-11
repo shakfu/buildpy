@@ -108,7 +108,7 @@ impl Builder {
 
     pub fn process(&mut self) {
         self.setup();
-        // self.install_dependencies();
+        self.install_dependencies();
         self.build();
     }
 }

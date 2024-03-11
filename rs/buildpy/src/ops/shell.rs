@@ -1,4 +1,5 @@
 // use std::path::PathBuf;
+use std::collections::HashMap;
 use crate::ops::log;
 use crate::ops::process;
 
@@ -23,12 +24,26 @@ pub fn cmake_configure(src_dir: &str, build_dir: &str, opts: Vec<&str>) {
     process::cmd("cmake", args, ".");
 }
 
+pub fn cmake_configure_env(src_dir: &str, build_dir: &str, opts: Vec<&str>, envs: HashMap<String, String>) {
+    let mut args = vec!["S", src_dir, "-B", build_dir];
+    args.extend(opts);
+    process::cmd_env("cmake", args, ".", envs);
+}
+
 pub fn cmake_build(build_dir: &str, release: bool) {
     let mut args = vec!["--build", build_dir];
     if release {
         args.extend(vec!["--config", "Release"]);
     }
     process::cmd("cmake", args, ".");
+}
+
+pub fn cmake_build_env(build_dir: &str, release: bool, envs: HashMap<String, String>) {
+    let mut args = vec!["--build", build_dir];
+    if release {
+        args.extend(vec!["--config", "Release"]);
+    }
+    process::cmd_env("cmake", args, ".", envs);
 }
 
 pub fn cmake_install(build_dir: &str, prefix: &str) {

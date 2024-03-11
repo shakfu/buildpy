@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use super::Project;
 use crate::core::deps;
-use crate::ops;
+// use crate::ops;
 use crate::ops::log;
 use crate::ops::process;
 
@@ -64,13 +64,14 @@ impl Builder {
 
     pub fn setup(&self) {
         self.project.setup();
-        if self.use_git {
-            self.git_clone();
-        } else {
-            let target = self.download_url.replace("<VERSION>", &self.version);
-            log::info!("downloading: {}", target);
-            ops::download_file(&target);
-        }
+        self.git_clone();
+        // if self.use_git {
+        //     self.git_clone();
+        // } else {
+        //     let target = self.download_url.replace("<VERSION>", &self.version);
+        //     log::info!("downloading: {}", target);
+        //     ops::download_file(&target);
+        // }
     }
 
     pub fn prefix(&self) -> PathBuf {
@@ -92,15 +93,17 @@ impl Builder {
         let prefixopt = format!("--prefix={}", self.prefix().display());
         process::cmd(
             "bash",
-            vec!["./configure", "--disable-test-modules", "--enable-shared", "--without-static-libpython", &prefixopt],
+            vec![
+                "./configure",
+                "--disable-test-modules",
+                "--enable-shared",
+                "--without-static-libpython",
+                &prefixopt,
+            ],
             self.srcdir(),
         );
         let jobs = format!("-j{}", self.parallel);
-        process::cmd(
-            "make",
-            vec!["install", &jobs],
-            self.srcdir(),
-        );
+        process::cmd("make", vec!["install", &jobs], self.srcdir());
     }
 
     pub fn process(&mut self) {

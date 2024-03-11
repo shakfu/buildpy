@@ -5,13 +5,13 @@ mod config;
 mod core;
 mod ops;
 
-use crate::ops::log;
-use crate::ops::process;
-
-use clap::Parser;
+// use std::path::PathBuf;
 use std::env;
 
-// use std::path::PathBuf;
+use clap::Parser;
+
+use crate::ops::log;
+use crate::ops::process;
 
 /// Builds python from source
 #[derive(Parser, Debug)]
@@ -26,28 +26,40 @@ struct Cli {
     config: Option<String>,
 
     /// Config options
-    #[arg(short, long)]
+    #[arg(long)]
     opts: Option<Vec<String>>,
+
+    /// Install python packages
+    #[arg(long)]
+    pkgs: Option<Vec<String>>,
+
+    /// Optimize build
+    #[arg(short, long, action)]
+    optimize: bool,
+
+    /// Use git to download code
+    #[arg(short, long, action)]
+    git: bool,
+
+    /// reset before build
+    #[arg(short, long, action)]
+    reset: bool,
 
     /// Run Demo
     #[arg(short, long, action)]
     demo: bool,
-    // version, _ := cmd.Flags().GetString("version")
-    // config, _ := cmd.Flags().GetString("config")
-    // pkgs, _ := cmd.Flags().GetStringSlice("pkgs")
-    // opts, _ := cmd.Flags().GetStringSlice("opts")
-    // jobs, _ := cmd.Flags().GetInt("jobs")
-    // optimize, _ := cmd.Flags().GetBool("optimize")
-    // reset, _ := cmd.Flags().GetBool("reset")
+
+    /// Parallel build jobs
+    #[arg(short, long, default_value = "4")]
+    jobs: i16,
     // debug, _ := cmd.Flags().GetBool("debug")
-    // git, _ := cmd.Flags().GetBool("git")
 }
 
 /// run a demo
 fn run_demo() {
     let mut cfg = config::Config::new("static_max".to_string(), "3.12.2".to_string());
 
-    let _serialized = serde_yaml::to_string(&cfg).unwrap();
+    let _serialized = serde_json::to_string(&cfg).unwrap();
 
     process::cmd("python3", vec!["-c", "print('ok')"], ".");
 
@@ -85,9 +97,10 @@ fn main() {
     // if let Some(name) = args.name.as_deref() {
     //     log::info!("name: {name}");
     // }
+
     if args.demo {
         log::info!("run demo: {}", args.demo);
-        run_demo();
+        // run_demo();
     } else if let Some(version) = args.pyversion.as_deref() {
         if let Some(cfg) = args.config.as_deref() {
             log::info!("pyversion: {version} config: {cfg}");

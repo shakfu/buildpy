@@ -15,7 +15,6 @@ run:
 
 fmt:
 	@cargo fmt -- --emit=files
-	# @rustfmt src/**/*.rs
 
 clean:
 	@cargo clean

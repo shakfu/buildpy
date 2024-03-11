@@ -7,13 +7,11 @@ edition = "2021"
 
 [dependencies]
 clap = { version = "4.5.2", features = ["derive"] }
-downloader = "0.2.7"
-flate2 = "1.0.28"
-formatx = "0.2.2"
-indicatif = "0.17.8"
-indicatif-log-bridge = "0.2.2"
+# downloader = "0.2.7"
+# flate2 = "1.0.28"
 log = "0.4.21"
+log-panics = "2.1.0"
 serde = { version = "1.0", features = ["derive"] }
-serde_yaml = "0.9"
+serde_json = "1.0.114"
 simplelog = { version = "^0.12.2", features = ["paris"] }
-tinytemplate = "1.2.1"
+# tinytemplate = "1.2.1"

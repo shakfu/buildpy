@@ -1,4 +1,3 @@
-
 macro_rules! vecs {
     ( $( $x:expr ),* ) => {
         {

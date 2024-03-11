@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use super::Project;
 use crate::ops::process;
@@ -70,10 +70,14 @@ impl Dependency {
     }
 
     pub fn staticlibs_exist(&self) -> bool {
-        false
+        for lib in &self.staticlibs {
+            if !Path::new(&lib).exists() {
+                return false;
+            }
+        }
+        return true;
     }
 }
-
 
 pub fn install_bz2() {
     let bz2 = Dependency::new(
@@ -102,7 +106,6 @@ pub fn install_bz2() {
     }
 }
 
-
 pub fn install_ssl() {
     let ssl = Dependency::new(
         "openssl",
@@ -122,17 +125,12 @@ pub fn install_ssl() {
             vec!["./config", "no-shared", "no-tests", &prefixopt],
             ssl.srcdir(),
         );
-        process::cmd(
-            "make",
-            vec!["install_sw"],
-            ssl.srcdir(),
-        );
+        process::cmd("make", vec!["install_sw"], ssl.srcdir());
         if !ssl.staticlibs_exist() {
             log::error!("could not build ssl");
             std::process::exit(1);
         }
     }
 }
-
 
 pub fn install_xz() {}

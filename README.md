@@ -128,7 +128,7 @@ options:
 
 ### buildpy (go-edition)
 
-A golang version of `buildpy`. (Hey, Why not?!)
+A golang version of `buildpy`.
 
 Mostly mirrors the python version except for the following:
 
@@ -137,6 +137,13 @@ Mostly mirrors the python version except for the following:
 ## rust
 
 ### buildpy (rust-edition)
+
+A golang version of `buildpy`.
+
+Mostly mirrors the python version except for the following:
+
+- Round-trip serialization/deserialization from/to json
+
 
 ## swift
 

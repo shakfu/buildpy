@@ -30,11 +30,11 @@ impl Builder {
             name: String::from("Python"),
             config: String::from(cfg),
             version: String::from(version),
-            download_url: String::from(format!(
+            download_url: format!(
                 "https://github.com/python/cpython/archive/refs/tags/v{version}.tar.gz"
-            )),
+            ),
             repo_url: String::from("https://github.com/python/cpython.git"),
-            repo_branch: String::from(format!("v{version}")),
+            repo_branch: format!("v{version}"),
             config_options: vec![],
             packages: vec![],
             staticlibs: vec![],
@@ -74,11 +74,11 @@ impl Builder {
     }
 
     pub fn prefix(&self) -> PathBuf {
-        return self.project.install.join(self.name.to_lowercase());
+        self.project.install.join(self.name.to_lowercase())
     }
 
     pub fn srcdir(&self) -> PathBuf {
-        return self.project.src.join(self.name.to_lowercase());
+        self.project.src.join(self.name.to_lowercase())
     }
 
     pub fn install_dependencies(&self) {

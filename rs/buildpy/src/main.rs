@@ -1,4 +1,5 @@
 #![allow(dead_code)]
+#![allow(clippy::vec_init_then_push)]
 
 mod config;
 mod core;
@@ -87,16 +88,12 @@ fn main() {
     if args.demo {
         log::info!("run demo: {}", args.demo);
         run_demo();
-    } else {
-        if let Some(version) = args.pyversion.as_deref() {
-            if let Some(cfg) = args.config.as_deref() {
-                log::info!("pyversion: {version} config: {cfg}");
-                let mut builder = core::Builder::new(cfg, version);
-                builder.process();
-            }
+    } else if let Some(version) = args.pyversion.as_deref() {
+        if let Some(cfg) = args.config.as_deref() {
+            log::info!("pyversion: {version} config: {cfg}");
+            let mut builder = core::Builder::new(cfg, version);
+            builder.process();
         }
-        // let version = args.pyversion.as_deref().unwrap();
-        // let cfg =  args.config.as_deref().unwrap();
     }
 
     // if let Some(ver) = args.pyversion.as_deref() {

@@ -114,7 +114,7 @@ pub const DISABLED: &[&str; 23] = &[
 ];
 
 pub fn get_extensions() -> HashMap<&'static str, Vec<&'static str>> {
-    return HashMap::from([
+    HashMap::from([
         ("name", vec!["name", "dest"]),
         ("_abc", vec!["_abc.c"]),
         ("_asyncio", vec!["_asynciomodule.c"]),
@@ -344,7 +344,7 @@ pub fn get_extensions() -> HashMap<&'static str, Vec<&'static str>> {
         ),
         ("unicodedata", vec!["unicodedata.c"]),
         ("zlib", vec!["zlibmodule.c", "-lz"]),
-    ]);
+    ])
 }
 
 pub struct BaseConfig<'a> {

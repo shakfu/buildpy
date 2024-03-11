@@ -33,6 +33,10 @@ pub fn git_clone(url: &str, branch: &str, to_dir: PathBuf, recurse: bool) {
     }
 }
 
+pub fn download_file(to_dir: PathBuf, url: &str) {
+    wget(to_dir, url);
+}
+
 // pub fn download_file(target: &str) {
 //     log::info!("downloading {}", target);
 //     let mut downloader = Downloader::builder()

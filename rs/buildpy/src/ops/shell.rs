@@ -1,7 +1,8 @@
 // use std::path::PathBuf;
-use std::collections::HashMap;
 use crate::ops::log;
 use crate::ops::process;
+use std::collections::HashMap;
+use std::path::Path;
 
 pub fn makedirs(path: &str) {
     log::info!("makedirs {path}");
@@ -18,13 +19,34 @@ pub fn mv(src: &str, dst: &str) {
     std::fs::rename(src, dst).expect(&format!("failed to move {} to {}", src, dst));
 }
 
+pub fn remove<P>(path: P)
+where
+    P: AsRef<Path> + std::fmt::Debug + Copy,
+{
+    if path.as_ref().exists() {
+        std::fs::remove_dir_all(path).expect(&format!("failed to remove {:?}", path));
+    }
+}
+
+// pub fn remove<P: AsRef<Path> + std::fmt::Debug>(path: P) {
+//     match std::fs::remove_dir_all(path) {
+//         Ok(_) => log::info!("remove: {:?}", path),
+//         Err(e) => log::error!("failure: {e}"),
+//     };
+// }
+
 pub fn cmake_configure(src_dir: &str, build_dir: &str, opts: Vec<&str>) {
     let mut args = vec!["S", src_dir, "-B", build_dir];
     args.extend(opts);
     process::cmd("cmake", args, ".");
 }
 
-pub fn cmake_configure_env(src_dir: &str, build_dir: &str, opts: Vec<&str>, envs: HashMap<String, String>) {
+pub fn cmake_configure_env(
+    src_dir: &str,
+    build_dir: &str,
+    opts: Vec<&str>,
+    envs: HashMap<String, String>,
+) {
     let mut args = vec!["S", src_dir, "-B", build_dir];
     args.extend(opts);
     process::cmd_env("cmake", args, ".", envs);

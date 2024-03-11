@@ -13,8 +13,6 @@ use clap::Parser;
 use crate::ops::log;
 use crate::ops::process;
 
-
-
 /// Builds python from source
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]

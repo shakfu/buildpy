@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use super::Project;
 use crate::core::deps;
-// use crate::ops;
+use crate::ops;
 use crate::ops::log;
 use crate::ops::process;
 
@@ -64,14 +64,13 @@ impl Builder {
 
     pub fn setup(&self) {
         self.project.setup();
-        self.git_clone();
-        // if self.use_git {
-        //     self.git_clone();
-        // } else {
-        //     let target = self.download_url.replace("<VERSION>", &self.version);
-        //     log::info!("downloading: {}", target);
-        //     ops::download_file(&target);
-        // }
+        if self.use_git {
+            self.git_clone();
+        } else {
+            let url = self.download_url.replace("<VERSION>", &self.version);
+            log::info!("downloading: {}", url);
+            ops::download_file(self.project.downloads.clone(), &url);
+        }
     }
 
     pub fn prefix(&self) -> PathBuf {

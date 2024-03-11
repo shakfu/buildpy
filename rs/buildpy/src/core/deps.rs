@@ -1,5 +1,5 @@
-use std::path::PathBuf;
 use std::collections::HashMap;
+use std::path::PathBuf;
 
 use super::Project;
 use crate::ops::process;
@@ -139,7 +139,6 @@ pub fn install_ssl() {
     }
 }
 
-
 pub fn install_xz() {
     let xz = Dependency::new(
         "xz",
@@ -154,8 +153,12 @@ pub fn install_xz() {
         xz.project.setup();
         xz.git_clone();
         let envs = HashMap::from([("CFLAGS".to_string(), "-fPIC".to_string())]);
-        let opts = vec!["-DBUILD_SHARED_LIBS=OFF", "-DENABLE_NLS=OFF", "-DENABLE_SMALL=ON",
-        "-DCMAKE_BUILD_TYPE=MinSizeRel"];
+        let opts = vec![
+            "-DBUILD_SHARED_LIBS=OFF",
+            "-DENABLE_NLS=OFF",
+            "-DENABLE_SMALL=ON",
+            "-DCMAKE_BUILD_TYPE=MinSizeRel",
+        ];
         if let Some(sdir) = xz.src_dir().to_str() {
             if let Some(bdir) = xz.build_dir().to_str() {
                 if let Some(pdir) = xz.prefix().to_str() {
@@ -169,5 +172,5 @@ pub fn install_xz() {
                 }
             }
         }
-    }   
+    }
 }

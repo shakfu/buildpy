@@ -1,6 +1,6 @@
-use std::path::Path;
-use std::collections::HashMap;
 use crate::ops::log;
+use std::collections::HashMap;
+use std::path::Path;
 
 pub fn cmd<P>(exec: &str, args: Vec<&str>, cwd: P)
 where
@@ -19,8 +19,7 @@ where
     };
 }
 
-
-pub fn cmd_env<P>(exec: &str, args: Vec<&str>, cwd: P, envs: HashMap<String,String>)
+pub fn cmd_env<P>(exec: &str, args: Vec<&str>, cwd: P, envs: HashMap<String, String>)
 where
     P: AsRef<Path>,
 {

@@ -1,6 +1,8 @@
 use std::env;
 use std::path::PathBuf;
 
+use crate::ops::shell;
+
 #[derive(Debug)]
 pub struct Project {
     pub cwd: PathBuf,
@@ -38,16 +40,10 @@ impl Project {
     }
 
     pub fn clean(&self) {
-        match std::fs::remove_dir_all(self.src.as_path()) {
-            Ok(_) => log::info!("remove: {}", self.src.display()),
-            Err(e) => log::error!("failure: {e}"),
-        };
+        shell::remove(self.src.as_path());
     }
 
     pub fn reset(&self) {
-        match std::fs::remove_dir_all(self.build.as_path()) {
-            Ok(_) => log::info!("remove: {}", self.build.display()),
-            Err(e) => log::error!("failure: {e}"),
-        };
+        shell::remove(self.build.as_path());
     }
 }

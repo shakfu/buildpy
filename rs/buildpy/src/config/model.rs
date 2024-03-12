@@ -295,6 +295,18 @@ impl Config {
         }
     }
 
+    pub fn write<P: AsRef<std::path::Path>>(&self, path: P) {
+        let mut lines = self.headers.clone();
+        for elem in self.core.clone() {
+            let mut lv = vec![elem.clone()];
+            for l in &self.exts[&elem] {
+                lv.push(l.to_string());
+            }
+            lines.push(lv.join(" "));
+        }
+         let _ = std::fs::write(path, lines.join("\n"));
+    }
+
     pub fn static_to_shared(&mut self, names: Vec<String>) {
         for name in names {
             self.statik.retain(|x| x != &name);

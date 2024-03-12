@@ -3,13 +3,12 @@ name = "buildpy"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 clap = { version = "4.5.2", features = ["derive"] }
-globset = "=0.4.14"
 # downloader = "0.2.7"
 # flate2 = "1.0.28"
+globset = "=0.4.14"
 log = "0.4.21"
 log-panics = "2.1.0"
 serde = { version = "1.0", features = ["derive"] }

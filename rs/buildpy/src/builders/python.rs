@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 
-use crate::builders::deps;
+use crate::builders;
 use crate::config;
 use crate::ops;
 use crate::ops::log;
@@ -68,9 +68,9 @@ impl PythonBuilder {
     }
 
     fn install_dependencies(&self) {
-        deps::install_bz2();
-        deps::install_ssl();
-        deps::install_xz();
+        builders::Bzip2Builder::new().process();
+        builders::SslBuilder::new().process();
+        builders::XzBuilder::new().process();
     }
 }
 

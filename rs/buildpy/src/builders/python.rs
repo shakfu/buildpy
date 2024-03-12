@@ -1,13 +1,11 @@
 use std::path::PathBuf;
 
-
 use crate::builders;
+use crate::builders::api::Builder;
 use crate::config;
 use crate::ops;
 use crate::ops::log;
 use crate::ops::process;
-
-use crate::builders::api::Builder;
 
 use logging_timer::time;
 
@@ -75,7 +73,6 @@ impl PythonBuilder {
 }
 
 impl Builder for PythonBuilder {
-
     fn setup(&self) {
         self.project.setup();
         if self.use_git {
@@ -126,7 +123,6 @@ impl Builder for PythonBuilder {
     }
 
     fn is_built(&self) -> bool {
-        self.prefix().join("bin").join("python3").exists()    
+        self.prefix().join("bin").join("python3").exists()
     }
-
 }

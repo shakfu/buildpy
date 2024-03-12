@@ -1,11 +1,10 @@
 pub mod api;
-pub mod python;
 pub mod bz2;
-pub mod xz;
+pub mod python;
 pub mod ssl;
+pub mod xz;
 
-
-pub use python::PythonBuilder;
 pub use bz2::Bzip2Builder;
-pub use xz::XzBuilder;
+pub use python::PythonBuilder;
 pub use ssl::SslBuilder;
+pub use xz::XzBuilder;

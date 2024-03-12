@@ -1,8 +1,8 @@
 #![allow(dead_code)]
 #![allow(clippy::vec_init_then_push)]
 
-mod config;
 mod builders;
+mod config;
 mod ops;
 
 // use std::path::PathBuf;
@@ -13,8 +13,7 @@ use clap::Parser;
 use crate::builders::api::Builder;
 use crate::ops::log;
 use crate::ops::process;
-// use crate::config;
-// use crate::ops::shell;
+
 
 /// Builds python from source
 #[derive(Parser, Debug)]

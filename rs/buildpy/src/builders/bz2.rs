@@ -1,11 +1,9 @@
 use std::path::PathBuf;
 
-use crate::config;
-use crate::ops::process;
-use crate::ops::log;
 use crate::builders::api::Builder;
-
-
+use crate::config;
+use crate::ops::log;
+use crate::ops::process;
 
 pub struct Bzip2Builder {
     pub name: String,
@@ -55,7 +53,6 @@ impl Bzip2Builder {
 }
 
 impl Builder for Bzip2Builder {
-
     fn setup(&self) {
         self.project.setup();
         self.git_clone();

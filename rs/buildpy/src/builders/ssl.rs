@@ -1,11 +1,9 @@
 use std::path::PathBuf;
 
-use crate::ops::process;
-use crate::ops::log;
-use crate::config::Project;
-
 use crate::builders::api::Builder;
-
+use crate::config::Project;
+use crate::ops::log;
+use crate::ops::process;
 
 pub struct SslBuilder {
     pub name: String,
@@ -26,7 +24,8 @@ impl SslBuilder {
         Self {
             name: "openssl".to_string(),
             version: "1.1.1w".to_string(),
-            download_url: "https://www.openssl.org/source/old/1.1.1/openssl-1.1.1w.tar.gz".to_string(),
+            download_url: "https://www.openssl.org/source/old/1.1.1/openssl-1.1.1w.tar.gz"
+                .to_string(),
             repo_url: "https://github.com/openssl/openssl.git".to_string(),
             repo_branch: "OpenSSL_1_1_1w".to_string(),
             config_options: vec![],
@@ -55,7 +54,6 @@ impl SslBuilder {
 }
 
 impl Builder for SslBuilder {
-
     fn setup(&self) {
         self.project.setup();
         self.git_clone();
@@ -103,5 +101,3 @@ impl Builder for SslBuilder {
         true
     }
 }
-
-

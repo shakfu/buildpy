@@ -1,15 +1,12 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
 
-
 use crate::config;
+use crate::ops::log;
 use crate::ops::process;
 use crate::ops::shell;
-use crate::ops::log;
 
 use crate::builders::api::Builder;
-
-
 
 pub struct XzBuilder {
     pub name: String,
@@ -30,7 +27,9 @@ impl XzBuilder {
         Self {
             name: "xz".to_string(),
             version: "5.6.0".to_string(),
-            download_url: "https://github.com/tukaani-project/xz/releases/download/v5.6.0/xz-5.6.0.tar.gz".to_string(),
+            download_url:
+                "https://github.com/tukaani-project/xz/releases/download/v5.6.0/xz-5.6.0.tar.gz"
+                    .to_string(),
             repo_url: "https://github.com/tukaani-project/xz.git".to_string(),
             repo_branch: "v5.6.0".to_string(),
             config_options: vec![],
@@ -59,7 +58,6 @@ impl XzBuilder {
 }
 
 impl Builder for XzBuilder {
-
     fn setup(&self) {
         self.project.setup();
         self.git_clone();
@@ -83,28 +81,28 @@ impl Builder for XzBuilder {
 
     fn process(&mut self) {
         if !self.is_built() {
-                self.setup();
-                let envs = HashMap::from([("CFLAGS".to_string(), "-fPIC".to_string())]);
-                let opts = vec![
-                    "-DBUILD_SHARED_LIBS=OFF",
-                    "-DENABLE_NLS=OFF",
-                    "-DENABLE_SMALL=ON",
-                    "-DCMAKE_BUILD_TYPE=MinSizeRel",
-                ];
-                if let Some(sdir) = self.src_dir().to_str() {
-                    if let Some(bdir) = self.build_dir().to_str() {
-                        if let Some(pdir) = self.prefix().to_str() {
-                            shell::cmake_configure_env(sdir, bdir, opts, envs.clone());
-                            shell::cmake_build_env(bdir, true, envs);
-                            shell::cmake_install(bdir, pdir);
-                            if !self.is_built() {
-                                log::error!("could not build xz");
-                                std::process::exit(1);
-                            }
+            self.setup();
+            let envs = HashMap::from([("CFLAGS".to_string(), "-fPIC".to_string())]);
+            let opts = vec![
+                "-DBUILD_SHARED_LIBS=OFF",
+                "-DENABLE_NLS=OFF",
+                "-DENABLE_SMALL=ON",
+                "-DCMAKE_BUILD_TYPE=MinSizeRel",
+            ];
+            if let Some(sdir) = self.src_dir().to_str() {
+                if let Some(bdir) = self.build_dir().to_str() {
+                    if let Some(pdir) = self.prefix().to_str() {
+                        shell::cmake_configure_env(sdir, bdir, opts, envs.clone());
+                        shell::cmake_build_env(bdir, true, envs);
+                        shell::cmake_install(bdir, pdir);
+                        if !self.is_built() {
+                            log::error!("could not build xz");
+                            std::process::exit(1);
                         }
                     }
                 }
             }
+        }
     }
 
     fn is_built(&self) -> bool {

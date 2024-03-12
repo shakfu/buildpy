@@ -6,9 +6,11 @@ use crate::ops;
 use crate::ops::log;
 use crate::ops::process;
 
+use crate::core::api::Builder;
+
 use logging_timer::time;
 
-pub struct Builder {
+pub struct PythonBuilder {
     pub name: String,
     pub config: String,
     pub version: String,
@@ -26,7 +28,7 @@ pub struct Builder {
     pub project: core::Project,
 }
 
-impl Builder {
+impl PythonBuilder {
     pub fn new(cfg: &str, version: &str) -> Self {
         Self {
             name: String::from("Python"),
@@ -49,7 +51,7 @@ impl Builder {
         }
     }
 
-    pub fn git_clone(&self) {
+    fn git_clone(&self) {
         let mut args = vec![
             "clone",
             &self.repo_url,
@@ -64,7 +66,16 @@ impl Builder {
         }
     }
 
-    pub fn setup(&self) {
+    fn install_dependencies(&self) {
+        deps::install_bz2();
+        deps::install_ssl();
+        deps::install_xz();
+    }
+}
+
+impl Builder for PythonBuilder {
+
+    fn setup(&self) {
         self.project.setup();
         if self.use_git {
             self.git_clone();
@@ -73,24 +84,23 @@ impl Builder {
             log::info!("downloading: {}", url);
             ops::download_file(self.project.downloads.clone(), &url);
         }
+        self.install_dependencies();
     }
 
-    pub fn prefix(&self) -> PathBuf {
+    fn prefix(&self) -> PathBuf {
         self.project.install.join(self.name.to_lowercase())
     }
 
-    pub fn srcdir(&self) -> PathBuf {
+    fn src_dir(&self) -> PathBuf {
         self.project.src.join(self.name.to_lowercase())
     }
 
-    pub fn install_dependencies(&self) {
-        deps::install_bz2();
-        deps::install_ssl();
-        deps::install_xz();
+    fn build_dir(&self) -> PathBuf {
+        self.project.src.join("build")
     }
 
     #[time("info")]
-    pub fn build(&mut self) {
+    fn build(&mut self) {
         log::info!("building...{}-{}", self.name, self.version);
         let prefixopt = format!("--prefix={}", self.prefix().display());
         process::cmd(
@@ -102,15 +112,20 @@ impl Builder {
                 "--without-static-libpython",
                 &prefixopt,
             ],
-            self.srcdir(),
+            self.src_dir(),
         );
         let jobs = format!("-j{}", self.parallel);
-        process::cmd("make", vec!["install", &jobs], self.srcdir());
+        process::cmd("make", vec!["install", &jobs], self.src_dir());
     }
 
-    pub fn process(&mut self) {
+    fn process(&mut self) {
         self.setup();
         self.install_dependencies();
         self.build();
     }
+
+    fn is_built(&self) -> bool {
+        self.prefix().join("bin").join("python3").exists()    
+    }
+
 }

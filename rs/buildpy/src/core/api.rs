@@ -1,18 +1,11 @@
-pub trait Buildable {
-    fn build(&mut self);
-    fn speak(&mut self, x: String) -> String;
-}
+use std::path::PathBuf;
 
-struct Person {
-    name: String,
-}
-
-impl Buildable for Person {
-    fn build(&mut self) {
-        println!("OK");
-    }
-
-    fn speak(&mut self, x: String) -> String {
-        x.clone()
-    }
+pub trait Builder {
+   fn setup(&self);
+   fn prefix(&self) -> PathBuf;    
+   fn src_dir(&self) -> PathBuf;
+   fn build_dir(&self) -> PathBuf; 
+   fn build(&mut self);
+   fn process(&mut self);
+   fn is_built(&self) -> bool;
 }

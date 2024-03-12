@@ -1,10 +1,12 @@
 use std::path::PathBuf;
 
-use super::Project;
+use crate::core;
 use crate::core::deps;
 use crate::ops;
 use crate::ops::log;
 use crate::ops::process;
+
+use logging_timer::time;
 
 pub struct Builder {
     pub name: String,
@@ -21,7 +23,7 @@ pub struct Builder {
     pub use_git: bool,
     pub parallel: i16, // n workers
     pub duration: i16, // seconds
-    pub project: Project,
+    pub project: core::Project,
 }
 
 impl Builder {
@@ -43,7 +45,7 @@ impl Builder {
             use_git: true,
             parallel: 4,
             duration: 0,
-            project: Project::new(),
+            project: core::Project::new(),
         }
     }
 
@@ -87,6 +89,7 @@ impl Builder {
         deps::install_xz();
     }
 
+    #[time("info")]
     pub fn build(&mut self) {
         log::info!("building...{}-{}", self.name, self.version);
         let prefixopt = format!("--prefix={}", self.prefix().display());

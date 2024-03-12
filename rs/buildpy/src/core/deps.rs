@@ -4,6 +4,8 @@ use std::path::PathBuf;
 use super::Project;
 use crate::ops::process;
 use crate::ops::shell;
+use crate::ops::log;
+
 
 pub struct Dependency {
     pub name: String,

@@ -2,6 +2,7 @@ use std::env;
 use std::path::PathBuf;
 
 use crate::ops::shell;
+use crate::ops::log;
 
 #[derive(Debug)]
 pub struct Project {

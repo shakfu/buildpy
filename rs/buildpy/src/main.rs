@@ -12,6 +12,7 @@ use clap::Parser;
 
 use crate::ops::log;
 use crate::ops::process;
+// use crate::config;
 // use crate::ops::shell;
 
 /// Builds python from source
@@ -62,17 +63,13 @@ pub fn printit(d: &std::fs::DirEntry) {
 
 /// run a demo
 fn run_demo() {
-    // let p = std::path::Path::new(".");
-
-    // shell::visit_dirs(&p, &printit).expect("works");
-
     let mut cfg = config::Config::new("static_max".to_string(), "3.12.2".to_string());
+    cfg.write("out.mk");
 
     let _serialized = serde_json::to_string(&cfg).unwrap();
+    println!("{_serialized}");
 
     process::cmd("python3", vec!["-c", "print('ok')"], ".");
-
-    println!("{_serialized}");
 
     println!("cfg is {:?}", cfg);
     for key in cfg.exts.keys() {
@@ -109,7 +106,7 @@ fn main() {
 
     if args.demo {
         log::info!("run demo: {}", args.demo);
-        // run_demo();
+        run_demo();
     } else if let Some(version) = args.pyversion.as_deref() {
         if let Some(cfg) = args.config.as_deref() {
             log::info!("pyversion: {version} config: {cfg}");

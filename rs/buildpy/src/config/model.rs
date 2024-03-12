@@ -295,16 +295,28 @@ impl Config {
         }
     }
 
+    fn add_section(&self, header: &str, section: Vec<String>, lines: &mut Vec<String>) {
+        if !section.is_empty() {
+            lines.push(header.to_string());
+            for elem in section {
+                let mut lv = vec![elem.clone()];
+                for l in &self.exts[&elem] {
+                    lv.push(l.to_string());
+                }
+                lines.push(lv.join(" "));
+            }
+        }
+    }
+
     pub fn write<P: AsRef<std::path::Path>>(&self, path: P) {
         let mut lines = self.headers.clone();
-        for elem in self.core.clone() {
-            let mut lv = vec![elem.clone()];
-            for l in &self.exts[&elem] {
-                lv.push(l.to_string());
-            }
-            lines.push(lv.join(" "));
-        }
-         let _ = std::fs::write(path, lines.join("\n"));
+        self.add_section("\n# core\n", self.core.clone(), &mut lines);
+        self.add_section("\n*shared*\n", self.shared.clone(), &mut lines);
+        self.add_section("\n*static*\n", self.statik.clone(), &mut lines);
+        // disabled does not need lookups
+        lines.push("\n*disabled*\n".to_string());
+        lines.extend(self.disabled.clone());
+        let _ = std::fs::write(path, lines.join("\n"));
     }
 
     pub fn static_to_shared(&mut self, names: Vec<String>) {

@@ -1,12 +1,13 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
 
-use crate::core;
+
+use crate::config;
 use crate::ops::process;
 use crate::ops::shell;
 use crate::ops::log;
 
-use crate::core::api::Builder;
+use crate::builders::api::Builder;
 
 
 
@@ -21,7 +22,7 @@ pub struct DependencyBuilder {
     pub use_git: bool,
     pub parallel: i16, // n workers
     pub duration: i16, // seconds
-    pub project: core::Project,
+    pub project: config::Project,
 }
 
 impl DependencyBuilder {
@@ -45,7 +46,7 @@ impl DependencyBuilder {
             use_git: true,
             parallel: 4,
             duration: 0,
-            project: core::Project::new(),
+            project: config::Project::new(),
         }
     }
 

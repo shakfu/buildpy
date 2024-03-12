@@ -2,7 +2,7 @@
 #![allow(clippy::vec_init_then_push)]
 
 mod config;
-mod core;
+mod builders;
 mod ops;
 
 // use std::path::PathBuf;
@@ -10,7 +10,7 @@ use std::env;
 
 use clap::Parser;
 
-use crate::core::api::Builder;
+use crate::builders::api::Builder;
 use crate::ops::log;
 use crate::ops::process;
 // use crate::config;
@@ -111,7 +111,7 @@ fn main() {
     } else if let Some(version) = args.pyversion.as_deref() {
         if let Some(cfg) = args.config.as_deref() {
             log::info!("pyversion: {version} config: {cfg}");
-            let mut builder = core::PythonBuilder::new(cfg, version);
+            let mut builder = builders::PythonBuilder::new(cfg, version);
             builder.process();
         }
     }

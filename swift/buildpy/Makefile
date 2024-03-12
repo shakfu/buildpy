@@ -16,12 +16,10 @@ release:
 	@swift build -c release
 
 clean:
-	@rm -rf .build
-
+	@rm -rf .build build
 
 fmt:
 	@swift-format --recursive -i  Sources
-
 
 lint:
 	@swift-format lint --recursive Sources

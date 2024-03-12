@@ -1,42 +1,38 @@
 # pybuild - a bunch of python builders
 
-This project explorers how to build python from source.
+This project explorers how to build and configure python from source, usually for integration in an other compiled project or for embedding.
 
 It started from a concrete requirement in one [external project](https://github.com/shakfu/py-js) which led to the first python `builder`, this was then simplified into `pybuilder`, and finally producing `buildpy`, the latest iteration of this sequence.
 
-A golang implementation of `buildpy` followed which is reasonably complete, and recently, rust and swift variants have been started.
 
-The subprojects are (in order of decreasing maturity):
+After the python version of `buildpy` was created, it was thought a compiled version of the file would be useful for bootstrapping purposes.
 
-- python
-  - builder
-  - pybuild
-  - buildpy
+This led to straightforward golang implementation, and then a rust implementation as well as a swift implementation which are currently in development. Most likely will add a Haskell and/or an ocaml implementation as well.
 
-- go
-  - buildpy
+The idea is that they should eventually all be able to read each other's build configuration files which should be in json (since this is builtin to stdlib of the python version).
 
-- swift
-  - buildpy
+## The Configuration Format
 
-- rust
-  - buildpy
+```python
+class Config:
+  name: str
+  version: str
+  headers: list[str]
+  static: list[str]
+  shared: list[str]
+  disabled: list[str]
+  config_opts: list[str]
+  packages: list[str]
+  remove_patterns: list[str]
+  optimize: bool
+  debug: bool
+```
 
-## python builds python
+## The builders
 
-3 ways of building python from source using python:
+### builder (python)
 
-1. `builder`: the original, a package extracted from another large project.. has a kitchen-sink approach
-
-2. `pybuild`: a subsequent attempt at a lighter-weight package, extracted from (1) with only the build features.
-
-3. `buildpy`: lightest-weight single script/module, a 'modern' rewrite given collective experience of (1) and (2): the future.
-
-Ideally one should end up with 1 or maybe even 2 ways.
-
-(refactoring/consolidation-in-progress)
-
-### builder
+The original, a package extracted from another large project.. has a kitchen-sink approach.
 
 Heavyweight, full featured, building, codesigning, packaging solution, extracted from [py-js](https://github.com/shakfu/py-js)
 
@@ -70,7 +66,9 @@ subcommands:
     python       download and build python from src
 ```
 
-### pybuild
+### pybuild (python)
+
+A subsequent attempt at a lighter-weight package, extracted from (1) with only the build features.
 
 Lighter weight python builder as a single module or minimal package, with just the build functionality extracted from `builder`.
 
@@ -97,7 +95,9 @@ subcommands:
     static              build static python
 ```
 
-### buildpy
+### buildpy (python)
+
+Lightest-weight single script/module, a 'modern' rewrite given collective experience of (1) and (2). The future, so to speak.
 
 The lightest weight single-script python builder with the simplest interface. Only handles python 3.11 - 3.12 and has a builtin congifuration system which handles differences between build variants efficiently.
 
@@ -124,29 +124,83 @@ options:
   -w, --write           write configuration
 ```
 
-## go
 
 ### buildpy (go-edition)
 
 A golang version of `buildpy`.
 
+
+```bash
+% ./buildpy --help
+Builds python from source
+
+Usage:
+  buildpy [command]
+
+Available Commands:
+  build       Build python from source
+  completion  Generate the autocompletion script for the specified shell
+  config      Manage python configuration
+  deps        Build and manage python dependencies
+  help        Help about any command
+
+Flags:
+  -h, --help   help for buildpy
+
+Use "buildpy [command] --help" for more information about a command.
+```
+
 Mostly mirrors the python version except for the following:
 
 - Round-trip serialization/deserialization from/to yaml
 
-## rust
 
 ### buildpy (rust-edition)
 
-A golang version of `buildpy`.
+```bash
+% ./buildpy --help
+Builds python from source
+
+Usage: buildpy [OPTIONS]
+
+Options:
+  -p, --pyversion <PYVERSION>  Python version [default: 3.11.8]
+  -c, --config <CONFIG>        Config name [default: static_max]
+      --opts <OPTS>            Config options
+      --pkgs <PKGS>            Install python packages
+  -o, --optimize               Optimize build
+  -g, --git                    Use git to download code
+  -r, --reset                  reset before build
+  -d, --demo                   Run Demo
+  -j, --jobs <JOBS>            Parallel build jobs [default: 4]
+  -h, --help                   Print help
+  -V, --version                Print version
+sa@minx buildpy %
+```
+
+A rust version of `buildpy`.
 
 Mostly mirrors the python version except for the following:
 
 - Round-trip serialization/deserialization from/to json
 
 
-## swift
-
 ### buildpy (swift-edition)
+
+```bash
+% ./buildpy --help
+USAGE: buildpy [--version <version>] [--config <config>] [--opts <opts> ...] [--pkgs <pkgs> ...] [--debug] [--optimize] [--reset]
+
+OPTIONS:
+  --version <version>     python version (default: 3.11.7)
+  --config <config>       name of build config (default: static.max)
+  --opts <opts>           configure options
+  --pkgs <pkgs>           python packages to install
+  --debug                 build debug python
+  --optimize              optimize build
+  --reset                 reset build
+  -h, --help              Show help information.
+
+```
 
 A beginnings of a swift edition..

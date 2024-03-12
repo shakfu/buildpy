@@ -40,4 +40,7 @@ tidy: clean
 	@go mod tidy
 
 reset: clean
+	@rm -rf build
+
+cache:
 	@go clean -cache -modcache -i -r

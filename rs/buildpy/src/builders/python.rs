@@ -50,6 +50,18 @@ impl PythonBuilder {
         }
     }
 
+
+    }
+
+
+impl Builder for PythonBuilder {
+
+    fn install_dependencies(&self) {
+        builders::Bzip2Builder::new("1.0.8").process();
+        builders::SslBuilder::new("1.1.1w").process();
+        builders::XzBuilder::new("5.6.0").process();
+    }
+
     fn git_clone(&self) {
         let mut args = vec![
             "clone",
@@ -64,15 +76,7 @@ impl PythonBuilder {
             process::cmd("git", args, ".");
         }
     }
-
-    fn install_dependencies(&self) {
-        builders::Bzip2Builder::new("1.0.8").process();
-        builders::SslBuilder::new("1.1.1w").process();
-        builders::XzBuilder::new("5.6.0").process();
-    }
-}
-
-impl Builder for PythonBuilder {
+    
     fn setup(&self) {
         self.project.setup();
         if self.use_git {

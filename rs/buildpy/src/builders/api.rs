@@ -1,6 +1,8 @@
 use std::path::PathBuf;
 
 pub trait Builder {
+    fn install_dependencies(&self);
+    fn git_clone(&self);
     fn setup(&self);
     fn prefix(&self) -> PathBuf;
     fn src_dir(&self) -> PathBuf;

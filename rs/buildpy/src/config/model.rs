@@ -1,15 +1,14 @@
 #![allow(clippy::vec_init_then_push)]
 
-use std::env;
 use std::collections::HashMap;
+use std::env;
 
 use serde::{Deserialize, Serialize};
 
 use crate::config::macros::{hashmaps, vecs};
 use crate::ops::log;
 
-const PLATFORM: &str  = env::consts::OS;
-
+const PLATFORM: &str = env::consts::OS;
 
 #[derive(Serialize, Deserialize, Debug, Default)]
 pub struct Config {
@@ -380,10 +379,12 @@ impl Config {
         }
     }
 
-
     pub fn configure(&mut self) {
-
-        log::debug!("config: plat: {PLATFORM} cfg: {} version: {}", self.name, self.version);
+        log::debug!(
+            "config: plat: {PLATFORM} cfg: {} version: {}",
+            self.name,
+            self.version
+        );
 
         if PLATFORM == "darwin" {
             log::debug!("config: common > darwin");
@@ -394,39 +395,42 @@ impl Config {
 
             self.disabled_to_static(vecs!["ossaudiodev"]);
 
-            self.exts.insert("_ssl".to_string(), vecs![
-                "_ssl.c",
-                "-I$(OPENSSL)/include",
-                "-L$(OPENSSL)/lib",
-                "-l:libssl.a -Wl,--exclude-libs,libssl.a",
-                "-l:libcrypto.a -Wl,--exclude-libs,libcrypto.a"
-            ]);
-            self.exts.insert("_hashlib".to_string(), vecs![
-                "_hashopenssl.c",
-                "-I$(OPENSSL)/include",
-                "-L$(OPENSSL)/lib",
-                "-l:libcrypto.a -Wl,--exclude-libs,libcrypto.a"
-            ]);
+            self.exts.insert(
+                "_ssl".to_string(),
+                vecs![
+                    "_ssl.c",
+                    "-I$(OPENSSL)/include",
+                    "-L$(OPENSSL)/lib",
+                    "-l:libssl.a -Wl,--exclude-libs,libssl.a",
+                    "-l:libcrypto.a -Wl,--exclude-libs,libcrypto.a"
+                ],
+            );
+            self.exts.insert(
+                "_hashlib".to_string(),
+                vecs![
+                    "_hashopenssl.c",
+                    "-I$(OPENSSL)/include",
+                    "-L$(OPENSSL)/lib",
+                    "-l:libcrypto.a -Wl,--exclude-libs,libcrypto.a"
+                ],
+            );
         }
 
         if self.ver() == "3.11" {
-
             if self.name == "static_max" {
                 log::debug!("config: 3.11 -> static_max");
                 if PLATFORM == "linux" {
                     self.static_to_disabled(vecs!["_decimal"]);
                 }
-
             } else if self.name == "static_mid" {
                 log::debug!("config: 3.11 -> static_mid");
                 self.static_to_disabled(vecs!["_decimal"]);
-
             } else if self.name == "static_min" {
                 log::debug!("config: 3.11 -> static_min");
-                self.static_to_disabled(vecs!["_bz2", "_decimal", "_csv", "_json",
-                    "_lzma", "_scproxy", "_sqlite3", "_ssl", "pyexpat",
-                    "readline"]);
-
+                self.static_to_disabled(vecs![
+                    "_bz2", "_decimal", "_csv", "_json", "_lzma", "_scproxy", "_sqlite3", "_ssl",
+                    "pyexpat", "readline"
+                ]);
             } else if self.name == "shared_max" {
                 log::debug!("config: 3.11 -> shared_max");
                 if PLATFORM == "linux" {
@@ -435,48 +439,56 @@ impl Config {
                     self.disabled_to_shared(vecs!["_ctypes"]);
                     self.static_to_shared(vecs!["_decimal", "_ssl", "_hashlib"]);
                 }
-
             } else if self.name == "shared_mid" {
                 log::debug!("config: 3.11 -> shared_mid");
                 self.static_to_disabled(vecs!["_decimal", "_ssl", "_hashlib"]);
-
             }
-        
         } else if self.ver() == "3.12" {
+            self.exts.insert(
+                "_md5".to_string(),
+                vecs![
+                    "md5module.c",
+                    "-I$(srcdir)/Modules/_hacl/include",
+                    "_hacl/Hacl_Hash_MD5.c",
+                    "-D_BSD_SOURCE",
+                    "-D_DEFAULT_SOURCE"
+                ],
+            );
 
-            self.exts.insert("_md5".to_string(), vecs![
-                "md5module.c",
-                "-I$(srcdir)/Modules/_hacl/include",
-                "_hacl/Hacl_Hash_MD5.c",
-                "-D_BSD_SOURCE",
-                "-D_DEFAULT_SOURCE"
-            ]);
-    
-            self.exts.insert("_sha1".to_string(), vecs![
-                "sha1module.c",
-                "-I$(srcdir)/Modules/_hacl/include",
-                "_hacl/Hacl_Hash_SHA1.c",
-                "-D_BSD_SOURCE",
-                "-D_DEFAULT_SOURCE"
-            ]);
+            self.exts.insert(
+                "_sha1".to_string(),
+                vecs![
+                    "sha1module.c",
+                    "-I$(srcdir)/Modules/_hacl/include",
+                    "_hacl/Hacl_Hash_SHA1.c",
+                    "-D_BSD_SOURCE",
+                    "-D_DEFAULT_SOURCE"
+                ],
+            );
 
-            self.exts.insert("_sha2".to_string(), vecs![
-                "sha2module.c",
-                "-I$(srcdir)/Modules/_hacl/include",
-                "_hacl/Hacl_Hash_SHA2.c",
-                "-D_BSD_SOURCE",
-                "-D_DEFAULT_SOURCE",
-                "Modules/_hacl/libHacl_Hash_SHA2.a"
-            ]);
+            self.exts.insert(
+                "_sha2".to_string(),
+                vecs![
+                    "sha2module.c",
+                    "-I$(srcdir)/Modules/_hacl/include",
+                    "_hacl/Hacl_Hash_SHA2.c",
+                    "-D_BSD_SOURCE",
+                    "-D_DEFAULT_SOURCE",
+                    "Modules/_hacl/libHacl_Hash_SHA2.a"
+                ],
+            );
 
-            self.exts.insert("_sha3".to_string(), vecs![
-                "sha3module.c",
-                "-I$(srcdir)/Modules/_hacl/include",
-                "_hacl/Hacl_Hash_SHA3.c",
-                "-D_BSD_SOURCE",
-                "-D_DEFAULT_SOURCE"
-            ]);
-        
+            self.exts.insert(
+                "_sha3".to_string(),
+                vecs![
+                    "sha3module.c",
+                    "-I$(srcdir)/Modules/_hacl/include",
+                    "_hacl/Hacl_Hash_SHA3.c",
+                    "-D_BSD_SOURCE",
+                    "-D_DEFAULT_SOURCE"
+                ],
+            );
+
             if self.exts.contains_key("_sha256") {
                 self.exts.remove("_sha256");
             }
@@ -489,7 +501,7 @@ impl Config {
 
             self.statik.retain(|x| *x != "_sha256");
             self.statik.retain(|x| *x != "_sha512");
-        
+
             if self.name == "static_max" {
                 log::debug!("config: 3.12 -> static_max");
                 if PLATFORM == "linux" {
@@ -499,18 +511,16 @@ impl Config {
             } else if self.name == "static_mid" {
                 log::debug!("config: 3.12 -> static_mid");
                 self.static_to_disabled(vecs!["_decimal"]);
-
             } else if self.name == "static_min" {
                 log::debug!("config: 3.12 > static_min");
-                self.static_to_disabled(vecs!["_bz2", "_decimal", "_csv", "_json",
-                    "_lzma", "_scproxy", "_sqlite3", "_ssl", "pyexpat",
-                    "readline"]);
-
+                self.static_to_disabled(vecs![
+                    "_bz2", "_decimal", "_csv", "_json", "_lzma", "_scproxy", "_sqlite3", "_ssl",
+                    "pyexpat", "readline"
+                ]);
             } else if self.name == "shared_max" {
                 log::debug!("config: 3.12 -> shared_max");
                 self.disabled_to_shared(vecs!["_ctypes"]);
                 self.static_to_shared(vecs!["_decimal", "_ssl", "_hashlib"]);
-
             } else if self.name == "shared_mid" {
                 log::debug!("config: 3.12 -> shared_max");
                 self.static_to_disabled(vecs!["_decimal", "_ssl", "_hashlib"]);

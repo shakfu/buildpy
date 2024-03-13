@@ -38,8 +38,14 @@ impl SslBuilder {
             project: Project::new(),
         }
     }
+}
 
-    pub fn git_clone(&self) {
+impl Builder for SslBuilder {
+
+
+    fn install_dependencies(&self) {}
+
+    fn git_clone(&self) {
         let mut args = vec![
             "clone",
             &self.repo_url,
@@ -53,9 +59,7 @@ impl SslBuilder {
             process::cmd("git", args, ".");
         }
     }
-}
 
-impl Builder for SslBuilder {
     fn setup(&self) {
         self.project.setup();
         self.git_clone();

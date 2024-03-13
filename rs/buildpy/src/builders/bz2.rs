@@ -36,8 +36,13 @@ impl Bzip2Builder {
             project: config::Project::new(),
         }
     }
+}
 
-    pub fn git_clone(&self) {
+impl Builder for Bzip2Builder {
+
+    fn install_dependencies(&self) {}
+
+    fn git_clone(&self) {
         let mut args = vec![
             "clone",
             &self.repo_url,
@@ -51,9 +56,7 @@ impl Bzip2Builder {
             process::cmd("git", args, ".");
         }
     }
-}
 
-impl Builder for Bzip2Builder {
     fn setup(&self) {
         self.project.setup();
         self.git_clone();

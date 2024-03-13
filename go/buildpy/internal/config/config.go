@@ -490,7 +490,7 @@ func (c *Config) Configure() {
 		c.Disabled["_xxinterpchannels"] = true
 
 		delete(c.Static, "_sha256")
-		delete(c.Static, "_sha51")
+		delete(c.Static, "_sha512")
 
 		if c.Name == "static_max" {
 			log.Debug("config.Configure: 3.12 -> static_max")

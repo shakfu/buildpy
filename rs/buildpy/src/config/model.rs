@@ -1,9 +1,15 @@
 #![allow(clippy::vec_init_then_push)]
 
-use crate::config::macros::{hashmaps, vecs};
+use std::env;
+use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+
+use crate::config::macros::{hashmaps, vecs};
+use crate::ops::log;
+
+const PLATFORM: &str  = env::consts::OS;
+
 
 #[derive(Serialize, Deserialize, Debug, Default)]
 pub struct Config {
@@ -295,6 +301,18 @@ impl Config {
         }
     }
 
+    pub fn ver(&self) -> String {
+        let split: Vec<String> = self.version.split('.').map(|s| s.to_string()).collect();
+        format!("{}.{}", split[0], split[1])
+    }
+
+    fn sort_all(&mut self) {
+        // self.core.sort();
+        self.shared.sort();
+        self.statik.sort();
+        self.disabled.sort();
+    }
+
     fn add_section(&self, header: &str, section: Vec<String>, lines: &mut Vec<String>) {
         if !section.is_empty() {
             lines.push(header.to_string());
@@ -308,7 +326,8 @@ impl Config {
         }
     }
 
-    pub fn write<P: AsRef<std::path::Path>>(&self, path: P) {
+    pub fn write<P: AsRef<std::path::Path>>(&mut self, path: P) {
+        self.sort_all();
         let mut lines = self.headers.clone();
         self.add_section("\n# core\n", self.core.clone(), &mut lines);
         self.add_section("\n*shared*\n", self.shared.clone(), &mut lines);
@@ -358,6 +377,144 @@ impl Config {
         for name in names {
             self.disabled.retain(|x| x != &name);
             self.shared.push(name);
+        }
+    }
+
+
+    pub fn configure(&mut self) {
+
+        log::debug!("config: plat: {PLATFORM} cfg: {} version: {}", self.name, self.version);
+
+        if PLATFORM == "darwin" {
+            log::debug!("config: common > darwin");
+            self.disabled_to_static(vecs!["_scproxy"]);
+        }
+        if PLATFORM == "linux" {
+            log::debug!("config: common > linux");
+
+            self.disabled_to_static(vecs!["ossaudiodev"]);
+
+            self.exts.insert("_ssl".to_string(), vecs![
+                "_ssl.c",
+                "-I$(OPENSSL)/include",
+                "-L$(OPENSSL)/lib",
+                "-l:libssl.a -Wl,--exclude-libs,libssl.a",
+                "-l:libcrypto.a -Wl,--exclude-libs,libcrypto.a"
+            ]);
+            self.exts.insert("_hashlib".to_string(), vecs![
+                "_hashopenssl.c",
+                "-I$(OPENSSL)/include",
+                "-L$(OPENSSL)/lib",
+                "-l:libcrypto.a -Wl,--exclude-libs,libcrypto.a"
+            ]);
+        }
+
+        if self.ver() == "3.11" {
+
+            if self.name == "static_max" {
+                log::debug!("config: 3.11 -> static_max");
+                if PLATFORM == "linux" {
+                    self.static_to_disabled(vecs!["_decimal"]);
+                }
+
+            } else if self.name == "static_mid" {
+                log::debug!("config: 3.11 -> static_mid");
+                self.static_to_disabled(vecs!["_decimal"]);
+
+            } else if self.name == "static_min" {
+                log::debug!("config: 3.11 -> static_min");
+                self.static_to_disabled(vecs!["_bz2", "_decimal", "_csv", "_json",
+                    "_lzma", "_scproxy", "_sqlite3", "_ssl", "pyexpat",
+                    "readline"]);
+
+            } else if self.name == "shared_max" {
+                log::debug!("config: 3.11 -> shared_max");
+                if PLATFORM == "linux" {
+                    self.static_to_disabled(vecs!["_decimal"]);
+                } else {
+                    self.disabled_to_shared(vecs!["_ctypes"]);
+                    self.static_to_shared(vecs!["_decimal", "_ssl", "_hashlib"]);
+                }
+
+            } else if self.name == "shared_mid" {
+                log::debug!("config: 3.11 -> shared_mid");
+                self.static_to_disabled(vecs!["_decimal", "_ssl", "_hashlib"]);
+
+            }
+        
+        } else if self.ver() == "3.12" {
+
+            self.exts.insert("_md5".to_string(), vecs![
+                "md5module.c",
+                "-I$(srcdir)/Modules/_hacl/include",
+                "_hacl/Hacl_Hash_MD5.c",
+                "-D_BSD_SOURCE",
+                "-D_DEFAULT_SOURCE"
+            ]);
+    
+            self.exts.insert("_sha1".to_string(), vecs![
+                "sha1module.c",
+                "-I$(srcdir)/Modules/_hacl/include",
+                "_hacl/Hacl_Hash_SHA1.c",
+                "-D_BSD_SOURCE",
+                "-D_DEFAULT_SOURCE"
+            ]);
+
+            self.exts.insert("_sha2".to_string(), vecs![
+                "sha2module.c",
+                "-I$(srcdir)/Modules/_hacl/include",
+                "_hacl/Hacl_Hash_SHA2.c",
+                "-D_BSD_SOURCE",
+                "-D_DEFAULT_SOURCE",
+                "Modules/_hacl/libHacl_Hash_SHA2.a"
+            ]);
+
+            self.exts.insert("_sha3".to_string(), vecs![
+                "sha3module.c",
+                "-I$(srcdir)/Modules/_hacl/include",
+                "_hacl/Hacl_Hash_SHA3.c",
+                "-D_BSD_SOURCE",
+                "-D_DEFAULT_SOURCE"
+            ]);
+        
+            if self.exts.contains_key("_sha256") {
+                self.exts.remove("_sha256");
+            }
+            if self.exts.contains_key("_sha512") {
+                self.exts.remove("_sha512");
+            }
+
+            self.statik.push("_sha2".to_string());
+            self.disabled.push("_xxinterpchannels".to_string());
+
+            self.statik.retain(|x| *x != "_sha256");
+            self.statik.retain(|x| *x != "_sha512");
+        
+            if self.name == "static_max" {
+                log::debug!("config: 3.12 -> static_max");
+                if PLATFORM == "linux" {
+                    log::debug!("config: 3.12 > static_max > linux");
+                    self.static_to_disabled(vecs!["_decimal"]);
+                }
+            } else if self.name == "static_mid" {
+                log::debug!("config: 3.12 -> static_mid");
+                self.static_to_disabled(vecs!["_decimal"]);
+
+            } else if self.name == "static_min" {
+                log::debug!("config: 3.12 > static_min");
+                self.static_to_disabled(vecs!["_bz2", "_decimal", "_csv", "_json",
+                    "_lzma", "_scproxy", "_sqlite3", "_ssl", "pyexpat",
+                    "readline"]);
+
+            } else if self.name == "shared_max" {
+                log::debug!("config: 3.12 -> shared_max");
+                self.disabled_to_shared(vecs!["_ctypes"]);
+                self.static_to_shared(vecs!["_decimal", "_ssl", "_hashlib"]);
+
+            } else if self.name == "shared_mid" {
+                log::debug!("config: 3.12 -> shared_max");
+                self.static_to_disabled(vecs!["_decimal", "_ssl", "_hashlib"]);
+            }
         }
     }
 }

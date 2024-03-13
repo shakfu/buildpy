@@ -63,7 +63,9 @@ pub fn printit(d: &std::fs::DirEntry) {
 /// run a demo
 fn run_demo() {
     let mut cfg = config::Config::new("static_max".to_string(), "3.12.2".to_string());
-    cfg.write("out.mk");
+    cfg.write("out-noconfig.mk");
+    cfg.configure();
+    cfg.write("out-config.mk");
 
     let _serialized = serde_json::to_string(&cfg).unwrap();
     println!("{_serialized}");
@@ -74,8 +76,6 @@ fn run_demo() {
     for key in cfg.exts.keys() {
         println!("{key}");
     }
-    cfg.static_to_disabled(config::macros::vecs!["_decimal"]);
-    println!("bye..");
 
     println!("{}", env::consts::OS); // Prints the current OS.
 
@@ -84,8 +84,8 @@ fn run_demo() {
     log::warn!("This is a warning");
     log::error!("Bright red error");
 
-    println!("this should fail end exit:");
-    process::cmd("python2", vec!["--version"], ".");
+    // println!("this should fail end exit:");
+    // process::cmd("python2", vec!["--version"], ".");
     // ops::cmd("python2", &["--version"], ".");
 }
 

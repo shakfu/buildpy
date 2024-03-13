@@ -5,6 +5,7 @@ use crate::config;
 use crate::ops::log;
 use crate::ops::process;
 use crate::ops::shell;
+use crate::ops;
 
 use crate::builders::api::Builder;
 
@@ -41,13 +42,6 @@ impl XzBuilder {
         }
     }
 
-
-}
-
-impl Builder for XzBuilder {
-
-    fn install_dependencies(&self) {}
-
     fn git_clone(&self) {
         let mut args = vec![
             "clone",
@@ -63,13 +57,59 @@ impl Builder for XzBuilder {
         }
     }
 
+}
+
+impl Builder for XzBuilder {
+
+    fn install_dependencies(&self) {}
+
+    fn download(&self) {
+        if self.use_git {
+            self.git_clone();
+        } else {
+            let url = self.download_url.replace("<VERSION>", &self.version);
+            log::info!("downloading: {}", url);
+            ops::download_file(self.project.downloads.clone(), &url);
+        }
+    }
+    
     fn setup(&self) {
         self.project.setup();
-        self.git_clone();
+        self.download();
+        self.install_dependencies();
     }
 
-    fn build(&mut self) {
+    fn configure(&self) {
+        println!("configuring...{} {}", self.name, self.version);
+        let envs = HashMap::from([("CFLAGS".to_string(), "-fPIC".to_string())]);
+        let opts = vec![
+            "-DBUILD_SHARED_LIBS=OFF",
+            "-DENABLE_NLS=OFF",
+            "-DENABLE_SMALL=ON",
+            "-DCMAKE_BUILD_TYPE=MinSizeRel",
+        ];
+        if let Some(sdir) = self.src_dir().to_str() {
+            if let Some(bdir) = self.build_dir().to_str() {
+                shell::cmake_configure_env(sdir, bdir, opts, envs.clone());
+            }
+        }
+    }
+
+    fn build(&self) {
         println!("building...{} {}", self.name, self.version);
+        let envs = HashMap::from([("CFLAGS".to_string(), "-fPIC".to_string())]);
+        if let Some(bdir) = self.build_dir().to_str() {
+            shell::cmake_build_env(bdir, true, envs);
+        }
+    }
+
+    fn install(&self) {
+        println!("installing...{} {}", self.name, self.version);
+        if let Some(bdir) = self.build_dir().to_str() {
+            if let Some(pdir) = self.prefix().to_str() {
+                shell::cmake_install(bdir, pdir);
+            }
+        }
     }
 
     fn prefix(&self) -> PathBuf {
@@ -84,28 +124,15 @@ impl Builder for XzBuilder {
         self.src_dir().join("build")
     }
 
-    fn process(&mut self) {
+    fn process(&self) {
         if !self.is_built() {
             self.setup();
-            let envs = HashMap::from([("CFLAGS".to_string(), "-fPIC".to_string())]);
-            let opts = vec![
-                "-DBUILD_SHARED_LIBS=OFF",
-                "-DENABLE_NLS=OFF",
-                "-DENABLE_SMALL=ON",
-                "-DCMAKE_BUILD_TYPE=MinSizeRel",
-            ];
-            if let Some(sdir) = self.src_dir().to_str() {
-                if let Some(bdir) = self.build_dir().to_str() {
-                    if let Some(pdir) = self.prefix().to_str() {
-                        shell::cmake_configure_env(sdir, bdir, opts, envs.clone());
-                        shell::cmake_build_env(bdir, true, envs);
-                        shell::cmake_install(bdir, pdir);
-                        if !self.is_built() {
-                            log::error!("could not build xz");
-                            std::process::exit(1);
-                        }
-                    }
-                }
+            self.configure();
+            self.build();
+            self.install();
+            if !self.is_built() {
+                log::error!("could not build xz");
+                std::process::exit(1);
             }
         }
     }

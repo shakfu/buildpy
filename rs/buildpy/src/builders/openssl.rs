@@ -4,8 +4,9 @@ use crate::builders::api::Builder;
 use crate::config::Project;
 use crate::ops::log;
 use crate::ops::process;
+use crate::ops;
 
-pub struct SslBuilder {
+pub struct OpensslBuilder {
     pub name: String,
     pub version: String,
     pub download_url: String,
@@ -19,7 +20,8 @@ pub struct SslBuilder {
     pub project: Project,
 }
 
-impl SslBuilder {
+
+impl OpensslBuilder {
     pub fn new(version: &str) -> Self {
         Self {
             name: "openssl".to_string(),
@@ -29,7 +31,7 @@ impl SslBuilder {
             )
             .to_string(),
             repo_url: "https://github.com/openssl/openssl.git".to_string(),
-            repo_branch: format!("OpenSSL_{}", version.replace('_', ".")).to_string(),
+            repo_branch: format!("OpenSSL_{}", version.replace('.', "_")).to_string(),
             config_options: vec!["no-shared".to_string(), "no-tests".to_string()],
             staticlibs: vec!["libssl.a".to_string(), "libcrypto.a".to_string()],
             use_git: true,
@@ -38,12 +40,6 @@ impl SslBuilder {
             project: Project::new(),
         }
     }
-}
-
-impl Builder for SslBuilder {
-
-
-    fn install_dependencies(&self) {}
 
     fn git_clone(&self) {
         let mut args = vec![
@@ -60,14 +56,44 @@ impl Builder for SslBuilder {
         }
     }
 
-    fn setup(&self) {
-        self.project.setup();
-        self.git_clone();
+}
+
+impl Builder for OpensslBuilder {
+
+    fn install_dependencies(&self) {}
+
+    fn download(&self) {
+        if self.use_git {
+            self.git_clone();
+        } else {
+            let url = self.download_url.replace("<VERSION>", &self.version);
+            log::info!("downloading: {}", url);
+            ops::download_file(self.project.downloads.clone(), &url);
+        }
     }
 
-    fn build(&mut self) {
-        println!("building...{} {}", self.name, self.version);
+    fn setup(&self) {
+        self.project.setup();
+        self.download();
+        self.install_dependencies();
     }
+
+    fn configure(&self) {
+        println!("building...{} {}", self.name, self.version);
+        let prefixopt = format!("--prefix={}", self.prefix().display());
+        process::cmd(
+            "bash",
+            vec!["./config", "no-shared", "no-tests", &prefixopt],
+            self.src_dir(),
+        );
+    }
+
+    fn build(&self) {
+        println!("building...{} {}", self.name, self.version);
+        process::cmd("make", vec!["install_sw"], self.src_dir());
+    }
+
+    fn install(&self) {}
 
     fn prefix(&self) -> PathBuf {
         self.project.install.join(self.name.to_lowercase())
@@ -81,18 +107,13 @@ impl Builder for SslBuilder {
         self.src_dir().join("build")
     }
 
-    fn process(&mut self) {
+    fn process(&self) {
         if !self.is_built() {
             self.setup();
-            let prefixopt = format!("--prefix={}", self.prefix().display());
-            process::cmd(
-                "bash",
-                vec!["./config", "no-shared", "no-tests", &prefixopt],
-                self.src_dir(),
-            );
-            process::cmd("make", vec!["install_sw"], self.src_dir());
+            self.configure();
+            self.build();
             if !self.is_built() {
-                log::error!("could not build ssl");
+                log::error!("could not build openssl");
                 std::process::exit(1);
             }
         }

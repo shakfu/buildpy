@@ -17,4 +17,5 @@ fmt:
 	@cargo fmt -- --emit=files
 
 clean:
+	@rm -rf build *.log
 	@cargo clean

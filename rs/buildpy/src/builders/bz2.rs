@@ -4,6 +4,8 @@ use crate::builders::api::Builder;
 use crate::config;
 use crate::ops::log;
 use crate::ops::process;
+use crate::ops;
+
 
 pub struct Bzip2Builder {
     pub name: String,
@@ -36,11 +38,6 @@ impl Bzip2Builder {
             project: config::Project::new(),
         }
     }
-}
-
-impl Builder for Bzip2Builder {
-
-    fn install_dependencies(&self) {}
 
     fn git_clone(&self) {
         let mut args = vec![
@@ -56,15 +53,41 @@ impl Builder for Bzip2Builder {
             process::cmd("git", args, ".");
         }
     }
+}
 
+impl Builder for Bzip2Builder {
+
+    fn install_dependencies(&self) {}
+
+    fn download(&self) {
+        if self.use_git {
+            self.git_clone();
+        } else {
+            let url = self.download_url.replace("<VERSION>", &self.version);
+            log::info!("downloading: {}", url);
+            ops::download_file(self.project.downloads.clone(), &url);
+        }
+    }
+    
     fn setup(&self) {
         self.project.setup();
-        self.git_clone();
+        self.download();
+        self.install_dependencies();
     }
 
-    fn build(&mut self) {
+    fn configure(&self) {}
+
+    fn build(&self) {
         println!("building...{} {}", self.name, self.version);
+        let prefixopt = format!("PREFIX={}", self.prefix().display());
+        process::cmd(
+            "make",
+            vec!["install", &prefixopt, "CFLAGS='-fPIC'"],
+            self.src_dir(),
+        );
     }
+
+    fn install(&self) {}
 
     fn prefix(&self) -> PathBuf {
         self.project.install.join(self.name.to_lowercase())
@@ -78,15 +101,10 @@ impl Builder for Bzip2Builder {
         self.src_dir().join("build")
     }
 
-    fn process(&mut self) {
+    fn process(&self) {
         if !self.is_built() {
             self.setup();
-            let prefixopt = format!("PREFIX={}", self.prefix().display());
-            process::cmd(
-                "make",
-                vec!["install", &prefixopt, "CFLAGS='-fPIC'"],
-                self.src_dir(),
-            );
+            self.build();
             if !self.is_built() {
                 log::error!("could not build bzip2");
                 std::process::exit(1);

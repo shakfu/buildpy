@@ -48,18 +48,7 @@ impl PythonBuilder {
             duration: 0,
             project: config::Project::new(),
         }
-    }
 
-
-    }
-
-
-impl Builder for PythonBuilder {
-
-    fn install_dependencies(&self) {
-        builders::Bzip2Builder::new("1.0.8").process();
-        builders::SslBuilder::new("1.1.1w").process();
-        builders::XzBuilder::new("5.6.0").process();
     }
 
     fn git_clone(&self) {
@@ -76,9 +65,19 @@ impl Builder for PythonBuilder {
             process::cmd("git", args, ".");
         }
     }
-    
-    fn setup(&self) {
-        self.project.setup();
+
+    }
+
+
+impl Builder for PythonBuilder {
+
+    fn install_dependencies(&self) {
+        builders::Bzip2Builder::new("1.0.8").process();
+        builders::OpensslBuilder::new("1.1.1w").process();
+        builders::XzBuilder::new("5.6.0").process();
+    }
+
+    fn download(&self) {
         if self.use_git {
             self.git_clone();
         } else {
@@ -86,6 +85,11 @@ impl Builder for PythonBuilder {
             log::info!("downloading: {}", url);
             ops::download_file(self.project.downloads.clone(), &url);
         }
+    }
+    
+    fn setup(&self) {
+        self.project.setup();
+        self.download();
         self.install_dependencies();
     }
 
@@ -101,9 +105,8 @@ impl Builder for PythonBuilder {
         self.project.src.join("build")
     }
 
-    #[time("info")]
-    fn build(&mut self) {
-        log::info!("building...{}-{}", self.name, self.version);
+    fn configure(&self) {
+        log::info!("configuring...{}-{}", self.name, self.version);
         let prefixopt = format!("--prefix={}", self.prefix().display());
         process::cmd(
             "bash",
@@ -116,14 +119,26 @@ impl Builder for PythonBuilder {
             ],
             self.src_dir(),
         );
-        let jobs = format!("-j{}", self.parallel);
-        process::cmd("make", vec!["install", &jobs], self.src_dir());
     }
 
-    fn process(&mut self) {
+    #[time("info")]
+    fn build(&self) {
+        log::info!("building...{}-{}", self.name, self.version);
+        let jobs = format!("-j{}", self.parallel);
+        process::cmd("make", vec![&jobs], self.src_dir());
+    }
+
+    fn install(&self) {
+        log::info!("installing...{}-{}", self.name, self.version);
+        process::cmd("make", vec!["install"], self.src_dir());
+    }
+
+    fn process(&self) {
         self.setup();
         self.install_dependencies();
+        self.configure();
         self.build();
+        self.install();
     }
 
     fn is_built(&self) -> bool {

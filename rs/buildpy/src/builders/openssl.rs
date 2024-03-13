@@ -1,10 +1,9 @@
 use std::path::PathBuf;
 
-use crate::builders::api::Builder;
 use crate::config::Project;
+use crate::ops;
 use crate::ops::log;
 use crate::ops::process;
-use crate::ops;
 
 pub struct OpensslBuilder {
     pub name: String,
@@ -19,7 +18,6 @@ pub struct OpensslBuilder {
     pub duration: i16, // seconds
     pub project: Project,
 }
-
 
 impl OpensslBuilder {
     pub fn new(version: &str) -> Self {
@@ -55,10 +53,6 @@ impl OpensslBuilder {
             process::cmd("git", args, ".");
         }
     }
-
-}
-
-impl Builder for OpensslBuilder {
 
     fn install_dependencies(&self) {}
 
@@ -107,7 +101,7 @@ impl Builder for OpensslBuilder {
         self.src_dir().join("build")
     }
 
-    fn process(&self) {
+    pub fn process(&self) {
         if !self.is_built() {
             self.setup();
             self.configure();

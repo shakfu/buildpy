@@ -1,11 +1,10 @@
 use std::path::PathBuf;
 
-use crate::builders::api::Builder;
+// use crate::builders::api::Builder;
 use crate::config;
+use crate::ops;
 use crate::ops::log;
 use crate::ops::process;
-use crate::ops;
-
 
 pub struct Bzip2Builder {
     pub name: String,
@@ -53,9 +52,6 @@ impl Bzip2Builder {
             process::cmd("git", args, ".");
         }
     }
-}
-
-impl Builder for Bzip2Builder {
 
     fn install_dependencies(&self) {}
 
@@ -68,7 +64,7 @@ impl Builder for Bzip2Builder {
             ops::download_file(self.project.downloads.clone(), &url);
         }
     }
-    
+
     fn setup(&self) {
         self.project.setup();
         self.download();
@@ -101,7 +97,7 @@ impl Builder for Bzip2Builder {
         self.src_dir().join("build")
     }
 
-    fn process(&self) {
+    pub fn process(&self) {
         if !self.is_built() {
             self.setup();
             self.build();

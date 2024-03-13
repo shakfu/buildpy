@@ -2,10 +2,10 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 
 use crate::config;
+use crate::ops;
 use crate::ops::log;
 use crate::ops::process;
 use crate::ops::shell;
-use crate::ops;
 
 use crate::builders::api::Builder;
 
@@ -56,11 +56,9 @@ impl XzBuilder {
             process::cmd("git", args, ".");
         }
     }
-
 }
 
 impl Builder for XzBuilder {
-
     fn install_dependencies(&self) {}
 
     fn download(&self) {
@@ -72,7 +70,7 @@ impl Builder for XzBuilder {
             ops::download_file(self.project.downloads.clone(), &url);
         }
     }
-    
+
     fn setup(&self) {
         self.project.setup();
         self.download();

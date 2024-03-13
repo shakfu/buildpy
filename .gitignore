@@ -3,6 +3,7 @@
 .DS_Store
 .vscode
 
+bin/
 build/
 
 # Byte-compiled / optimized / DLL files

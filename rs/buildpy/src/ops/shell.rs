@@ -8,17 +8,23 @@ use walkdir::WalkDir;
 
 use globset::{Glob, GlobSetBuilder};
 
-pub fn recursive_remove(dir: &Path, patterns: &[&str]) {
+pub fn recursive_remove(dir: &Path, patterns: Vec<String>) {
     // setup globset
     let mut builder = GlobSetBuilder::new();
     for pat in patterns {
-        builder.add(Glob::new(pat).unwrap());
+        builder.add(Glob::new(&pat).unwrap());
     }
     let set = builder.build().unwrap();
     for entry in WalkDir::new(dir) {
         let entry = entry.unwrap();
-        if set.is_match(entry.path()) {
-            println!("{}", entry.path().display());
+        if set.is_match(entry.path().file_name().unwrap()) {
+            if entry.file_type().is_file() {
+                log::info!("removing file {}", entry.path().display());
+                std::fs::remove_file(entry.path()).unwrap();
+            } else {
+                log::info!("removing dir {}", entry.path().display());
+                std::fs::remove_dir_all(entry.path()).unwrap();
+            }
         }
     }
 }
@@ -36,15 +42,6 @@ pub fn makedirs(path: &str) {
 
 pub fn mv(src: &str, dst: &str) {
     std::fs::rename(src, dst).unwrap_or_else(|_| panic!("failed to move {} to {}", src, dst));
-}
-
-pub fn remove<P>(path: P)
-where
-    P: AsRef<Path> + std::fmt::Debug + Copy,
-{
-    if path.as_ref().exists() {
-        std::fs::remove_dir_all(path).unwrap_or_else(|_| panic!("failed to remove {:?}", path));
-    }
 }
 
 pub fn cmake_configure(src_dir: &str, build_dir: &str, opts: Vec<&str>) {

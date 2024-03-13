@@ -20,13 +20,14 @@ pub struct Bzip2Builder {
 }
 
 impl Bzip2Builder {
-    pub fn new() -> Self {
+    pub fn new(version: &str) -> Self {
         Self {
             name: "bzip2".to_string(),
-            version: "1.0.8".to_string(),
-            download_url: "https://sourceware.org/pub/bzip2/bzip2-1.0.8.tar.gz".to_string(),
+            version: version.to_string(),
+            download_url: format!("https://sourceware.org/pub/bzip2/bzip2-{version}.tar.gz")
+                .to_string(),
             repo_url: "https://github.com/libarchive/bzip2.git".to_string(),
-            repo_branch: "bzip2-1.0.8".to_string(),
+            repo_branch: format!("bzip2-{version}").to_string(),
             config_options: vec![],
             staticlibs: vec!["libbz2.a".to_string()],
             use_git: true,

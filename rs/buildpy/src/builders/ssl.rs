@@ -20,15 +20,17 @@ pub struct SslBuilder {
 }
 
 impl SslBuilder {
-    pub fn new() -> Self {
+    pub fn new(version: &str) -> Self {
         Self {
             name: "openssl".to_string(),
-            version: "1.1.1w".to_string(),
-            download_url: "https://www.openssl.org/source/old/1.1.1/openssl-1.1.1w.tar.gz"
-                .to_string(),
+            version: version.to_string(),
+            download_url: format!(
+                "https://www.openssl.org/source/old/1.1.1/openssl-{version}.tar.gz"
+            )
+            .to_string(),
             repo_url: "https://github.com/openssl/openssl.git".to_string(),
-            repo_branch: "OpenSSL_1_1_1w".to_string(),
-            config_options: vec![],
+            repo_branch: format!("OpenSSL_{}", version.replace('_', ".")).to_string(),
+            config_options: vec!["no-shared".to_string(), "no-tests".to_string()],
             staticlibs: vec!["libssl.a".to_string(), "libcrypto.a".to_string()],
             use_git: true,
             parallel: 4,

@@ -23,15 +23,15 @@ pub struct XzBuilder {
 }
 
 impl XzBuilder {
-    pub fn new() -> Self {
+    pub fn new(version: &str) -> Self {
         Self {
             name: "xz".to_string(),
-            version: "5.6.0".to_string(),
+            version: version.to_string(),
             download_url:
-                "https://github.com/tukaani-project/xz/releases/download/v5.6.0/xz-5.6.0.tar.gz"
+                format!("https://github.com/tukaani-project/xz/releases/download/v{version}/xz-{version}.tar.gz")
                     .to_string(),
             repo_url: "https://github.com/tukaani-project/xz.git".to_string(),
-            repo_branch: "v5.6.0".to_string(),
+            repo_branch: format!("v{version}").to_string(),
             config_options: vec![],
             staticlibs: vec!["liblzma.a".to_string()],
             use_git: true,

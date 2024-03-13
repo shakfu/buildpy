@@ -38,6 +38,20 @@ impl Bzip2Builder {
         }
     }
 
+    fn prefix(&self) -> PathBuf {
+        self.project.install.join(self.name.to_lowercase())
+    }
+
+    fn src_dir(&self) -> PathBuf {
+        self.project.src.join(self.name.to_lowercase())
+    }
+
+    fn build_dir(&self) -> PathBuf {
+        self.src_dir().join("build")
+    }
+
+    fn install_dependencies(&self) {}
+
     fn git_clone(&self) {
         let mut args = vec![
             "clone",
@@ -52,8 +66,6 @@ impl Bzip2Builder {
             process::cmd("git", args, ".");
         }
     }
-
-    fn install_dependencies(&self) {}
 
     fn download(&self) {
         if self.use_git {
@@ -84,18 +96,6 @@ impl Bzip2Builder {
     }
 
     fn install(&self) {}
-
-    fn prefix(&self) -> PathBuf {
-        self.project.install.join(self.name.to_lowercase())
-    }
-
-    fn src_dir(&self) -> PathBuf {
-        self.project.src.join(self.name.to_lowercase())
-    }
-
-    fn build_dir(&self) -> PathBuf {
-        self.src_dir().join("build")
-    }
 
     pub fn process(&self) {
         if !self.is_built() {

@@ -1,8 +1,9 @@
 use std::path::PathBuf;
 
 use crate::builders;
-use crate::builders::api::Builder;
+// use crate::builders::api::Builder;
 use crate::config;
+// use crate::config::macros;
 use crate::ops;
 use crate::ops::log;
 use crate::ops::process;
@@ -39,7 +40,7 @@ impl PythonBuilder {
             ),
             repo_url: String::from("https://github.com/python/cpython.git"),
             repo_branch: format!("v{version}"),
-            config_options: vec![],
+            config_options: vec!["--disable-test-modules".to_string()],
             packages: vec![],
             staticlibs: vec![],
             remove_patterns: config::macros::vecs![
@@ -78,11 +79,37 @@ impl PythonBuilder {
 
     fn ver(&self) -> String {
         let xs: Vec<String> = self.version.split('.').map(|s| s.to_string()).collect();
-        return format!("{}.{}", xs[0], xs[1]);
+        format!("{}.{}", xs[0], xs[1])
     }
 
     fn name_ver(&self) -> String {
-        return format!("{}{}", self.name.to_lowercase(), self.ver());
+        format!("{}{}", self.name.to_lowercase(), self.ver())
+    }
+
+    fn setup_local(&self) -> PathBuf {
+        self.src_dir().join("Modules").join("Setup.local")
+    }
+
+    fn build_type(&self) -> String {
+        let parts: Vec<String> = self.version.split('_').map(|s| s.to_string()).collect();
+        parts[0].clone()
+    }
+
+    fn size_type(&self) -> String {
+        let parts: Vec<String> = self.version.split('_').map(|s| s.to_string()).collect();
+        parts[1].clone()
+    }
+
+    fn prefix(&self) -> PathBuf {
+        self.project.install.join(self.name.to_lowercase())
+    }
+
+    fn src_dir(&self) -> PathBuf {
+        self.project.src.join(self.name.to_lowercase())
+    }
+
+    fn build_dir(&self) -> PathBuf {
+        self.project.src.join("build")
     }
 
     fn git_clone(&self) {
@@ -131,30 +158,45 @@ impl PythonBuilder {
         self.install_dependencies();
     }
 
-    fn prefix(&self) -> PathBuf {
-        self.project.install.join(self.name.to_lowercase())
-    }
+    fn configure(&mut self) {
+        log::info!("configuring {}-{} ...", self.name, self.version);
 
-    fn src_dir(&self) -> PathBuf {
-        self.project.src.join(self.name.to_lowercase())
-    }
-
-    fn build_dir(&self) -> PathBuf {
-        self.project.src.join("build")
-    }
-
-    fn configure(&self) {
-        log::info!("configuring...{}-{}", self.name, self.version);
         let prefixopt = format!("--prefix={}", self.prefix().display());
+
+        let mut opts: Vec<&str> = vec![
+            "./configure",
+            &prefixopt,
+        ];
+
+        if self.build_type() == "shared" {
+            self.config_options.extend(vec![
+                "--enable-shared".to_string(), 
+                "--without-static-libpython".to_string(),
+           ]);
+        } else if self.build_type() == "framework" {
+            self.config_options.push(
+                format!("--enable-framework={}", self.prefix().display())
+            )
+        }
+        if self.optimize {
+            self.config_options.push("--enable-optimizations".to_string());
+        }
+        if !self.packages.is_empty() {
+            self.config_options.push("--without-ensurepip".to_string());
+            self.remove_patterns.push("ensurepip".to_string());
+        }
+
+        for opt in &self.config_options {
+            opts.push(opt.as_str());
+        }
+
+        let mut cfg = config::Config::new(self.config.clone(), self.ver());
+        cfg.configure();
+        cfg.write(self.setup_local());
+
         process::cmd(
             "bash",
-            vec![
-                "./configure",
-                "--disable-test-modules",
-                "--enable-shared",
-                "--without-static-libpython",
-                &prefixopt,
-            ],
+            opts,
             self.src_dir(),
         );
     }
@@ -171,12 +213,12 @@ impl PythonBuilder {
         process::cmd("make", vec!["install"], self.src_dir());
     }
 
-    pub fn process(&self) {
-        // self.setup();
-        // self.install_dependencies();
-        // self.configure();
-        // self.build();
-        // self.install();
+    pub fn process(&mut self) {
+        self.setup();
+        self.install_dependencies();
+        self.configure();
+        self.build();
+        self.install();
         self.clean();
     }
 

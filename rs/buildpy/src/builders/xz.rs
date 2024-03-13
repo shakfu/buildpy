@@ -1,13 +1,13 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
 
-use crate::config;
 use crate::ops;
 use crate::ops::log;
 use crate::ops::process;
 use crate::ops::shell;
+use crate::config::Project;
 
-use crate::builders::api::Builder;
+// use crate::builders::api::Builder;
 
 pub struct XzBuilder {
     pub name: String,
@@ -20,7 +20,7 @@ pub struct XzBuilder {
     pub use_git: bool,
     pub parallel: i16, // n workers
     pub duration: i16, // seconds
-    pub project: config::Project,
+    pub project: Project,
 }
 
 impl XzBuilder {
@@ -38,9 +38,23 @@ impl XzBuilder {
             use_git: true,
             parallel: 4,
             duration: 0,
-            project: config::Project::new(),
+            project: Project::new(),
         }
     }
+
+    fn prefix(&self) -> PathBuf {
+        self.project.install.join(self.name.to_lowercase())
+    }
+
+    fn src_dir(&self) -> PathBuf {
+        self.project.src.join(self.name.to_lowercase())
+    }
+
+    fn build_dir(&self) -> PathBuf {
+        self.src_dir().join("build")
+    }
+
+    fn install_dependencies(&self) {}
 
     fn git_clone(&self) {
         let mut args = vec![
@@ -56,10 +70,6 @@ impl XzBuilder {
             process::cmd("git", args, ".");
         }
     }
-}
-
-impl Builder for XzBuilder {
-    fn install_dependencies(&self) {}
 
     fn download(&self) {
         if self.use_git {
@@ -110,19 +120,7 @@ impl Builder for XzBuilder {
         }
     }
 
-    fn prefix(&self) -> PathBuf {
-        self.project.install.join(self.name.to_lowercase())
-    }
-
-    fn src_dir(&self) -> PathBuf {
-        self.project.src.join(self.name.to_lowercase())
-    }
-
-    fn build_dir(&self) -> PathBuf {
-        self.src_dir().join("build")
-    }
-
-    fn process(&self) {
+    pub fn process(&self) {
         if !self.is_built() {
             self.setup();
             self.configure();

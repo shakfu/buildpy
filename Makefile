@@ -1,7 +1,8 @@
 
 define all-projects
-@$(MAKE) -C rs/buildpy $1
 @$(MAKE) -C go/buildpy $1
+@$(MAKE) -C hs/buildpy $1
+@$(MAKE) -C rs/buildpy $1
 @$(MAKE) -C swift/buildpy $1
 endef
 

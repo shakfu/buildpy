@@ -1,13 +1,45 @@
 module Process where
 
-import System.Process ( shell, CreateProcess, createProcess, proc )
+-- import System.Process ( shell, CreateProcess, createProcess, proc )
+import System.Process
 
+import Log (info)
 
-ls :: CreateProcess
-ls = shell "ls"
-
+mkproc ::
+       String
+    -> [String]
+    -> Maybe FilePath
+    -> Maybe [(String, String)]
+    -> CreateProcess
+mkproc exe args wd envs =
+    CreateProcess
+        { cmdspec = RawCommand exe args
+        , cwd = wd
+        , env = envs
+        , std_in = Inherit
+        , std_out = Inherit
+        , std_err = Inherit
+        , close_fds = False
+        , create_group = False
+        , delegate_ctlc = False
+        , detach_console = False
+        , create_new_console = False
+        , new_session = False
+        , child_group = Nothing
+        , child_user = Nothing
+        , use_process_jobs = False
+        }
 
 run :: String -> [String] -> IO ()
-run exec args = do
-    _ <- createProcess (proc exec args)
-    putStrLn (exec ++ " " ++ unwords args ++ " DONE")
+run exe args = do
+    (_, _, _, p1) <- createProcess (proc exe args)
+    info (exe ++ " " ++ unwords args ++ " DONE")
+    _ <- waitForProcess p1
+    return ()
+
+cmd :: String -> [String] -> Maybe FilePath -> Maybe [(String, String)] -> IO ()
+cmd exe args wd envs = do
+    (_, _, _, p1) <- createProcess (mkproc exe args wd envs)
+    info (exe ++ " " ++ unwords args ++ " DONE")
+    _ <- waitForProcess p1
+    return ()

@@ -45,7 +45,7 @@ pub fn mv(src: &str, dst: &str) {
 }
 
 pub fn cmake_configure(src_dir: &str, build_dir: &str, opts: Vec<&str>) {
-    let mut args = vec!["S", src_dir, "-B", build_dir];
+    let mut args = vec!["-S", src_dir, "-B", build_dir];
     args.extend(opts);
     process::cmd("cmake", args, ".");
 }

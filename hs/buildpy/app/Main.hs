@@ -1,21 +1,27 @@
 module Main where
 
---import Control.Monad
+import Prelude hiding (log)
 
-import Process (run) 
 import Config (configName, defaultConfig)
 import Log (info, timeFunction)
 
+--import Control.Monad
+import Process (cmd, run)
 
+-- import Shell (isGlobMatch)
 someFunction :: IO ()
 someFunction = do
-   putStrLn "Function completed"
+    putStrLn "Function completed"
+   -- gitClone "https://github.com/python/cpython.git" "v3.12.2" "python" False 
 
-
-
+-- demo :: IO ()
+-- demo = do
 main :: IO ()
 main = do
-   info "running python"
-   run "python3" ["-c", "import sys; print(sys.version)"]
-   putStrLn (configName defaultConfig)
-   timeFunction "someFunction" someFunction
+    let _ = cmd "ls" [] Nothing Nothing
+    info "running python"
+   -- run "python3" ["-c", "import sys; print(sys.version)"]
+    run "python3" ["--version"]
+    putStrLn (configName defaultConfig)
+    timeFunction "someFunction" someFunction
+   -- demo

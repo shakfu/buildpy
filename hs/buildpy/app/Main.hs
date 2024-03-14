@@ -1,15 +1,21 @@
 module Main where
 
-import System.Process ( shell, CreateProcess, createProcess, proc )
+--import Control.Monad
 
+import Process (run) 
 import Config (configName, defaultConfig)
+import Log (info, timeFunction)
 
-ls :: CreateProcess
-ls = shell "ls"
+
+someFunction :: IO ()
+someFunction = do
+   putStrLn "Function completed"
 
 
 
 main :: IO ()
-main = do 
-    _ <- createProcess (proc "echo" ["hello"])
-    putStrLn (configName defaultConfig)
+main = do
+   info "running python"
+   run "python3" ["-c", "import sys; print(sys.version)"]
+   putStrLn (configName defaultConfig)
+   timeFunction "someFunction" someFunction

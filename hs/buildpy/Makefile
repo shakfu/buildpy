@@ -1,5 +1,5 @@
 
-.PHONY: all build run repl clean indent
+.PHONY: all build run repl clean indent release
 
 
 all: build
@@ -18,3 +18,7 @@ clean:
 
 indent:
 	@hindent --indent-size 4 app/*.hs
+
+release:
+	@cabal build --enable-optimization=2 --enable-executable-stripping
+	@mkdir -p build

@@ -1,9 +1,8 @@
 # pybuild - a bunch of python builders
 
-This project explorers how to build and configure python from source, usually for integration in an other compiled project or for embedding.
+This project explores how to build and configure python from source, especially if the eng-goal is integration in an other compiled project or plugin via embedding.
 
 It started from a concrete requirement in one [external project](https://github.com/shakfu/py-js) which led to the first python `builder`, this was then simplified into `pybuilder`, and finally producing `buildpy`, the latest iteration of this sequence.
-
 
 After the python version of `buildpy` was created, it was thought a compiled version of the file would be useful for bootstrapping purposes.
 

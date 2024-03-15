@@ -1,22 +1,20 @@
 module Shell where
 
-import System.FilePattern
 import System.Directory
+import System.FilePattern
 
 import Process (cmd, run)
 
 makedirs :: FilePath -> IO ()
 makedirs = createDirectoryIfMissing True
+
 -- createDirectory :: FilePath -> IO ()
-
-
 -- remove file or directory recursively
 remove :: FilePath -> IO ()
 remove = removePathForcibly
 
 rename :: FilePath -> FilePath -> IO ()
 rename = renamePath
-
 
 make :: [String] -> IO ()
 make = run "make"

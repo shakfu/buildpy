@@ -4,12 +4,17 @@ module Config
     , defaultPyConfig
     , defaultProject
     , PythonConfig
+    , sslDefault
     ) where
 
 -- import qualified Data.Map.Strict as Map
 import Data.Map
 import System.Directory (getCurrentDirectory)
 import System.FilePath (joinPath)
+-- import Data.List.Utils (replace)
+
+import Utils (replace)
+
 
 data Project = Project
     { projectCwd :: String
@@ -44,43 +49,60 @@ data DependencyConfig = DependencyConfig
     , depLibs :: [String]
     }
 
-sslConfig :: DependencyConfig
-sslConfig =
+
+sslConfig :: String -> DependencyConfig
+sslConfig v = 
     DependencyConfig
         { depName = "openssl"
-        , depVersion = "1.1.1w"
+        , depVersion = v ++ "w"
         , depRepoUrl = "https://github.com/openssl/openssl.git"
-        , depRepoBranch = "OpenSSL_1_1_1w"
-        , depDownloadUrl =
-              "https://www.openssl.org/source/old/1.1.1/openssl-1.1.1w.tar.gz"
+        , depRepoBranch = "OpenSSL_" ++ (replace '.' '_' v)  ++ "w"
+        , depDownloadUrl = ("https://www.openssl.org/source/old/" ++ v ++ "/openssl-" ++ v ++ "w.tar.gz")
         , depOptions = []
         , depLibs = ["libssl.a", "libcrypto.a"]
         }
 
-bz2Config :: DependencyConfig
-bz2Config =
+sslDefault :: DependencyConfig
+sslDefault = sslConfig "1.1.1"
+
+
+
+bz2Config :: String -> DependencyConfig
+bz2Config v =
     DependencyConfig
         { depName = "bzip2"
-        , depVersion = "1.0.8"
+        , depVersion = v
         , depRepoUrl = "https://github.com/libarchive/bzip2.git"
-        , depRepoBranch = "bzip2-1.0.8"
-        , depDownloadUrl = "https://sourceware.org/pub/bzip2/bzip2-1.0.8.tar.gz"
+        , depRepoBranch = "bzip2-" ++ v
+        , depDownloadUrl = "https://sourceware.org/pub/bzip2/bzip2-" ++ v ++ ".tar.gz"
         , depOptions = []
         , depLibs = ["libbz2.a"]
         }
 
-xzConfig :: DependencyConfig
-xzConfig =
+bz2Default :: DependencyConfig
+bz2Default = bz2Config "1.0.8"
+
+
+
+xzConfig :: String -> DependencyConfig
+xzConfig v =
     DependencyConfig
         { depName = "xz"
-        , depVersion = "5.6.0"
+        , depVersion = v
         , depRepoUrl = "https://github.com/tukaani-project/xz.git"
-        , depRepoBranch = "v5.6.0"
+        , depRepoBranch = "v" ++ v
         , depDownloadUrl =
-              "https://github.com/tukaani-project/xz/releases/download/v5.6.0/xz-5.6.0.tar.gz"
+              ("https://github.com/tukaani-project/xz/releases/download/v" ++ v ++ "/xz-" ++ v ++ ".tar.gz")
         , depOptions = []
         , depLibs = ["liblzma.a"]
         }
+
+xzDefault :: DependencyConfig
+xzDefault = xzConfig "5.6.0"
+
+
+
+
 
 data PythonConfig = PythonConfig
     { configName :: String

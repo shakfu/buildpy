@@ -6,9 +6,9 @@ It started from a concrete requirement in one [external project](https://github.
 
 After the python version of `buildpy` was created, it was thought a compiled version of the file would be useful for bootstrapping purposes.
 
-This led to straightforward golang implementation, and then a rust implementation as well as a swift implementation which are currently in development. Most likely will add a Haskell and/or an ocaml implementation as well.
+This led to a straightforward golang implementation, and then a rust implementation as well as haskell and swift implementations which are currently under development.
 
-The idea is that they should eventually all be able to read each other's build configuration files which should be in json (since this is builtin to stdlib of the python version).
+The idea is that all versions should eventually all be able to read, write and use a standard JSON build configuration file,
 
 ## The Configuration Format
 

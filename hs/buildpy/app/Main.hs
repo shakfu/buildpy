@@ -1,16 +1,21 @@
 module Main where
 
+-- import Prelude hiding (log)
+import Control.Monad ( when )
 import Data.Maybe (fromMaybe)
 import System.Console.GetOpt
-
--- import Prelude hiding (log)
+    ( getOpt,
+      usageInfo,
+      ArgDescr(OptArg, NoArg),
+      ArgOrder(RequireOrder),
+      OptDescr(..) )
 import System.Environment (getArgs, getProgName)
 
 -- import Config (configName, defaultConfig)
 -- import Log (info, timeFunction)
-import Control.Monad
+
 -- import Process (cmd, run)
--- import Shell (isGlobMatch)
+
 someFunction :: IO ()
 someFunction = do
     putStrLn "Function completed"
@@ -28,30 +33,32 @@ someFunction = do
 --     timeFunction "someFunction" someFunction
 --    -- demo
 
-
-header = "Usage: newsagent [options]"
+header :: String -> String
+header name = "Usage: " ++ name ++ " [options]"
 
 -- option types
-data Flag = Verbose | NoHtml | Help | List | Parallel | Name String
+data Flag = Verbose | Optimize | Help | List | Parallel | Name String
             deriving (Show, Eq)
 
-defaultMission = Name . fromMaybe "tech"
+defaultConfig :: Maybe String -> Flag
+defaultConfig = Name . fromMaybe "static_max"
 
 -- commandline options
 options :: [OptDescr Flag]
 options = 
     [ Option "h" ["help"]     (NoArg Help)     "display help"
     , Option "v" ["verbose"]  (NoArg Verbose)  "show verbose output"
-    , Option "l" ["list"]     (NoArg List)     "list available missions"
-    , Option "n" ["nohtml"]   (NoArg NoHtml)   "skip html output"
-    , Option "p" ["parallel"] (NoArg Parallel) "runs agents in parallel"
-    , Option "m" ["mission"]  (OptArg defaultMission "MISSION") "set mission"   
+    , Option "l" ["list"]     (NoArg List)     "list available build configs"
+    , Option "o" ["optimize"] (NoArg Optimize) "optimize build"
+    , Option "p" ["parallel"] (NoArg Parallel) "build jobs in parallel"
+    , Option "c" ["config"]   (OptArg defaultConfig "CONFIG") "set config"   
     ]
 
 -- primary command line processing function
 processArgs :: [Flag] -> IO ()
 processArgs flags = do
-    when (Help    `elem` flags) $ putStrLn $ usageInfo header options
+    prog <- getProgName
+    when (Help    `elem` flags) $ putStrLn $ usageInfo (header prog) options
     when (Verbose `elem` flags) $ dump flags
     -- when (List    `elem` flags) $ mapM_ putStrLn [missionCodeName m | m <- missions]
     -- startMissionFromFlags flags
@@ -80,8 +87,9 @@ processArgs flags = do
 main :: IO ()
 main = do
     args <- getArgs
+    prog <- getProgName
     case getOpt RequireOrder options args of
         ([],    [],      [])   -> putStrLn "EMPTY" --start missions 
         (flags, [],      [])   -> processArgs flags
         (_,     nonOpts, [])   -> error $ "unrecognized arguments: " ++ unwords nonOpts
-        (_,     _,       msgs) -> error $ concat msgs ++ usageInfo header options
+        (_,     _,       msgs) -> error $ concat msgs ++ usageInfo (header prog) options

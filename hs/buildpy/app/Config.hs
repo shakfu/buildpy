@@ -1,15 +1,93 @@
 module Config
     ( configName
     , configRemovePatterns
-    , defaultConfig
+    , defaultPyConfig
+    , defaultProject
+    , PythonConfig
     ) where
 
 -- import qualified Data.Map.Strict as Map
 import Data.Map
+import System.Directory (getCurrentDirectory)
+import System.FilePath (joinPath)
 
-data BuildConfig = BuildConfig
+data Project = Project
+    { projectCwd :: String
+    , projectBuild :: String
+    , projectDownloads :: String
+    , projectSrc :: String
+    , projectInstall :: String
+    } deriving (Show)
+
+newProject :: String -> Project
+newProject cwd =
+    Project
+        { projectCwd = cwd
+        , projectBuild = joinPath [cwd, "build"]
+        , projectDownloads = joinPath [cwd, "build", "downloads"]
+        , projectSrc = joinPath [cwd, "build", "src"]
+        , projectInstall = joinPath [cwd, "build", "install"]
+        }
+
+defaultProject :: IO Project
+defaultProject = do
+    cwd <- getCurrentDirectory
+    return $ newProject cwd
+
+data DependencyConfig = DependencyConfig
+    { depName :: String
+    , depVersion :: String
+    , depRepoUrl :: String
+    , depRepoBranch :: String
+    , depDownloadUrl :: String
+    , depOptions :: [String]
+    , depLibs :: [String]
+    }
+
+sslConfig :: DependencyConfig
+sslConfig =
+    DependencyConfig
+        { depName = "openssl"
+        , depVersion = "1.1.1w"
+        , depRepoUrl = "https://github.com/openssl/openssl.git"
+        , depRepoBranch = "OpenSSL_1_1_1w"
+        , depDownloadUrl =
+              "https://www.openssl.org/source/old/1.1.1/openssl-1.1.1w.tar.gz"
+        , depOptions = []
+        , depLibs = ["libssl.a", "libcrypto.a"]
+        }
+
+bz2Config :: DependencyConfig
+bz2Config =
+    DependencyConfig
+        { depName = "bzip2"
+        , depVersion = "1.0.8"
+        , depRepoUrl = "https://github.com/libarchive/bzip2.git"
+        , depRepoBranch = "bzip2-1.0.8"
+        , depDownloadUrl = "https://sourceware.org/pub/bzip2/bzip2-1.0.8.tar.gz"
+        , depOptions = []
+        , depLibs = ["libbz2.a"]
+        }
+
+xzConfig :: DependencyConfig
+xzConfig =
+    DependencyConfig
+        { depName = "xz"
+        , depVersion = "5.6.0"
+        , depRepoUrl = "https://github.com/tukaani-project/xz.git"
+        , depRepoBranch = "v5.6.0"
+        , depDownloadUrl =
+              "https://github.com/tukaani-project/xz/releases/download/v5.6.0/xz-5.6.0.tar.gz"
+        , depOptions = []
+        , depLibs = ["liblzma.a"]
+        }
+
+data PythonConfig = PythonConfig
     { configName :: String
     , configVersion :: String
+    , configRepoUrl :: String
+    , configRepoBranch :: String
+    , configDownloadUrl :: String
     , configHeaders :: [String]
     , configExts :: Map String [String]
     , configCore :: [String]
@@ -21,11 +99,15 @@ data BuildConfig = BuildConfig
     , configPackages :: [String]
     } deriving (Show)
 
-defaultConfig :: BuildConfig
-defaultConfig =
-    BuildConfig
+defaultPyConfig :: PythonConfig
+defaultPyConfig =
+    PythonConfig
         { configName = "static_max"
-        , configVersion = "2.1.2"
+        , configVersion = "3.12.2"
+        , configRepoUrl = "https://github.com/python/cpython.git"
+        , configRepoBranch = "v3.12.2"
+        , configDownloadUrl =
+              "https://www.python.org/ftp/python/3.12.2/Python-3.12.2.tar.xz"
         , configHeaders =
               [ "DESTLIB=$(LIBDEST)"
               , "MACHDESTLIB=$(BINLIBDEST)"
@@ -344,4 +426,6 @@ defaultConfig =
               , "venv"
               , "xx*.so"
               ]
+        , configOptions = []
+        , configPackages = []
         }

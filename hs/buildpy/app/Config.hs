@@ -17,6 +17,8 @@ data BuildConfig = BuildConfig
     , configShared :: [String]
     , configDisabled :: [String]
     , configRemovePatterns :: [String]
+    , configOptions :: [String]
+    , configPackages :: [String]
     } deriving (Show)
 
 defaultConfig :: BuildConfig

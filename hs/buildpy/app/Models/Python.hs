@@ -1,136 +1,46 @@
-module Config
-    ( configName
-    , configRemovePatterns
-    , defaultPyConfig
-    , defaultProject
-    , PythonConfig
-    , sslDefault
-    ) where
+module Models.Python where
 
--- import qualified Data.Map.Strict as Map
 import Data.Map
-import System.Directory (getCurrentDirectory)
 import System.FilePath (joinPath)
--- import Data.List.Utils (replace)
-
-import Utils (replace)
-
-
-data Project = Project
-    { projectCwd :: String
-    , projectBuild :: String
-    , projectDownloads :: String
-    , projectSrc :: String
-    , projectInstall :: String
-    } deriving (Show)
-
-newProject :: String -> Project
-newProject cwd =
-    Project
-        { projectCwd = cwd
-        , projectBuild = joinPath [cwd, "build"]
-        , projectDownloads = joinPath [cwd, "build", "downloads"]
-        , projectSrc = joinPath [cwd, "build", "src"]
-        , projectInstall = joinPath [cwd, "build", "install"]
-        }
-
-defaultProject :: IO Project
-defaultProject = do
-    cwd <- getCurrentDirectory
-    return $ newProject cwd
-
-data DependencyConfig = DependencyConfig
-    { depName :: String
-    , depVersion :: String
-    , depRepoUrl :: String
-    , depRepoBranch :: String
-    , depDownloadUrl :: String
-    , depOptions :: [String]
-    , depLibs :: [String]
-    }
-
-
-sslConfig :: String -> DependencyConfig
-sslConfig v = 
-    DependencyConfig
-        { depName = "openssl"
-        , depVersion = v ++ "w"
-        , depRepoUrl = "https://github.com/openssl/openssl.git"
-        , depRepoBranch = "OpenSSL_" ++ (replace '.' '_' v)  ++ "w"
-        , depDownloadUrl = ("https://www.openssl.org/source/old/" ++ v ++ "/openssl-" ++ v ++ "w.tar.gz")
-        , depOptions = []
-        , depLibs = ["libssl.a", "libcrypto.a"]
-        }
-
-sslDefault :: DependencyConfig
-sslDefault = sslConfig "1.1.1"
-
-
-
-bz2Config :: String -> DependencyConfig
-bz2Config v =
-    DependencyConfig
-        { depName = "bzip2"
-        , depVersion = v
-        , depRepoUrl = "https://github.com/libarchive/bzip2.git"
-        , depRepoBranch = "bzip2-" ++ v
-        , depDownloadUrl = "https://sourceware.org/pub/bzip2/bzip2-" ++ v ++ ".tar.gz"
-        , depOptions = []
-        , depLibs = ["libbz2.a"]
-        }
-
-bz2Default :: DependencyConfig
-bz2Default = bz2Config "1.0.8"
-
-
-
-xzConfig :: String -> DependencyConfig
-xzConfig v =
-    DependencyConfig
-        { depName = "xz"
-        , depVersion = v
-        , depRepoUrl = "https://github.com/tukaani-project/xz.git"
-        , depRepoBranch = "v" ++ v
-        , depDownloadUrl =
-              ("https://github.com/tukaani-project/xz/releases/download/v" ++ v ++ "/xz-" ++ v ++ ".tar.gz")
-        , depOptions = []
-        , depLibs = ["liblzma.a"]
-        }
-
-xzDefault :: DependencyConfig
-xzDefault = xzConfig "5.6.0"
-
-
-
-
+import Models.Dependency
+import Models.Project
+import Shell
+import Log
 
 data PythonConfig = PythonConfig
-    { configName :: String
-    , configVersion :: String
-    , configRepoUrl :: String
-    , configRepoBranch :: String
-    , configDownloadUrl :: String
-    , configHeaders :: [String]
-    , configExts :: Map String [String]
-    , configCore :: [String]
-    , configStatic :: [String]
-    , configShared :: [String]
-    , configDisabled :: [String]
-    , configRemovePatterns :: [String]
-    , configOptions :: [String]
-    , configPackages :: [String]
+    { pythonName :: String
+    , pythonVersion :: String
+    , pythonConfig :: String
+    , pythonRepoUrl :: String
+    , pythonRepoBranch :: String
+    , pythonDownloadUrl :: String
+    , pythonHeaders :: [String]
+    , pythonExts :: Map String [String]
+    , pythonCore :: [String]
+    , pythonStatic :: [String]
+    , pythonShared :: [String]
+    , pythonDisabled :: [String]
+    , pythonRemovePatterns :: [String]
+    , pythonConfigOptions :: [String]
+    , pythonPackages :: [String]
+    , pythonDependsOn :: [DependencyConfig]
+    , pythonProject :: Project
     } deriving (Show)
 
-defaultPyConfig :: PythonConfig
-defaultPyConfig =
+
+
+
+newPythonConfig :: String -> String -> Project -> PythonConfig
+newPythonConfig name version proj =
     PythonConfig
-        { configName = "static_max"
-        , configVersion = "3.12.2"
-        , configRepoUrl = "https://github.com/python/cpython.git"
-        , configRepoBranch = "v3.12.2"
-        , configDownloadUrl =
+        { pythonName = "Python"
+        , pythonVersion = version
+        , pythonConfig = name
+        , pythonRepoUrl = "https://github.com/python/cpython.git"
+        , pythonRepoBranch = "v3.12.2"
+        , pythonDownloadUrl =
               "https://www.python.org/ftp/python/3.12.2/Python-3.12.2.tar.xz"
-        , configHeaders =
+        , pythonHeaders =
               [ "DESTLIB=$(LIBDEST)"
               , "MACHDESTLIB=$(BINLIBDEST)"
               , "DESTPATH="
@@ -142,7 +52,7 @@ defaultPyConfig =
               , "BZIP2=$(srcdir)/../../install/bzip2"
               , "LZMA=$(srcdir)/../../install/xz"
               ]
-        , configExts =
+        , pythonExts =
               fromList
                   [ ("name", ["name", "dest"])
                   , ("_abc", ["_abc.c"])
@@ -324,7 +234,7 @@ defaultPyConfig =
                   , ("unicodedata", ["unicodedata.c"])
                   , ("zlib", ["zlibmodule.c", "-lz"])
                   ]
-        , configCore =
+        , pythonCore =
               [ "_abc"
               , "_codecs"
               , "_collections"
@@ -347,7 +257,7 @@ defaultPyConfig =
               , "pwd"
               , "time"
               ]
-        , configStatic =
+        , pythonStatic =
               [ "_asyncio"
               , "_bisect"
               , "_blake2"
@@ -396,8 +306,8 @@ defaultPyConfig =
               , "unicodedata"
               , "zlib"
               ]
-        , configShared = []
-        , configDisabled =
+        , pythonShared = []
+        , pythonDisabled =
               [ "_codecs_cn"
               , "_codecs_hk"
               , "_codecs_iso2022"
@@ -422,7 +332,7 @@ defaultPyConfig =
               , "xxlimited"
               , "xxlimited_35"
               ]
-        , configRemovePatterns =
+        , pythonRemovePatterns =
               [ "*.exe"
               , "*config-3*"
               , "*tcl*"
@@ -448,6 +358,77 @@ defaultPyConfig =
               , "venv"
               , "xx*.so"
               ]
-        , configOptions = []
-        , configPackages = []
+        , pythonConfigOptions = []
+        , pythonPackages = []
+        , pythonDependsOn =
+              [sslConfig "1.1.1", bz2Config "1.0.8", xzConfig "5.6.0"]
+        , pythonProject = proj
         }
+
+
+
+pythonPrefix ::  PythonConfig -> FilePath
+pythonPrefix c = joinPath [projectInstall p, pythonName c]
+    where p =  pythonProject c
+
+pythonSrcDir :: PythonConfig -> FilePath
+pythonSrcDir c = joinPath [projectSrc p, pythonName c]
+    where p =  pythonProject c
+
+configurePython ::  String -> String -> Project -> PythonConfig
+configurePython = newPythonConfig
+
+processPython :: IO ()
+processPython = do
+    p <- defaultProject
+    let c = configurePython "3.12.2" "static_max" p
+    info ("building python " ++ show (pythonVersion c))
+    processPythonDependencies c
+    downloadPython c
+    setupPython c
+    buildPython c
+    installPython c
+    cleanPython c
+    zipPython c
+
+
+
+processDep :: Project -> DependencyConfig -> IO ()
+processDep p dep = do
+    print p
+    print dep
+
+processPythonDependencies :: PythonConfig -> IO ()
+processPythonDependencies c = do
+    mapM_ (processDep p) $ pythonDependsOn c
+    where
+        p = pythonProject c
+
+downloadPython :: PythonConfig -> IO ()
+downloadPython c = do
+  Shell.gitClone url branch dir False
+      where
+        url = pythonRepoUrl c
+        branch = pythonRepoBranch c
+        dir = pythonSrcDir c
+
+
+setupPython :: PythonConfig -> IO ()
+setupPython c = do
+    print c
+
+buildPython :: PythonConfig -> IO ()
+buildPython c = do
+    print c
+
+installPython :: PythonConfig -> IO ()
+installPython c = do
+    print c
+
+cleanPython :: PythonConfig -> IO ()
+cleanPython c = do
+    print c
+
+zipPython :: PythonConfig -> IO ()
+zipPython c = do
+    print c

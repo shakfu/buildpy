@@ -54,5 +54,8 @@ cmakeInstall :: String -> String -> IO ()
 cmakeInstall build_dir prefix =
     cmd "cmake" ["--install", build_dir, "--prefix", prefix] Nothing Nothing
 
+-- isGlobMatch :: FilePath -> [String] -> Bool
+-- isGlobMatch f patterns = any ((== True) . flip (?==) f) patterns
+
 isGlobMatch :: FilePath -> [String] -> Bool
-isGlobMatch f patterns = any (== True) $ map (flip (?==) f) patterns
+isGlobMatch f = any (?== f)

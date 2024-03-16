@@ -18,6 +18,7 @@ clean:
 
 indent:
 	@hindent --indent-size 4 app/*.hs
+	@hindent --indent-size 4 app/Models/*.hs
 
 release:
 	@cabal build --enable-optimization=2 --enable-executable-stripping

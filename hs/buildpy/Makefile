@@ -17,8 +17,8 @@ clean:
 	@rm -rf dist-newstyle build
 
 indent:
-	@hindent --indent-size 4 app/*.hs
-	@hindent --indent-size 4 app/Models/*.hs
+	@hindent --indent-size 2 app/*.hs
+	@hindent --indent-size 2 app/Models/*.hs
 
 release:
 	@cabal build --enable-optimization=2 --enable-executable-stripping

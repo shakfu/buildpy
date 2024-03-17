@@ -3,10 +3,10 @@ module Log where
 import Data.Time
 
 data LogLevel
-    = DEBUG
-    | INFO
-    | WARN
-    | ERROR
+  = DEBUG
+  | INFO
+  | WARN
+  | ERROR
 
 cyan :: String -> String
 cyan s = "\ESC[36m" ++ s ++ "\ESC[0m"
@@ -22,12 +22,12 @@ yellow s = "\ESC[93m" ++ s ++ "\ESC[0m"
 
 withLogLevel :: LogLevel -> String -> IO ()
 withLogLevel level msg = do
-    timestamp <- formatTime defaultTimeLocale "%H:%M:%S" <$> getCurrentTime
-    case level of
-        DEBUG -> putStrLn $ timestamp ++ " " ++ cyan "DEBUG " ++ msg
-        INFO -> putStrLn $ timestamp ++ " " ++ green "INFO " ++ msg
-        WARN -> putStrLn $ timestamp ++ " " ++ yellow "WARN " ++ msg
-        ERROR -> putStrLn $ timestamp ++ " " ++ magenta "ERROR " ++ msg
+  timestamp <- formatTime defaultTimeLocale "%H:%M:%S" <$> getCurrentTime
+  case level of
+    DEBUG -> putStrLn $ timestamp ++ " " ++ cyan "DEBUG " ++ msg
+    INFO -> putStrLn $ timestamp ++ " " ++ green "INFO " ++ msg
+    WARN -> putStrLn $ timestamp ++ " " ++ yellow "WARN " ++ msg
+    ERROR -> putStrLn $ timestamp ++ " " ++ magenta "ERROR " ++ msg
 
 info :: String -> IO ()
 info = withLogLevel INFO
@@ -43,8 +43,8 @@ error = withLogLevel ERROR
 
 timeFunction :: String -> IO () -> IO ()
 timeFunction desc function = do
-    startTime <- getCurrentTime
-    function
-    endTime <- getCurrentTime
-    let diff = diffUTCTime endTime startTime
-    info $ desc ++ " execution Time: " ++ show diff
+  startTime <- getCurrentTime
+  function
+  endTime <- getCurrentTime
+  let diff = diffUTCTime endTime startTime
+  info $ desc ++ " execution Time: " ++ show diff

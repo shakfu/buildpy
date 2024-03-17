@@ -30,32 +30,31 @@ tar archive dir = cmd "tar" ["xvf", archive, "-C", dir] Nothing Nothing
 
 gitClone :: String -> String -> String -> Bool -> IO ()
 gitClone url branch dir recurse = do
-    let args = ["clone", "--depth=1", "--branch", branch]
-    let extras =
-            if recurse
-                then ["--recurse-submodules", "--shallow-submodules", url, dir]
-                else [url, dir]
-    cmd "git" (args ++ extras) Nothing Nothing
+  let args = ["clone", "--depth=1", "--branch", branch]
+  let extras =
+        if recurse
+          then ["--recurse-submodules", "--shallow-submodules", url, dir]
+          else [url, dir]
+  cmd "git" (args ++ extras) Nothing Nothing
 
 cmakeConfig :: String -> String -> [String] -> IO ()
 cmakeConfig src_dir build_dir opts =
-    cmd "cmake" (["-S", src_dir, "-B", build_dir] ++ opts) Nothing Nothing
+  cmd "cmake" (["-S", src_dir, "-B", build_dir] ++ opts) Nothing Nothing
 
 cmakeBuild :: String -> Bool -> IO ()
 cmakeBuild build_dir release =
-    cmd "cmake" (["--build", build_dir] ++ extras) Nothing Nothing
+  cmd "cmake" (["--build", build_dir] ++ extras) Nothing Nothing
   where
     extras =
-        if release
-            then ["--config", "Release"]
-            else []
+      if release
+        then ["--config", "Release"]
+        else []
 
 cmakeInstall :: String -> String -> IO ()
 cmakeInstall build_dir prefix =
-    cmd "cmake" ["--install", build_dir, "--prefix", prefix] Nothing Nothing
+  cmd "cmake" ["--install", build_dir, "--prefix", prefix] Nothing Nothing
 
 -- isGlobMatch :: FilePath -> [String] -> Bool
 -- isGlobMatch f patterns = any ((== True) . flip (?==) f) patterns
-
 isGlobMatch :: FilePath -> [String] -> Bool
 isGlobMatch f = any (?== f)

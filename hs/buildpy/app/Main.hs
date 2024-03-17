@@ -11,6 +11,7 @@ import System.Console.GetOpt
   , usageInfo
   )
 import System.Environment (getArgs, getProgName)
+import Models.Python (processPython)
 
 -- import Config (configName, defaultConfig)
 -- import Log (info, timeFunction)
@@ -66,6 +67,7 @@ processArgs flags = do
   when (Verbose `elem` flags) $ dump flags
     -- when (List    `elem` flags) $ mapM_ putStrLn [missionCodeName m | m <- missions]
     -- startMissionFromFlags flags
+  processPython
   where
     dump fs = putStrLn $ "options: " ++ show fs
         -- startMissionFromFlags fs = case fs of

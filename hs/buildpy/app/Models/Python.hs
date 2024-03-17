@@ -4,6 +4,7 @@
 module Models.Python where
 
 import Data.Map
+import Data.Maybe
 import Log
 import Models.Dependency
 import Models.Project
@@ -381,26 +382,27 @@ pythonSrcDir c = joinPath [projectSrc p, pythonName c]
 pythonBuildType :: PythonConfig -> String
 pythonBuildType c = head $ wordsWhen (== '_') (pythonConfig c)
 
+pythonSetupLocal :: PythonConfig -> FilePath
+pythonSetupLocal c = joinPath [pythonSrcDir c, "Modules", "Setup.local"]
+
 -- ----------------------------------------------------------------------------
 -- methods
 configurePython :: String -> String -> Project -> PythonConfig
 configurePython version name project = do
   let c = newPythonConfig version name project
-  let prefix = pythonPrefix c
-  let btype = pythonBuildType c
-  let nopackages = Prelude.null (pythonPackages c)
-  let baseOpts = ["./configure", "--prefix=" ++ prefix] ++ pythonConfigOptions c
+  let baseOpts =
+        ["./configure", "--prefix=" ++ pythonPrefix c] ++ pythonConfigOptions c
   let typeOpts =
-        if | btype == "shared" ->
+        if | pythonBuildType c == "shared" ->
              baseOpts ++ ["--enable-shared", "--without-static-libpython"]
-           | btype == "framework" ->
-             baseOpts ++ ["--enable-framework=" ++ prefix]
+           | pythonBuildType c == "framework" ->
+             baseOpts ++ ["--enable-framework=" ++ pythonPrefix c]
            | otherwise -> []
-  let removepats = pythonRemovePatterns c
   let opts =
         if pythonOptimize c
           then typeOpts ++ ["--enable-optimizations"]
           else typeOpts
+  let nopackages = Prelude.null (pythonPackages c)
   c
     { pythonConfigOptions =
         if nopackages
@@ -408,17 +410,34 @@ configurePython version name project = do
           else opts
     , pythonRemovePatterns =
         if nopackages
-          then removepats ++ ["ensurepip"]
-          else removepats
+          then pythonRemovePatterns c ++ ["ensurepip"]
+          else pythonRemovePatterns c
     }
+
+writeSetupLocal :: PythonConfig -> IO ()
+writeSetupLocal c = do
+  let out = ["# -*- makefile -*-"]
+          ++ pythonHeaders c
+          ++ ["\n# core\n"]
+          ++ getEntries (pythonCore c)
+          ++ ["\n*shared*\n"]
+          ++ getEntries (pythonShared c)
+          ++ ["\n*static*\n"]
+          ++ getEntries (pythonStatic c)
+          ++ ["\n*disabled*\n"]
+          ++ pythonDisabled c
+  writeFile (pythonSetupLocal c) (unlines out)
+  where
+    extlookup k = k : fromJust (Data.Map.lookup k (pythonExts c))
+    getEntries = Prelude.map (unwords . extlookup)
 
 doConfigurePython :: PythonConfig -> IO ()
 doConfigurePython c = do
+  --     let mut cfg = config::Config::new(self.config.clone(), self.ver());
+  --     cfg.configure();
+  writeSetupLocal c
   cmd "bash" (pythonConfigOptions c) Nothing Nothing
 
---     let mut cfg = config::Config::new(self.config.clone(), self.ver());
---     cfg.configure();
---     cfg.write(self.setup_local());
 processPython :: IO ()
 processPython = do
   p <- defaultProject

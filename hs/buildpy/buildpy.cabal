@@ -51,8 +51,7 @@ library
     exposed-modules:  BuildPy
 
     -- Modules included in this library but not exported.
-    other-modules:    Build,
-                      Log,
+    other-modules:    Log,
                       Models.Dependency,
                       Models.Project,
                       Models.Python,

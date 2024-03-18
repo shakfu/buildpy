@@ -7,7 +7,7 @@ define all-projects
 endef
 
 
-.PHONY: all build clean
+.PHONY: all build release clean
 
 all: build
 
@@ -16,6 +16,12 @@ build:
 	@echo "make $@ for all projects"
 	$(call all-projects)
 
+release:
+	@mkdir -p bin
+	@mv go/buildpy/buildpy bin/buildpy-go
+	@make -C rs/buildpy release
+
 clean:
 	@echo "make $@ for all projects"
 	$(call all-projects,"$@")
+

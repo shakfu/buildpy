@@ -1,6 +1,6 @@
 GO_FILES=$(shell go list ./... | grep -v /vendor/)
 
-.PHONY: all run build build-test test clean fmt vet tidy repl repl-test \
+.PHONY: all run build build-test release test clean fmt vet tidy repl repl-test \
 		rpath
 
 all: build
@@ -13,6 +13,11 @@ build:
 
 build-test: clean build
 	@./buildpy build
+
+release:
+	@mkdir -p ../../bin
+	@go build -ldflags "-w"
+	@mv buildpy ../../bin/buildpy-go
 
 repl:
 	@build/install/python/bin/python3

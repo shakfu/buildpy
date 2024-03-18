@@ -8,9 +8,9 @@ The general steps are as follows:
 
 ```
 ./build/
-  downloads/
-  src/
-  install/
+./build/downloads/
+./build/src/
+./build/install/
 ```
 
 2. Download, build, and install python dependencies {openssl, bzip2, xz, ..} into build project
@@ -24,15 +24,14 @@ The end product is especially useful for integration in an other compiled projec
 
 Features of `buildpy` variants by language:
 
-| Features             |  python | golang   | rust     | haskell  | swift    |
-| :------------------- | :------:| :------: | :------: | :------: | :------: |
-| Create Build Env     | x       | x        | x        | x        |          |
-| Build Dependencies   | x       | x        | x        | x        |          |
-| Configure Python     | x       | x        | x        |          |          |
-| Build/Install Python | x       | x        | x        |          |          |
-| Clean Python Build   | x       | x        | x        |          |          |
-| Zip python library   | x       | x        | x        |          |          |
-
+| Features                   |  python | golang   | rust     | haskell  | swift    |
+| :------------------------- | :------:| :------: | :------: | :------: | :------: |
+| Create Build Env           | x       | x        | x        | x        |          |
+| Build Python Dependencies  | x       | x        | x        | x        |          |
+| Configure Python Build     | x       | x        | x        |          |          |
+| Build/Install Python       | x       | x        | x        |          |          |
+| Clean Python Build         | x       | x        | x        |          |          |
+| Zip python library         | x       | x        | x        |          |          |
 
 
 

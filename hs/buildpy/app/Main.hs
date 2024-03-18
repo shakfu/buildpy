@@ -3,6 +3,7 @@ module Main where
 -- import Prelude hiding (log)
 import Control.Monad (when)
 import Data.Maybe (fromMaybe)
+import Models.Python (processPython)
 import System.Console.GetOpt
   ( ArgDescr(NoArg, OptArg)
   , ArgOrder(RequireOrder)
@@ -11,7 +12,6 @@ import System.Console.GetOpt
   , usageInfo
   )
 import System.Environment (getArgs, getProgName)
-import Models.Python (processPython)
 
 -- import Config (configName, defaultConfig)
 -- import Log (info, timeFunction)
@@ -67,7 +67,6 @@ processArgs flags = do
   when (Verbose `elem` flags) $ dump flags
     -- when (List    `elem` flags) $ mapM_ putStrLn [missionCodeName m | m <- missions]
     -- startMissionFromFlags flags
-  processPython
   where
     dump fs = putStrLn $ "options: " ++ show fs
         -- startMissionFromFlags fs = case fs of
@@ -92,7 +91,8 @@ main = do
   args <- getArgs
   prog <- getProgName
   case getOpt RequireOrder options args of
-    ([], [], []) -> putStrLn "EMPTY" --start missions 
+    ([], [], []) -> processPython
+    -- ([], [], []) -> putStrLn "EMPTY" --start missions 
     (flags, [], []) -> processArgs flags
     (_, nonOpts, []) -> error $ "unrecognized arguments: " ++ unwords nonOpts
     (_, _, msgs) -> error $ concat msgs ++ usageInfo (header prog) options

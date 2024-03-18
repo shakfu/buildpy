@@ -3,6 +3,8 @@ module Models.Project where
 import System.Directory (getCurrentDirectory)
 import System.FilePath (joinPath)
 
+import Shell (makedir)
+
 data Project = Project
   { projectCwd :: String
   , projectBuild :: String
@@ -24,3 +26,9 @@ newProject cwd =
 defaultProject :: IO Project
 defaultProject = do
   newProject <$> getCurrentDirectory
+
+setupProject :: Project -> IO ()
+setupProject p = do
+  mapM_
+    makedir
+    [projectBuild p, projectDownloads p, projectSrc p, projectInstall p]

@@ -3,6 +3,7 @@
 
 module Models.Python where
 
+import Control.Monad
 import Data.Map
 import Data.Maybe
 import Log
@@ -35,7 +36,7 @@ data PythonConfig = PythonConfig
   } deriving (Show)
 
 newPythonConfig :: String -> String -> Project -> PythonConfig
-newPythonConfig name version proj =
+newPythonConfig version name proj =
   PythonConfig
     { pythonName = "Python"
     , pythonVersion = version
@@ -362,7 +363,8 @@ newPythonConfig name version proj =
         ]
     , pythonConfigOptions = []
     , pythonPackages = []
-    , pythonDependsOn = [sslConfig "1.1.1", bz2Config "1.0.8", xzConfig "5.6.0"]
+    , pythonDependsOn =
+        [sslConfig "1.1.1" proj, bz2Config "1.0.8" proj, xzConfig "5.6.0" proj]
     , pythonOptimize = False
     , pythonProject = proj
     }
@@ -370,12 +372,12 @@ newPythonConfig name version proj =
 -- ----------------------------------------------------------------------------
 -- properties
 pythonPrefix :: PythonConfig -> FilePath
-pythonPrefix c = joinPath [projectInstall p, pythonName c]
+pythonPrefix c = joinPath [projectInstall p, lowercase $ pythonName c]
   where
     p = pythonProject c
 
 pythonSrcDir :: PythonConfig -> FilePath
-pythonSrcDir c = joinPath [projectSrc p, pythonName c]
+pythonSrcDir c = joinPath [projectSrc p, lowercase $ pythonName c]
   where
     p = pythonProject c
 
@@ -397,7 +399,7 @@ configurePython version name project = do
              baseOpts ++ ["--enable-shared", "--without-static-libpython"]
            | pythonBuildType c == "framework" ->
              baseOpts ++ ["--enable-framework=" ++ pythonPrefix c]
-           | otherwise -> []
+           | otherwise -> baseOpts
   let opts =
         if pythonOptimize c
           then typeOpts ++ ["--enable-optimizations"]
@@ -416,7 +418,8 @@ configurePython version name project = do
 
 writeSetupLocal :: PythonConfig -> IO ()
 writeSetupLocal c = do
-  let out = ["# -*- makefile -*-"]
+  let out =
+        ["# -*- makefile -*-"]
           ++ pythonHeaders c
           ++ ["\n# core\n"]
           ++ getEntries (pythonCore c)
@@ -435,33 +438,29 @@ doConfigurePython :: PythonConfig -> IO ()
 doConfigurePython c = do
   --     let mut cfg = config::Config::new(self.config.clone(), self.ver());
   --     cfg.configure();
+  debug $ "buildtype: " ++ pythonBuildType c
+  debug $ "config opts: " ++ show (pythonConfigOptions c)
+  info "writing Setup.local"
   writeSetupLocal c
-  cmd "bash" (pythonConfigOptions c) Nothing Nothing
+  cmd "bash" (pythonConfigOptions c) (Just $ pythonSrcDir c) Nothing
 
 processPython :: IO ()
 processPython = do
   p <- defaultProject
   let c = configurePython "3.12.2" "static_max" p
-  doConfigurePython c
-  info ("building python " ++ show (pythonVersion c))
+  setupProject $ pythonProject c
   processPythonDependencies c
-  downloadPython c
-  setupPython c
-  buildPython c
-  installPython c
-  cleanPython c
-  zipPython c
-
-processDep :: Project -> DependencyConfig -> IO ()
-processDep p dep = do
-  print p
-  print dep
+  -- downloadPython c
+  -- doConfigurePython c
+  -- buildPython c
+  -- installPython c
+  -- cleanPython c
+  -- zipPython c
 
 processPythonDependencies :: PythonConfig -> IO ()
 processPythonDependencies c = do
-  mapM_ (processDep p) $ pythonDependsOn c
-  where
-    p = pythonProject c
+  forM_ (pythonDependsOn c) $ \dep -> do
+    depBuildFunc dep dep
 
 downloadPython :: PythonConfig -> IO ()
 downloadPython c = do
@@ -471,17 +470,18 @@ downloadPython c = do
     branch = pythonRepoBranch c
     dir = pythonSrcDir c
 
-setupPython :: PythonConfig -> IO ()
-setupPython c = do
-  print c
-
+-- setupPython :: PythonConfig -> IO ()
+-- setupPython c = do
+--   print c
 buildPython :: PythonConfig -> IO ()
 buildPython c = do
-  print c
+  info ("building python " ++ show (pythonVersion c))
+  cmd "make" [] (Just $ pythonSrcDir c) Nothing
 
 installPython :: PythonConfig -> IO ()
 installPython c = do
-  print c
+  info ("install python " ++ show (pythonVersion c))
+  cmd "make" ["install"] (Just $ pythonSrcDir c) Nothing
 
 cleanPython :: PythonConfig -> IO ()
 cleanPython c = do

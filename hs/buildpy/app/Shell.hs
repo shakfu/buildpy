@@ -5,8 +5,8 @@ import System.FilePattern
 
 import Process (cmd, run)
 
-makedirs :: FilePath -> IO ()
-makedirs = createDirectoryIfMissing True
+makedir :: FilePath -> IO ()
+makedir = createDirectoryIfMissing True
 
 -- createDirectory :: FilePath -> IO ()
 -- remove file or directory recursively

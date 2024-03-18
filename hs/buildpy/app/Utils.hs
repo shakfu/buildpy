@@ -1,5 +1,10 @@
 module Utils where
 
+import Data.Char (toLower)
+
+lowercase :: String -> String
+lowercase = map toLower
+
 -- | replace chars in a string
 --
 -- >>> replace '.' '_' "hello.world"

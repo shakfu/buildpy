@@ -1,7 +1,11 @@
 module Models.Dependency where
 
+import Log (info)
 import Models.Project
+import Process
+import Shell
 import System.FilePath (joinPath)
+import Text.Show.Functions ()
 import Utils (replace)
 
 data DependencyConfig = DependencyConfig
@@ -12,60 +16,105 @@ data DependencyConfig = DependencyConfig
   , depDownloadUrl :: String
   , depOptions :: [String]
   , depLibs :: [String]
+  , depProject :: Project
+  , depBuildFunc :: DependencyConfig -> IO ()
   } deriving (Show)
 
-depPrefix :: Project -> DependencyConfig -> FilePath
-depPrefix p c = joinPath [projectInstall p, depName c]
+depPrefix :: DependencyConfig -> FilePath
+depPrefix c = joinPath [projectInstall $ depProject c, depName c]
 
-depSrcDir :: Project -> DependencyConfig -> FilePath
-depSrcDir p c = joinPath [projectSrc p, depName c]
+depSrcDir :: DependencyConfig -> FilePath
+depSrcDir c = joinPath [projectSrc $ depProject c, depName c]
 
-depBuildDir :: Project -> DependencyConfig -> FilePath
-depBuildDir p c = joinPath [depSrcDir p c, "build"]
+depBuildDir :: DependencyConfig -> FilePath
+depBuildDir c = joinPath [depSrcDir c, "build"]
 
-sslConfig :: String -> DependencyConfig
-sslConfig v =
+downloadDep :: DependencyConfig -> IO ()
+downloadDep c = do
+  Shell.gitClone url branch dir False
+  where
+    url = depRepoUrl c
+    branch = depRepoBranch c
+    dir = depSrcDir c
+
+processSsl :: DependencyConfig -> IO ()
+processSsl c = do
+  info $ "building " ++ depName c
+  downloadDep c
+  let args =
+        ["./config", "no-shared", "no-tests"] ++ ["--prefix=" ++ depPrefix c]
+  let srcdir = Just $ depSrcDir c
+  cmd "bash" args srcdir Nothing
+  cmd "make" ["install_sw"] srcdir Nothing
+
+sslConfig :: String -> Project -> DependencyConfig
+sslConfig version proj =
   DependencyConfig
     { depName = "openssl"
-    , depVersion = v ++ "w"
+    , depVersion = version ++ "w"
     , depRepoUrl = "https://github.com/openssl/openssl.git"
-    , depRepoBranch = "OpenSSL_" ++ replace '.' '_' v ++ "w"
+    , depRepoBranch = "OpenSSL_" ++ replace '.' '_' version ++ "w"
     , depDownloadUrl =
         "https://www.openssl.org/source/old/"
-          ++ v
+          ++ version
           ++ "/openssl-"
-          ++ v
+          ++ version
           ++ "w.tar.gz"
     , depOptions = []
     , depLibs = ["libssl.a", "libcrypto.a"]
+    , depProject = proj
+    , depBuildFunc = processSsl
     }
 
-xzConfig :: String -> DependencyConfig
-xzConfig v =
+processXz :: DependencyConfig -> IO ()
+processXz c = do
+  info $ "building " ++ depName c
+  downloadDep c
+  let args =
+        ["./configure", "--disable-shared", "--enable-static"]
+          ++ ["--prefix=" ++ depPrefix c]
+  let srcdir = Just $ depSrcDir c
+  cmd "bash" args srcdir Nothing
+  cmd "make" ["install"] srcdir Nothing
+
+xzConfig :: String -> Project -> DependencyConfig
+xzConfig version proj =
   DependencyConfig
     { depName = "xz"
-    , depVersion = v
+    , depVersion = version
     , depRepoUrl = "https://github.com/tukaani-project/xz.git"
-    , depRepoBranch = "v" ++ v
+    , depRepoBranch = "v" ++ version
     , depDownloadUrl =
         "https://github.com/tukaani-project/xz/releases/download/v"
-          ++ v
+          ++ version
           ++ "/xz-"
-          ++ v
+          ++ version
           ++ ".tar.gz"
     , depOptions = []
     , depLibs = ["liblzma.a"]
+    , depProject = proj
+    , depBuildFunc = processXz
     }
 
-bz2Config :: String -> DependencyConfig
-bz2Config v =
+processBz2 :: DependencyConfig -> IO ()
+processBz2 c = do
+  info $ "building " ++ depName c
+  downloadDep c
+  let args = ["install", "CFLAGS=-fPIC"] ++ ["PREFIX=" ++ depPrefix c]
+  let srcdir = Just $ depSrcDir c
+  cmd "make" args srcdir Nothing
+
+bz2Config :: String -> Project -> DependencyConfig
+bz2Config version proj =
   DependencyConfig
     { depName = "bzip2"
-    , depVersion = v
+    , depVersion = version
     , depRepoUrl = "https://github.com/libarchive/bzip2.git"
-    , depRepoBranch = "bzip2-" ++ v
+    , depRepoBranch = "bzip2-" ++ version
     , depDownloadUrl =
-        "https://sourceware.org/pub/bzip2/bzip2-" ++ v ++ ".tar.gz"
+        "https://sourceware.org/pub/bzip2/bzip2-" ++ version ++ ".tar.gz"
     , depOptions = []
     , depLibs = ["libbz2.a"]
+    , depProject = proj
+    , depBuildFunc = processBz2
     }

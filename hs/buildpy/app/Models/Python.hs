@@ -450,10 +450,10 @@ processPython = do
   let c = configurePython "3.12.2" "static_max" p
   setupProject $ pythonProject c
   processPythonDependencies c
-  -- downloadPython c
-  -- doConfigurePython c
-  -- buildPython c
-  -- installPython c
+  downloadPython c
+  doConfigurePython c
+  buildPython c
+  installPython c
   -- cleanPython c
   -- zipPython c
 

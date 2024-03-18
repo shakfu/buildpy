@@ -44,8 +44,8 @@ processSsl c = do
   let args =
         ["./config", "no-shared", "no-tests"] ++ ["--prefix=" ++ depPrefix c]
   let srcdir = Just $ depSrcDir c
-  cmd "bash" args srcdir Nothing
-  cmd "make" ["install_sw"] srcdir Nothing
+  Process.cmd "bash" args srcdir Nothing
+  Process.cmd "make" ["install_sw"] srcdir Nothing
 
 sslConfig :: String -> Project -> DependencyConfig
 sslConfig version proj =
@@ -70,12 +70,17 @@ processXz :: DependencyConfig -> IO ()
 processXz c = do
   info $ "building " ++ depName c
   downloadDep c
-  let args =
-        ["./configure", "--disable-shared", "--enable-static"]
-          ++ ["--prefix=" ++ depPrefix c]
-  let srcdir = Just $ depSrcDir c
-  cmd "bash" args srcdir Nothing
-  cmd "make" ["install"] srcdir Nothing
+  Shell.cmakeConfig
+    (depSrcDir c)
+    (depBuildDir c)
+    [ "-DBUILD_SHARED_LIBS=OFF"
+    , "-DENABLE_NLS=OFF"
+    , "-DENABLE_SMALL=ON"
+    , "-DCMAKE_BUILD_TYPE=MinSizeRel"
+    ]
+    (Just [("CFLAGS", "-fPIC")])
+  Shell.cmakeBuild (depBuildDir c) False
+  Shell.cmakeInstall (depBuildDir c) (depPrefix c)
 
 xzConfig :: String -> Project -> DependencyConfig
 xzConfig version proj =
@@ -102,7 +107,7 @@ processBz2 c = do
   downloadDep c
   let args = ["install", "CFLAGS=-fPIC"] ++ ["PREFIX=" ++ depPrefix c]
   let srcdir = Just $ depSrcDir c
-  cmd "make" args srcdir Nothing
+  Process.cmd "make" args srcdir Nothing
 
 bz2Config :: String -> Project -> DependencyConfig
 bz2Config version proj =

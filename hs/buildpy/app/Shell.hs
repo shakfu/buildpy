@@ -8,7 +8,6 @@ import Process (cmd, run)
 makedir :: FilePath -> IO ()
 makedir = createDirectoryIfMissing True
 
--- createDirectory :: FilePath -> IO ()
 -- remove file or directory recursively
 remove :: FilePath -> IO ()
 remove = removePathForcibly
@@ -28,6 +27,9 @@ curl dir url = cmd "curl" ["-L", "--output-dir", dir, "-O", url] Nothing Nothing
 tar :: String -> String -> IO ()
 tar archive dir = cmd "tar" ["xvf", archive, "-C", dir] Nothing Nothing
 
+ziplib :: String -> String -> IO ()
+ziplib libpath zippath = cmd "zip" ["-r", zippath, "."] (Just libpath) Nothing
+
 gitClone :: String -> String -> String -> Bool -> IO ()
 gitClone url branch dir recurse = do
   let args = ["clone", "--depth=1", "--branch", branch]
@@ -37,9 +39,9 @@ gitClone url branch dir recurse = do
           else [url, dir]
   cmd "git" (args ++ extras) Nothing Nothing
 
-cmakeConfig :: String -> String -> [String] -> IO ()
+cmakeConfig :: String -> String -> [String] -> Maybe [(String, String)] -> IO ()
 cmakeConfig src_dir build_dir opts =
-  cmd "cmake" (["-S", src_dir, "-B", build_dir] ++ opts) Nothing Nothing
+  cmd "cmake" (["-S", src_dir, "-B", build_dir] ++ opts) Nothing
 
 cmakeBuild :: String -> Bool -> IO ()
 cmakeBuild build_dir release =

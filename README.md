@@ -1,10 +1,32 @@
-# pybuild - a bunch of python builders
+# pybuild - a bunch of python3 builders
 
-This project explores how to build and configure python from source, especially if the eng-goal is integration in an other compiled project or plugin via embedding.
+This project explores different ways to programmatically configure and build python from source.
 
-It started from a concrete requirement in one [external project](https://github.com/shakfu/py-js) which led to the first python `builder`, this was then simplified into `pybuilder`, and finally producing `buildpy`, the latest iteration of this sequence.
+The general steps are as follows:
 
-After the python version of `buildpy` was created, it was thought a compiled version of the file would be useful for bootstrapping purposes.
+1. Create local build environment / project which consists of the following folder structure
+
+```
+./build/
+  downloads/
+  src/
+  install/
+```
+
+2. Download, build, and install python dependencies {openssl, bzip2, xz, ..} into build project
+3. Download a particular version of python3 from from python.org
+4. Configure python3 build using configure options and custom `Setup.local` file
+5. Build and install python3 into build project
+6. Clean or remove extraneous libraries, extensions, modules
+7. Zip standard library
+
+The end product is especially useful for integration in an other compiled project or plugin via embedding.
+
+A number of `builders` are available:
+
+This project started from a concrete requirement in one [external project](https://github.com/shakfu/py-js) which led to the first python `builder`, this was then simplified into `pybuilder`, and finally producing `buildpy`, the latest iteration of this sequence.
+
+After the python version of `buildpy` was created, it was thought a compiled version of the tool would be useful for bootstrapping purposes.
 
 This led to a straightforward golang implementation, and then a rust implementation as well as haskell and swift implementations which are currently under development.
 

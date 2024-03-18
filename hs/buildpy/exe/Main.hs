@@ -1,9 +1,10 @@
 module Main where
 
+import qualified BuildPy (processPython)
+
 -- import Prelude hiding (log)
 import Control.Monad (when)
 import Data.Maybe (fromMaybe)
-import Models.Python (processPython)
 import System.Console.GetOpt
   ( ArgDescr(NoArg, OptArg)
   , ArgOrder(RequireOrder)
@@ -91,7 +92,7 @@ main = do
   args <- getArgs
   prog <- getProgName
   case getOpt RequireOrder options args of
-    ([], [], []) -> processPython
+    ([], [], []) -> BuildPy.processPython
     -- ([], [], []) -> putStrLn "EMPTY" --start missions 
     (flags, [], []) -> processArgs flags
     (_, nonOpts, []) -> error $ "unrecognized arguments: " ++ unwords nonOpts

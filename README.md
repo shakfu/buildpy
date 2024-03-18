@@ -14,7 +14,7 @@ The general steps are as follows:
 ```
 
 2. Download, build, and install python dependencies {openssl, bzip2, xz, ..} into build project
-3. Download a particular version of python3 from from python.org
+3. Download the source code of a particular version of python3 from python.org
 4. Configure python3 build using configure options and custom `Setup.local` file
 5. Build and install python3 into build project
 6. Clean or remove extraneous libraries, extensions, modules

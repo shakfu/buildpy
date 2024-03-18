@@ -82,6 +82,11 @@ impl PythonBuilder {
         format!("{}.{}", xs[0], xs[1])
     }
 
+    fn ver_nodot(&self) -> String {
+        let xs: Vec<String> = self.version.split('.').map(|s| s.to_string()).collect();
+        format!("{}{}", xs[0], xs[1])
+    }
+
     fn name_ver(&self) -> String {
         format!("{}{}", self.name.to_lowercase(), self.ver())
     }
@@ -127,15 +132,6 @@ impl PythonBuilder {
         };
     }
 
-    fn clean(&self) {
-        let target = self.prefix().join("lib").join(self.name_ver());
-        log::info!("cleaning {}", target.display());
-        shell::recursive_remove(
-            &self.prefix().join("lib").join(self.name_ver()),
-            self.remove_patterns.clone(),
-        );
-    }
-
     fn install_dependencies(&self) {
         builders::Bzip2Builder::new("1.0.8").process();
         builders::OpensslBuilder::new("1.1.1w").process();
@@ -163,23 +159,20 @@ impl PythonBuilder {
 
         let prefixopt = format!("--prefix={}", self.prefix().display());
 
-        let mut opts: Vec<&str> = vec![
-            "./configure",
-            &prefixopt,
-        ];
+        let mut opts: Vec<&str> = vec!["./configure", &prefixopt];
 
         if self.build_type() == "shared" {
             self.config_options.extend(vec![
-                "--enable-shared".to_string(), 
+                "--enable-shared".to_string(),
                 "--without-static-libpython".to_string(),
-           ]);
+            ]);
         } else if self.build_type() == "framework" {
-            self.config_options.push(
-                format!("--enable-framework={}", self.prefix().display())
-            )
+            self.config_options
+                .push(format!("--enable-framework={}", self.prefix().display()))
         }
         if self.optimize {
-            self.config_options.push("--enable-optimizations".to_string());
+            self.config_options
+                .push("--enable-optimizations".to_string());
         }
         if !self.packages.is_empty() {
             self.config_options.push("--without-ensurepip".to_string());
@@ -194,11 +187,7 @@ impl PythonBuilder {
         cfg.configure();
         cfg.write(self.setup_local());
 
-        process::cmd(
-            "bash",
-            opts,
-            self.src_dir(),
-        );
+        process::cmd("bash", opts, self.src_dir());
     }
 
     #[time("info")]
@@ -213,6 +202,54 @@ impl PythonBuilder {
         process::cmd("make", vec!["install"], self.src_dir());
     }
 
+    fn clean(&self) {
+        let target = self.prefix().join("lib").join(self.name_ver());
+        log::info!("cleaning {}", target.display());
+        shell::recursive_remove(
+            &self.prefix().join("lib").join(self.name_ver()),
+            self.remove_patterns.clone(),
+        );
+    }
+
+    fn ziplib(&self) {
+        let tmp_libdynload = self.project.build.join("lib-dynload");
+        let tmp_os_py = self.project.build.join("os.py");
+        let zip_path = self
+            .prefix()
+            .join("lib")
+            .join(format!("python{}.zip", self.ver_nodot()));
+        let lib_path = self.prefix().join("lib").join(self.name_ver());
+
+        let src = self.prefix().join("lib").join(self.name_ver());
+        let lib_dynload = src.join("lib-dynload");
+        let os_py = src.join("os.py");
+        let site_packages = src.join("site-packages");
+
+        // pre-cleanup
+        if tmp_libdynload.exists() {
+            std::fs::remove_dir_all(tmp_libdynload.clone()).unwrap();
+        }
+        if tmp_os_py.exists() {
+            std::fs::remove_file(tmp_os_py.clone()).unwrap();
+        }
+
+        shell::mv(lib_dynload.clone(), tmp_libdynload.clone());
+        shell::mv(os_py.clone(), tmp_os_py.clone());
+
+        log::info!("zipping {}", lib_path.display());
+        process::cmd("zip", vec!["-r", zip_path.to_str().unwrap(), "."], lib_path);
+
+        std::fs::remove_dir_all(src.clone()).unwrap();
+
+        std::fs::remove_dir_all(self.prefix().join("lib").join("pkgconfig")).unwrap();
+
+        std::fs::create_dir_all(src).unwrap();
+        shell::makedirs(site_packages.to_str().unwrap());
+
+        shell::mv(tmp_libdynload, lib_dynload);
+        shell::mv(tmp_os_py, os_py);
+    }
+
     pub fn process(&mut self) {
         self.setup();
         self.install_dependencies();
@@ -220,6 +257,7 @@ impl PythonBuilder {
         self.build();
         self.install();
         self.clean();
+        self.ziplib()
     }
 
     fn is_built(&self) -> bool {

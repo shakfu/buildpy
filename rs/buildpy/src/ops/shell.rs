@@ -40,9 +40,13 @@ pub fn makedirs(path: &str) {
     }
 }
 
-pub fn mv(src: &str, dst: &str) {
-    std::fs::rename(src, dst).unwrap_or_else(|_| panic!("failed to move {} to {}", src, dst));
+pub fn mv(src: std::path::PathBuf, dst: std::path::PathBuf) {
+    let _ = std::fs::rename(src, dst);
 }
+
+// pub fn mv(src: &str, dst: &str) {
+//     std::fs::rename(src, dst).unwrap_or_else(|_| panic!("failed to move {} to {}", src, dst));
+// }
 
 pub fn cmake_configure(src_dir: &str, build_dir: &str, opts: Vec<&str>) {
     let mut args = vec!["-S", src_dir, "-B", build_dir];

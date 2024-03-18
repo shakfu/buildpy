@@ -22,15 +22,16 @@ The general steps are as follows:
 
 The end product is especially useful for integration in an other compiled project or plugin via embedding.
 
-A number of `builders` are available:
+Features of `buildpy` variants by language:
 
-This project started from a concrete requirement in one [external project](https://github.com/shakfu/py-js) which led to the first python `builder`, this was then simplified into `pybuilder`, and finally producing `buildpy`, the latest iteration of this sequence.
-
-After the python version of `buildpy` was created, it was thought a compiled version of the tool would be useful for bootstrapping purposes.
-
-This led to a straightforward golang implementation, and then a rust implementation as well as haskell and swift implementations which are currently under development.
-
-The idea is that all versions should eventually all be able to read, write and use a standard JSON build configuration file,
+| Features             |  python | golang   | rust     | haskell  | swift    |
+| :------------------- | :------:| :------: | :------: | :------: | :------: |
+| Create Build Env     | x       | x        | x        | x        |          |
+| Build Dependencies   | x       | x        | x        | x        |          |
+| Configure Python     | x       | x        | x        |          |          |
+| Build/Install Python | x       | x        | x        |          |          |
+| Clean Python Build   | x       | x        | x        |          |          |
+| Zip python library   | x       | x        | x        |          |          |
 
 
 
@@ -228,3 +229,20 @@ OPTIONS:
 ```
 
 A beginnings of a swift edition..
+
+
+
+
+
+## Background
+
+This project started from a concrete requirement in one [external project](https://github.com/shakfu/py-js) which led to the first python `builder`, this was then simplified into `pybuilder`, and finally producing `buildpy`, the latest iteration of this sequence.
+
+After the python version of `buildpy` was created, it was thought a compiled version of the tool would be useful for bootstrapping purposes.
+
+This led to a straightforward golang implementation, and then a rust implementation as well as haskell and swift implementations which are currently under development.
+
+The idea is that all versions should eventually all be able to read, write and use a standard JSON build configuration file,
+
+
+

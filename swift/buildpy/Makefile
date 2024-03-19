@@ -1,5 +1,5 @@
 
-
+EXECUTABLE_DIR := $(shell swift build -c release --show-bin-path)
 
 .PHONY: all, build, run, release, clean, format, lint
 
@@ -15,7 +15,7 @@ run:
 release:
 	@mkdir -p ../../bin
 	@swift build -c release
-	@mv .build/arm64-apple-macosx/release/buildpy ../../bin/buildpy-sw
+	@mv $(EXECUTABLE_DIR)/buildpy ../../bin/buildpy-sw
 
 clean:
 	@rm -rf .build build

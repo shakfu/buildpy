@@ -13,7 +13,9 @@ run:
 	@swift run
 
 release:
+	@mkdir -p ../../bin
 	@swift build -c release
+	@mv .build/arm64-apple-macosx/release/buildpy ../../bin/buildpy-sw
 
 clean:
 	@rm -rf .build build

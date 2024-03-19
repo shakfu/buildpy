@@ -1,12 +1,16 @@
 # pybuild - a bunch of python3 builders
 
-This project explores different ways to programmatically configure and build python from source.
+This project provides different language implementations to programmatically configure and build python from source.
 
-The general steps are as follows:
+The implementations are so far: {python, golang, rust, haskell, swift (wip)}
+
+The initial design, called `buildpy`, was initially implemented in python3 as an improvement on some earlier incarnations (see Background section below).
+
+The design includes the following general steps:
 
 1. Create local build environment / project which consists of the following folder structure
 
-```
+```bash
 ./build/
 ./build/downloads/
 ./build/src/
@@ -14,15 +18,26 @@ The general steps are as follows:
 ```
 
 2. Download, build, and install python dependencies {openssl, bzip2, xz, ..} into build project
-3. Download the source code of a particular version of python3 from python.org
-4. Configure python3 build using configure options and custom `Setup.local` file
+3. Download the source code of a particular version of python3 from python.org or from github
+4. Configure python3 build using `configure` options and custom `Setup.local` file
 5. Build and install python3 into build project
-6. Clean or remove extraneous libraries, extensions, modules
+6. Clean or remove extraneous libraries, extensions, tests, modules
 7. Zip standard library
 
 The end product is especially useful for integration in an other compiled project or plugin via embedding.
 
-Features of `buildpy` variants by language:
+To build all variants do this in the root of this project.
+
+```bash
+make release
+```
+
+To build a specific case, do the same in the root of the subproject.
+
+
+## Implementation Details
+
+Feature coverage and notable aspects of `buildpy` variants by language:
 
 | Features                   |  python | golang   | rust     | haskell  | swift    |
 | :------------------------- | :------:| :------: | :------: | :------: | :------: |
@@ -32,6 +47,24 @@ Features of `buildpy` variants by language:
 | Build/Install Python       | x       | x        | x        |          |          |
 | Clean Python Build         | x       | x        | x        |          |          |
 | Zip python library         | x       | x        | x        |          |          |
+| # of Dependencies          | x       | x        | x        |          |          |
+| Size of final executable   | 48 Kb   | 5.1 MB   | 2.6 MB   | 24.5 MB  | 1.6 MB   |
+
+
+Use of External executables
+
+| External Executable        |  python | golang   | rust     | haskell  | swift    |
+| :------------------------- | :------:| :------: | :------: | :------: | :------: |
+| git                        |         | x        | x        | x        |          |
+| wget                       |         | x        | x        | x        |          |
+| tar                        |         | x        | x        |          |          |
+| zip                        |         | x        | x        |          |          |
+| cmake                      |         | x        | x        |          |          |
+| make                       | x       | x        | x        |          |          |
+| bash                       | x       | x        | x        |          |          |
+
+The python implementation of `buildpy` uses the capabilities of its stdlib to download python and its dependencies, uncompress the results only uses an external executables when calling `./configure` and `make`.
+
 
 
 
@@ -228,8 +261,6 @@ OPTIONS:
 ```
 
 A beginnings of a swift edition..
-
-
 
 
 

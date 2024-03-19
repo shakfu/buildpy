@@ -14,12 +14,12 @@ all: build
 
 build:
 	@echo "make $@ for all projects"
-	$(call all-projects)
+	$(call all-projects,"$@")
 
 release:
-	@mkdir -p bin
-	@mv go/buildpy/buildpy bin/buildpy-go
-	@make -C rs/buildpy release
+	@echo "make $@ for all projects"
+	$(call all-projects,"$@")
+	@cp py/buildpy/buildpy.py ./bin/
 
 clean:
 	@echo "make $@ for all projects"

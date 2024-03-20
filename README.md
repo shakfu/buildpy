@@ -1,3 +1,4 @@
+
 # pybuild - a bunch of python3 builders
 
 This project provides different language implementations to programmatically configure and build python from source.
@@ -88,6 +89,20 @@ class Config:
   optimize: bool
   debug: bool
 ```
+
+The product is a python installation with the following name:
+
+`py-<buildtype>-<sizetype>-<pyversion>-<platform>-<arch>`
+
+
+`py-static-max-3.12.2-darwin-x86_64`
+
+
+`py-3.12.2-static-max-darwin-x86_64`
+
+a symlink directory `<python>` will be created and link to above.
+
+
 
 ## The builders
 

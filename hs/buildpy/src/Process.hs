@@ -1,7 +1,12 @@
 module Process where
 
--- import System.Process ( shell, CreateProcess, createProcess, proc )
 import System.Process
+    ( CreateProcess(..),
+      createProcess,
+      proc,
+      waitForProcess,
+      CmdSpec(RawCommand),
+      StdStream(Inherit) )
 
 import Log (info)
 

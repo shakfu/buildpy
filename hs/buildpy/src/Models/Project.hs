@@ -6,11 +6,11 @@ import System.FilePath (joinPath)
 import Shell (makedir)
 
 data Project = Project
-  { projectCwd :: String
-  , projectBuild :: String
-  , projectDownloads :: String
-  , projectSrc :: String
-  , projectInstall :: String
+  { projectCwd :: FilePath
+  , projectBuild :: FilePath
+  , projectDownloads :: FilePath
+  , projectSrc :: FilePath
+  , projectInstall :: FilePath
   } deriving (Show)
 
 newProject :: String -> Project

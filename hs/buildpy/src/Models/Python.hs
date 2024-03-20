@@ -1,26 +1,29 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE MultiWayIf #-}
+{-# LANGUAGE InstanceSigs #-}
 
 module Models.Python where
 
 import Control.Monad
 import Data.Map
 import Data.Maybe
+import System.FilePath (joinPath)
+
 import Log
 import Models.Dependency
 import Models.Project
 import Process
 import Shell
-import System.FilePath (joinPath)
+import Types
 import Utils
 
 data PythonConfig = PythonConfig
-  { pythonName :: String
-  , pythonVersion :: String
-  , pythonConfig :: String
-  , pythonRepoUrl :: String
+  { pythonName :: Name
+  , pythonVersion :: Version
+  , pythonConfig :: Name
+  , pythonRepoUrl :: Url
   , pythonRepoBranch :: String
-  , pythonDownloadUrl :: String
+  , pythonDownloadUrl :: Url
   , pythonHeaders :: [String]
   , pythonExts :: Map String [String]
   , pythonCore :: [String]
@@ -30,12 +33,12 @@ data PythonConfig = PythonConfig
   , pythonRemovePatterns :: [String]
   , pythonConfigOptions :: [String]
   , pythonPackages :: [String]
-  , pythonDependsOn :: [DependencyConfig]
+  , pythonDependsOn :: [Dependency]
   , pythonOptimize :: Bool
   , pythonProject :: Project
   } deriving (Show)
 
-newPythonConfig :: String -> String -> Project -> PythonConfig
+newPythonConfig :: Version -> Name -> Project -> PythonConfig
 newPythonConfig version name proj =
   PythonConfig
     { pythonName = "Python"
@@ -371,34 +374,54 @@ newPythonConfig version name proj =
 
 -- ----------------------------------------------------------------------------
 -- properties
-pythonPrefix :: PythonConfig -> FilePath
-pythonPrefix c = joinPath [projectInstall p, lowercase $ pythonName c]
-  where
-    p = pythonProject c
 
-pythonSrcDir :: PythonConfig -> FilePath
-pythonSrcDir c = joinPath [projectSrc p, lowercase $ pythonName c]
-  where
-    p = pythonProject c
+instance Buildable PythonConfig where
+
+  prefix :: PythonConfig -> FilePath
+  prefix c = joinPath [projectInstall p, lowercase $ pythonName c]
+    where
+      p = pythonProject c
+
+  srcDir :: PythonConfig -> FilePath
+  srcDir c = joinPath [projectSrc p, lowercase $ pythonName c]
+    where
+      p = pythonProject c
+
+  buildDir :: PythonConfig -> FilePath
+  buildDir c = joinPath [srcDir c, "build"]
+
+  download :: PythonConfig -> IO ()
+  download c = do
+    Shell.gitClone url branch dir False
+    where
+      url = pythonRepoUrl c
+      branch = pythonRepoBranch c
+      dir = srcDir c
+
+  build :: PythonConfig -> IO ()
+  build c   = do
+    info ("bui  lding python " ++ show (pythonVersion c))
+    cmd "make" [  ] (Just $ srcDir c) Nothing
+
 
 pythonBuildType :: PythonConfig -> String
 pythonBuildType c = head $ wordsWhen (== '_') (pythonConfig c)
 
 pythonSetupLocal :: PythonConfig -> FilePath
-pythonSetupLocal c = joinPath [pythonSrcDir c, "Modules", "Setup.local"]
+pythonSetupLocal c = joinPath [srcDir c, "Modules", "Setup.local"]
 
 -- ----------------------------------------------------------------------------
 -- methods
-configurePython :: String -> String -> Project -> PythonConfig
+configurePython :: Version -> Name -> Project -> PythonConfig
 configurePython version name project = do
   let c = newPythonConfig version name project
   let baseOpts =
-        ["./configure", "--prefix=" ++ pythonPrefix c] ++ pythonConfigOptions c
+        ["./configure", "--prefix=" ++ prefix c] ++ pythonConfigOptions c
   let typeOpts =
         if | pythonBuildType c == "shared" ->
              baseOpts ++ ["--enable-shared", "--without-static-libpython"]
            | pythonBuildType c == "framework" ->
-             baseOpts ++ ["--enable-framework=" ++ pythonPrefix c]
+             baseOpts ++ ["--enable-framework=" ++ prefix c]
            | otherwise -> baseOpts
   let opts =
         if pythonOptimize c
@@ -442,7 +465,7 @@ doConfigurePython c = do
   debug $ "config opts: " ++ show (pythonConfigOptions c)
   info "writing Setup.local"
   writeSetupLocal c
-  cmd "bash" (pythonConfigOptions c) (Just $ pythonSrcDir c) Nothing
+  cmd "bash" (pythonConfigOptions c) (Just $ srcDir c) Nothing
 
 processPython :: IO ()
 processPython = do
@@ -468,7 +491,7 @@ downloadPython c = do
   where
     url = pythonRepoUrl c
     branch = pythonRepoBranch c
-    dir = pythonSrcDir c
+    dir = srcDir c
 
 -- setupPython :: PythonConfig -> IO ()
 -- setupPython c = do
@@ -476,12 +499,12 @@ downloadPython c = do
 buildPython :: PythonConfig -> IO ()
 buildPython c = do
   info ("building python " ++ show (pythonVersion c))
-  cmd "make" [] (Just $ pythonSrcDir c) Nothing
+  cmd "make" [] (Just $ srcDir c) Nothing
 
 installPython :: PythonConfig -> IO ()
 installPython c = do
   info ("install python " ++ show (pythonVersion c))
-  cmd "make" ["install"] (Just $ pythonSrcDir c) Nothing
+  cmd "make" ["install"] (Just $ srcDir c) Nothing
 
 cleanPython :: PythonConfig -> IO ()
 cleanPython c = do

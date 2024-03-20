@@ -1,55 +1,52 @@
+{-# LANGUAGE InstanceSigs #-}
+
 module Models.Dependency where
 
 import Log (info)
-import Models.Project
-import Process
-import Shell
+import Models.Project ( Project(projectInstall, projectSrc) )
+import Process ( cmd )
+import Shell ( cmakeBuild, cmakeConfig, cmakeInstall, gitClone )
 import System.FilePath (joinPath)
 import Text.Show.Functions ()
+import Types ( Name, Url, Version, Buildable(..) )
 import Utils (replace)
 
-data DependencyConfig = DependencyConfig
-  { depName :: String
-  , depVersion :: String
-  , depRepoUrl :: String
+data Dependency = Dependency
+  { depName :: Name
+  , depVersion :: Version
+  , depRepoUrl :: Url
   , depRepoBranch :: String
-  , depDownloadUrl :: String
+  , depDownloadUrl :: Url
   , depOptions :: [String]
   , depLibs :: [String]
   , depProject :: Project
-  , depBuildFunc :: DependencyConfig -> IO ()
+  , depBuildFunc :: Dependency -> IO ()
   } deriving (Show)
 
-depPrefix :: DependencyConfig -> FilePath
-depPrefix c = joinPath [projectInstall $ depProject c, depName c]
+instance Buildable Dependency where
+  prefix :: Dependency -> FilePath
+  prefix d = joinPath [projectInstall $ depProject d, depName d]
+  srcDir :: Dependency -> FilePath
+  srcDir d = joinPath [projectSrc $ depProject d, depName d]
+  buildDir :: Dependency -> FilePath
+  buildDir d = joinPath [srcDir d, "build"]
+  download :: Dependency -> IO ()
+  download d = do
+    Shell.gitClone url branch dir False
+    where
+      url = depRepoUrl d
+      branch = depRepoBranch d
+      dir = srcDir d
+  build :: Dependency -> IO ()
+  build d = depBuildFunc d d
 
-depSrcDir :: DependencyConfig -> FilePath
-depSrcDir c = joinPath [projectSrc $ depProject c, depName c]
-
-depBuildDir :: DependencyConfig -> FilePath
-depBuildDir c = joinPath [depSrcDir c, "build"]
-
-downloadDep :: DependencyConfig -> IO ()
-downloadDep c = do
-  Shell.gitClone url branch dir False
-  where
-    url = depRepoUrl c
-    branch = depRepoBranch c
-    dir = depSrcDir c
-
-processSsl :: DependencyConfig -> IO ()
-processSsl c = do
-  info $ "building " ++ depName c
-  downloadDep c
-  let args =
-        ["./config", "no-shared", "no-tests"] ++ ["--prefix=" ++ depPrefix c]
-  let srcdir = Just $ depSrcDir c
-  Process.cmd "bash" args srcdir Nothing
-  Process.cmd "make" ["install_sw"] srcdir Nothing
-
-sslConfig :: String -> Project -> DependencyConfig
+-- ----------------------------------------------------------------------------
+-- dependency configuration and dependency-specific build functions
+-- ----------------------------------------------------------------------------
+-- openssl
+sslConfig :: Version -> Project -> Dependency
 sslConfig version proj =
-  DependencyConfig
+  Dependency
     { depName = "openssl"
     , depVersion = version ++ "w"
     , depRepoUrl = "https://github.com/openssl/openssl.git"
@@ -63,28 +60,23 @@ sslConfig version proj =
     , depOptions = []
     , depLibs = ["libssl.a", "libcrypto.a"]
     , depProject = proj
-    , depBuildFunc = processSsl
+    , depBuildFunc = buildSsl
     }
 
-processXz :: DependencyConfig -> IO ()
-processXz c = do
-  info $ "building " ++ depName c
-  downloadDep c
-  Shell.cmakeConfig
-    (depSrcDir c)
-    (depBuildDir c)
-    [ "-DBUILD_SHARED_LIBS=OFF"
-    , "-DENABLE_NLS=OFF"
-    , "-DENABLE_SMALL=ON"
-    , "-DCMAKE_BUILD_TYPE=MinSizeRel"
-    ]
-    (Just [("CFLAGS", "-fPIC")])
-  Shell.cmakeBuild (depBuildDir c) False
-  Shell.cmakeInstall (depBuildDir c) (depPrefix c)
+buildSsl :: Dependency -> IO ()
+buildSsl d = do
+  info $ "building " ++ depName d
+  download d
+  let args = ["./config", "no-shared", "no-tests"] ++ ["--prefix=" ++ prefix d]
+  let srcdir = Just $ srcDir d
+  Process.cmd "bash" args srcdir Nothing
+  Process.cmd "make" ["install_sw"] srcdir Nothing
 
-xzConfig :: String -> Project -> DependencyConfig
+-- ----------------------------------------------------------------------------
+-- xz (lzma)
+xzConfig :: Version -> Project -> Dependency
 xzConfig version proj =
-  DependencyConfig
+  Dependency
     { depName = "xz"
     , depVersion = version
     , depRepoUrl = "https://github.com/tukaani-project/xz.git"
@@ -98,20 +90,30 @@ xzConfig version proj =
     , depOptions = []
     , depLibs = ["liblzma.a"]
     , depProject = proj
-    , depBuildFunc = processXz
+    , depBuildFunc = buildXz
     }
 
-processBz2 :: DependencyConfig -> IO ()
-processBz2 c = do
-  info $ "building " ++ depName c
-  downloadDep c
-  let args = ["install", "CFLAGS=-fPIC"] ++ ["PREFIX=" ++ depPrefix c]
-  let srcdir = Just $ depSrcDir c
-  Process.cmd "make" args srcdir Nothing
+buildXz :: Dependency -> IO ()
+buildXz d = do
+  info $ "building " ++ depName d
+  download d
+  Shell.cmakeConfig
+    (srcDir d)
+    (buildDir d)
+    [ "-DBUILD_SHARED_LIBS=OFF"
+    , "-DENABLE_NLS=OFF"
+    , "-DENABLE_SMALL=ON"
+    , "-DCMAKE_BUILD_TYPE=MinSizeRel"
+    ]
+    (Just [("CFLAGS", "-fPIC")])
+  Shell.cmakeBuild (buildDir d) False
+  Shell.cmakeInstall (buildDir d) (prefix d)
 
-bz2Config :: String -> Project -> DependencyConfig
+-- ----------------------------------------------------------------------------
+-- bzip2
+bz2Config :: Version -> Project -> Dependency
 bz2Config version proj =
-  DependencyConfig
+  Dependency
     { depName = "bzip2"
     , depVersion = version
     , depRepoUrl = "https://github.com/libarchive/bzip2.git"
@@ -121,5 +123,14 @@ bz2Config version proj =
     , depOptions = []
     , depLibs = ["libbz2.a"]
     , depProject = proj
-    , depBuildFunc = processBz2
+    , depBuildFunc = buildBz2
     }
+
+buildBz2 :: Dependency -> IO ()
+buildBz2 d = do
+  info $ "building " ++ depName d
+  download d
+  let args = ["install", "CFLAGS=-fPIC"] ++ ["PREFIX=" ++ prefix d]
+  let srcdir = Just $ srcDir d
+  Process.cmd "make" args srcdir Nothing
+ 

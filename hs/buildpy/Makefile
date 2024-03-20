@@ -21,8 +21,9 @@ clean:
 	@rm -rf dist-newstyle build
 
 indent:
-	@hindent --indent-size 2 app/*.hs
-	@hindent --indent-size 2 app/Models/*.hs
+	@hindent --indent-size 2 exe/*.hs
+	@hindent --indent-size 2 src/*.hs
+	@hindent --indent-size 2 src/Models/*.hs
 
 release:
 	@mkdir -p ../../bin

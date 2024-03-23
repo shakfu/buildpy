@@ -5,6 +5,7 @@
 #include <subprocess.h>
 #include <taskflow/taskflow.hpp>
 
+#include <algorithm>
 #include <initializer_list>
 #include <string>
 #include <vector>
@@ -77,11 +78,17 @@ public:
 class Project : public ShellCmd {
     // Utility class to hold project directory structure
 public:
+    // -----------------------------------------------------------------------
+    // attributes
+
     fs::path cwd;
     fs::path build;
     fs::path downloads;
     fs::path src;
     fs::path install;
+
+    // -----------------------------------------------------------------------
+    // constructor
 
     Project()
     {
@@ -91,6 +98,9 @@ public:
         this->src = this->build / "src";
         this->install = this->build / "install";
     }
+
+    // -----------------------------------------------------------------------
+    // methods
 
     void setup()
     {
@@ -103,16 +113,81 @@ public:
 };
 
 
-class PythonBuilder : public ShellCmd {
-    // builds python from source
+class OpenSSLBuilder : public ShellCmd {
+    // builds openssl from source
 public:
-    // attributes
     semver::version version;
     std::string name;
     std::string repo_url;
     Project project;
 
+    // -----------------------------------------------------------------------
     // constructor
+
+    OpenSSLBuilder(std::string version)
+    {
+        this->version = semver::version::parse(version);
+        this->name = "openssl";
+        this->repo_url = "https://github.com/openssl/openssl.git";
+        this->project = Project();
+    }
+
+    // -----------------------------------------------------------------------
+    // operators
+
+    void operator()()
+    { 
+        // can be used in taskflow
+        this->process(); 
+    }
+
+    // -----------------------------------------------------------------------
+    // properties
+    
+
+    fs::path src_dir() { return this->project.src / this->name; }
+
+    fs::path build_dir() { return this->src_dir() / std::string("build"); }
+
+    fs::path prefix() { return this->project.install / this->name; }
+
+    std::string repo_branch()
+    {   // "OpenSSL_1_1_1w"
+        std::string s = this->version.str();
+        std::replace( s.begin(), s.end(), '.', '_'); // replace all '.' to '_'
+        return fmt::format("OpenSSL_{}", s);
+    }
+
+    std::string download_url()
+    {
+        return fmt::format(
+            "https://www.openssl.org/source/old/1.1.1/openssl-{}.tar.gz",
+            this->version.str());
+    }
+
+    // -----------------------------------------------------------------------
+    // methods
+
+    void process() {}
+    
+};
+
+
+
+class PythonBuilder : public ShellCmd {
+    // builds python from source
+public:
+    // -----------------------------------------------------------------------
+    // attributes
+
+    semver::version version;
+    std::string name;
+    std::string repo_url;
+    Project project;
+
+    // -----------------------------------------------------------------------
+    // constructor
+
     PythonBuilder(std::string version)
     {
         this->version = semver::version::parse(version);
@@ -121,14 +196,18 @@ public:
         this->project = Project();
     }
 
+    // -----------------------------------------------------------------------
     // operators
+
     void operator()()
     { 
         // can be used in taskflow
         this->process(); 
     }
 
+    // -----------------------------------------------------------------------
     // properties
+    
     std::string ver()
     {
         return fmt::format("{}.{}", this->version.major(),
@@ -214,7 +293,9 @@ public:
         return fs::exists(this->staticlib()) || fs::exists(this->dylib());
     }
 
+    // -----------------------------------------------------------------------
     // actions
+
     void preprocess() { }
     void setup() { }
     void configure() { }

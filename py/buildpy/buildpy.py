@@ -985,7 +985,7 @@ class AbstractBuilder(ShellCmd):
 
     @property
     def libname(self):
-        """library name suffix"""
+        """library name prefix"""
         return f"lib{self.name}"
 
     @property

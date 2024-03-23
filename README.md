@@ -3,11 +3,13 @@
 
 This project provides different language implementations to programmatically configure and build python from source.
 
-The implementations are so far: {python, golang, rust, haskell, swift (wip)}
+The end product is especially useful for integration or embeddding in another compiled project, and along the way I got to program the same application using different languages which is always fun and educational.
+
+The implementations are so far: {python, golang, rust, haskell, c++ (wip), swift (wip)}
 
 The initial design, called `buildpy`, was initially implemented in python3 as an improvement on some earlier incarnations (see Background section below).
 
-The design includes the following general steps:
+The design envisions the following general steps:
 
 1. Create local build environment / project which consists of the following folder structure
 
@@ -19,54 +21,60 @@ The design includes the following general steps:
 ```
 
 2. Download, build, and install python dependencies {openssl, bzip2, xz, ..} into build project
+
 3. Download the source code of a particular version of python3 from python.org or from github
+
 4. Configure python3 build using `configure` options and custom `Setup.local` file
+
 5. Build and install python3 into build project
+
 6. Clean or remove extraneous libraries, extensions, tests, modules
+
 7. Zip standard library
 
-The end product is especially useful for integration in an other compiled project or plugin via embedding.
 
-To build all variants do this in the root of this project.
+## Building
+
+To build all variants type `make release` in the root of this project.
 
 ```bash
 make release
 ```
 
-To build a specific case, do the same in the root of the subproject.
+To build a specific case, type the same in the root of the subproject.
 
 
 ## Implementation Details
 
 Feature coverage and notable aspects of `buildpy` variants by language:
 
-| Features                   |  python | golang   | rust     | haskell  | swift    |
-| :------------------------- | :------:| :------: | :------: | :------: | :------: |
-| Create Build Env           | x       | x        | x        | x        |          |
-| Build Python Dependencies  | x       | x        | x        | x        |          |
-| Configure Python Build     | x       | x        | x        |          |          |
-| Build/Install Python       | x       | x        | x        |          |          |
-| Clean Python Build         | x       | x        | x        |          |          |
-| Zip python library         | x       | x        | x        |          |          |
-| # of Dependencies          | x       | x        | x        |          |          |
-| Size of executable (macOS) | 48 Kb   | 5.1 MB   | 2.6 MB   | 24.5 MB  | 1.6 MB   |
-| Size of executable (linux) | 48 Kb   | 5.1 MB   | 6.3 MB   | 3.0 MB   | 3.9 MB   |
-| Tested on Linux            | x       | x        | x        | x        | x        |
-| Tested on macOS            | x       | x        | x        | x        | x        |
-| Tested on Windows          |         |          |          |          |          |
+| Features                   |  python | golang   | rust     | haskell  | c++    | swift    |
+| :------------------------- | :------:| :------: | :------: | :------: | :------: | :------: |
+| Create Build Env           | x       | x        | x        | x        |          |          |
+| Build Python Dependencies  | x       | x        | x        | x        |          |          |
+| Configure Python Build     | x       | x        | x        |          |          |          |
+| Build/Install Python       | x       | x        | x        |          |          |          |
+| Clean Python Build         | x       | x        | x        |          |          |          |
+| Zip python library         | x       | x        | x        |          |          |          |
+| # of Dependencies          | x       | x        | x        |          |          |          |
+| Size of executable (macOS) | 48 Kb   | 5.1 MB   | 2.6 MB   | 24.5 MB  | 0.0 MB   | 1.6 MB   |
+| Size of executable (linux) | 48 Kb   | 5.1 MB   | 6.3 MB   | 3.0 MB   | 0.0 MB   | 3.9 MB   |
+| Tested on Linux            | x       | x        | x        | x        |          | x        |
+| Tested on macOS            | x       | x        | x        | x        |          | x        |
+| Tested on Windows          |         |          |          |          |          |          |
 
 
 Use of External executables
 
-| External Executable        |  python | golang   | rust     | haskell  | swift    |
-| :------------------------- | :------:| :------: | :------: | :------: | :------: |
-| git                        |         | x        | x        | x        |          |
-| wget                       |         | x        | x        | x        |          |
-| tar                        |         | x        | x        |          |          |
-| zip                        |         | x        | x        |          |          |
-| cmake                      |         | x        | x        |          |          |
-| make                       | x       | x        | x        |          |          |
-| bash                       | x       | x        | x        |          |          |
+| External Executable        |  python | golang   | rust     | haskell  | c++      | swift    |
+| :------------------------- | :------:| :------: | :------: | :------: | :------: | :------: |
+| git                        |         | x        | x        | x        |          |          |
+| wget                       |         | x        | x        | x        |          |          |
+| tar                        |         | x        | x        |          |          |          |
+| zip                        |         | x        | x        |          |          |          |
+| cmake                      |         | x        | x        |          |          |          |
+| make                       | x       | x        | x        |          |          |          |
+| bash                       | x       | x        | x        |          |          |          |
 
 The python implementation of `buildpy` uses the capabilities of its stdlib to download python and its dependencies, uncompress the results only uses an external executables when calling `./configure` and `make`.
 

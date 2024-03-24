@@ -1,22 +1,7 @@
 #include "buildpy.hpp"
 
 
-
-
 const char* VERSION = "1.0.1";
-
-void task_a() { Info("task A"); }
-
-void task_b() { Info("task B"); }
-
-void task_c() { Info("task C"); }
-
-void task_d()
-{
-    const char* name = "task D";
-    // Info("task D");
-    Info(name);
-}
 
 
 int run_tasks()

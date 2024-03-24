@@ -11,20 +11,17 @@
 #include <vector>
 
 #include <chrono>
-#include <indicators/cursor_control.hpp>
-#include <indicators/indeterminate_progress_bar.hpp>
-#include <indicators/termcolor.hpp>
+#include <indicators/indicators.hpp>
 #include <thread>
 
-int wait(std::string text)
+
+int wait2(std::string text)
 {
     indicators::IndeterminateProgressBar bar {
-        indicators::option::BarWidth { 40 },
-        indicators::option::Start { "[" },
+        indicators::option::BarWidth { 40 }, indicators::option::Start { "[" },
         indicators::option::Fill { "·" },
         // indicators::option::Lead { "<==>" },
-        indicators::option::Lead { "<==>" },
-        indicators::option::End { "]" },
+        indicators::option::Lead { "<==>" }, indicators::option::End { "]" },
         indicators::option::PostfixText { text },
         indicators::option::ForegroundColor { indicators::Color::yellow },
         indicators::option::FontStyles { std::vector<indicators::FontStyle> {
@@ -36,10 +33,8 @@ int wait(std::string text)
     auto job = [&bar]() {
         std::this_thread::sleep_for(std::chrono::milliseconds(10000));
         bar.mark_as_completed();
-        std::cout << termcolor::bold << termcolor::green
-                  << "DONE!"
-                  << termcolor::reset
-                  << std::endl;
+        std::cout << termcolor::bold << termcolor::green << "DONE!"
+                  << termcolor::reset << std::endl;
     };
     std::thread job_completion_thread(job);
 
@@ -52,6 +47,42 @@ int wait(std::string text)
     job_completion_thread.join();
 
     indicators::show_console_cursor(true);
+    return 0;
+}
+
+
+int wait(std::string text)
+{
+    using namespace indicators;
+    indicators::ProgressSpinner spinner {
+        option::PostfixText { text },
+        option::ForegroundColor { Color::yellow },
+        // option::ShowPercentage { false },
+        // option::ShowElapsedTime { true },
+        option::SpinnerStates { std::vector<std::string> {
+            "⠈", "⠐", "⠠", "⢀", "⡀", "⠄", "⠂", "⠁" } },
+        option::FontStyles { std::vector<FontStyle> { FontStyle::bold } }
+    };
+
+    // Update spinner state
+    auto job = [&spinner]() {
+        while (true) {
+            if (spinner.is_completed()) {
+                spinner.set_option(option::ForegroundColor { Color::green });
+                spinner.set_option(option::PrefixText { "✔" });
+                spinner.set_option(option::ShowSpinner { false });
+                spinner.set_option(option::ShowPercentage { false });
+                spinner.set_option(option::PostfixText { "DONE!" });
+                spinner.mark_as_completed();
+                break;
+            } else
+                spinner.tick();
+            std::this_thread::sleep_for(std::chrono::milliseconds(40));
+        }
+    };
+    std::thread thread(job);
+    thread.join();
+
     return 0;
 }
 
@@ -76,11 +107,9 @@ public:
         int result = subprocess_create(&vc[0], 0, &subprocess);
         if (0 != result) {
             Error("error occurred.\n");
-        } else {
             FILE* p_stdout = subprocess_stdout(&subprocess);
-            char data[32];
-            fgets(data, 32, p_stdout);
-            Info("result: %s\n", data);
+            char data[4096];
+            fgets(data, 4096, p_stdout);            
         }
     }
 

@@ -1,6 +1,8 @@
 #include "buildpy.hpp"
 
 
+
+
 const char* VERSION = "1.0.1";
 
 void task_a() { Info("task A"); }
@@ -23,11 +25,8 @@ int run_tasks()
     tf::Taskflow taskflow;
 
     auto [ssl, bz2, xz, py] = taskflow.emplace( // create four tasks
-        OpenSSLBuilder("1.1.1"), 
-        Bzip2Builder("1.0.8"), 
-        XzBuilder("5.6.0"), 
-        PythonBuilder("3.12.2")
-    );
+        OpenSSLBuilder("1.1.1"), Bzip2Builder("1.0.8"), XzBuilder("5.6.0"),
+        PythonBuilder("3.12.2"));
 
     py.succeed(ssl, bz2, xz); // D runs after A, B and C
 

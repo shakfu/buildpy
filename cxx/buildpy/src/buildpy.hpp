@@ -10,6 +10,50 @@
 #include <string>
 #include <vector>
 
+#include <chrono>
+#include <indicators/cursor_control.hpp>
+#include <indicators/indeterminate_progress_bar.hpp>
+#include <indicators/termcolor.hpp>
+#include <thread>
+
+int wait(std::string text)
+{
+    indicators::IndeterminateProgressBar bar {
+        indicators::option::BarWidth { 40 },
+        indicators::option::Start { "[" },
+        indicators::option::Fill { "·" },
+        // indicators::option::Lead { "<==>" },
+        indicators::option::Lead { "<==>" },
+        indicators::option::End { "]" },
+        indicators::option::PostfixText { text },
+        indicators::option::ForegroundColor { indicators::Color::yellow },
+        indicators::option::FontStyles { std::vector<indicators::FontStyle> {
+            indicators::FontStyle::bold } }
+    };
+
+    indicators::show_console_cursor(false);
+
+    auto job = [&bar]() {
+        std::this_thread::sleep_for(std::chrono::milliseconds(10000));
+        bar.mark_as_completed();
+        std::cout << termcolor::bold << termcolor::green
+                  << "DONE!"
+                  << termcolor::reset
+                  << std::endl;
+    };
+    std::thread job_completion_thread(job);
+
+    // Update bar state
+    while (!bar.is_completed()) {
+        bar.tick();
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+
+    job_completion_thread.join();
+
+    indicators::show_console_cursor(true);
+    return 0;
+}
 
 namespace fs = std::filesystem;
 
@@ -17,17 +61,16 @@ namespace fs = std::filesystem;
 class ShellCmd {
     // Utility class to hold common file operations
 public:
-    void cmd(std::initializer_list<std::string> args)
+    void cmd(std::vector<std::string> args)
     {
-        // std::vector<std::string> vs = std::vector(args);
         std::vector<char*> vc;
 
-        std::transform(vc.begin(), vc.end(), std::back_inserter(vc),
-            [](const std::string& s) -> char* {
-               char* pc = new char[s.size() + 1];
-               std::strcpy(pc, s.c_str());
-               return pc;
-            });
+        std::transform(args.begin(), args.end(), std::back_inserter(vc),
+                       [](const std::string& s) -> char* {
+                           char* pc = new char[s.size() + 1];
+                           std::strcpy(pc, s.c_str());
+                           return pc;
+                       });
 
         struct subprocess_s subprocess;
         int result = subprocess_create(&vc[0], 0, &subprocess);
@@ -41,11 +84,35 @@ public:
         }
     }
 
+    void run(std::initializer_list<std::string> args)
+    {
+        std::vector<std::string> vargs = std::vector(args);
+        this->cmd(vargs);
+    }
+
     void create_dir(fs::path p)
     {
         if (!fs::exists(p)) {
             fs::create_directory(p);
         }
+    }
+
+    void git_clone(std::string url, std::string branch, std::string dir,
+                   bool recurse = false)
+    {
+        std::vector<std::string> args;
+        args.insert(
+            args.end(),
+            { "/usr/bin/git", "clone", "--depth=1", "--branch", branch });
+        if (recurse) {
+            args.insert(
+                args.end(),
+                { "--recurse-submodules", "--shallow-submodules", url, dir });
+        } else {
+            args.insert(args.end(), { url, dir });
+        }
+        this->cmd(args);
+        wait("git clone openssl");
     }
 
     std::vector<std::string> split(std::string s, std::string sep)
@@ -113,7 +180,6 @@ public:
 };
 
 
-
 class OpenSSLBuilder : public ShellCmd {
     // builds openssl from source
 public:
@@ -137,14 +203,14 @@ public:
     // operators
 
     void operator()()
-    { 
+    {
         // can be used in taskflow
-        this->process(); 
+        this->process();
     }
 
     // -----------------------------------------------------------------------
     // properties
-    
+
 
     fs::path src_dir() { return this->project.src / this->name; }
 
@@ -153,9 +219,9 @@ public:
     fs::path prefix() { return this->project.install / this->name; }
 
     std::string repo_branch()
-    {   // "OpenSSL_1_1_1w"
+    { // "OpenSSL_1_1_1w"
         std::string s = this->version.str();
-        std::replace( s.begin(), s.end(), '.', '_'); // replace all '.' to '_'
+        std::replace(s.begin(), s.end(), '.', '_'); // replace all '.' to '_'
         return fmt::format("OpenSSL_{}w", s);
     }
 
@@ -172,9 +238,10 @@ public:
     void process()
     {
         Info("OpenSSLBuilder process starting");
+        std::string dir = (this->project.src / this->name).string();
+        this->git_clone(this->repo_url, this->repo_branch(), dir);
         Info("OpenSSLBuilder process ending");
     }
-    
 };
 
 
@@ -201,14 +268,14 @@ public:
     // operators
 
     void operator()()
-    { 
+    {
         // can be used in taskflow
-        this->process(); 
+        this->process();
     }
 
     // -----------------------------------------------------------------------
     // properties
-    
+
 
     fs::path src_dir() { return this->project.src / this->name; }
 
@@ -223,9 +290,8 @@ public:
 
     std::string download_url()
     {
-        return fmt::format(
-            "https://sourceware.org/pub/bzip2/bzip2-{}.tar.gz",
-            this->version.str());
+        return fmt::format("https://sourceware.org/pub/bzip2/bzip2-{}.tar.gz",
+                           this->version.str());
     }
 
     // -----------------------------------------------------------------------
@@ -236,9 +302,7 @@ public:
         Info("Bzip2Builder process starting");
         Info("Bzip2Builder process ending");
     }
-    
 };
-
 
 
 class XzBuilder : public ShellCmd {
@@ -264,14 +328,14 @@ public:
     // operators
 
     void operator()()
-    { 
+    {
         // can be used in taskflow
-        this->process(); 
+        this->process();
     }
 
     // -----------------------------------------------------------------------
     // properties
-    
+
 
     fs::path src_dir() { return this->project.src / this->name; }
 
@@ -286,9 +350,9 @@ public:
 
     std::string download_url()
     {
-        return fmt::format(
-            "https://github.com/tukaani-project/xz/releases/download/v{}/xz-{}.tar.gz",
-            this->version.str(), this->version.str());
+        return fmt::format("https://github.com/tukaani-project/xz/releases/"
+                           "download/v{}/xz-{}.tar.gz",
+                           this->version.str(), this->version.str());
     }
 
     // -----------------------------------------------------------------------
@@ -299,9 +363,7 @@ public:
         Info("XzBuilder process starting");
         Info("XzBuilder process ending");
     }
-    
 };
-
 
 
 class PythonBuilder : public ShellCmd {
@@ -330,14 +392,14 @@ public:
     // operators
 
     void operator()()
-    { 
+    {
         // can be used in taskflow
-        this->process(); 
+        this->process();
     }
 
     // -----------------------------------------------------------------------
     // properties
-    
+
     std::string ver()
     {
         return fmt::format("{}.{}", this->version.major(),

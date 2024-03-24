@@ -92,7 +92,7 @@ static inline void logy_helper(F first, R&&... rest) {
 
 template<typename... T>
 void _Debug(T... args) {
-    logy_header(" DEBUG: ");
+    logy_header(" \e[32mDEBUG:\e[0m ");
     std::fprintf(stderr, args...);
     std::fprintf(stderr, "\n");
     std::fflush(stderr);
@@ -100,7 +100,7 @@ void _Debug(T... args) {
 
 template<typename... T>
 void _Info(T... args) {
-    logy_header(" INFO: ");
+    logy_header(" \e[36mINFO:\e[0m ");
     std::fprintf(stderr, args...);
     std::fprintf(stderr, "\n");
     std::fflush(stderr);
@@ -108,7 +108,7 @@ void _Info(T... args) {
 
 template<typename... T>
 void _Warning(T... args) {
-    logy_header(" WARNING: ");
+    logy_header(" \e[93mWARNING:\e[0m ");
     std::fprintf(stderr, args...);
     std::fprintf(stderr, "\n");
     std::fflush(stderr);
@@ -116,7 +116,7 @@ void _Warning(T... args) {
 
 template<typename... T>
 void _Error(T... args) {
-    logy_header(" ERROR: ");
+    logy_header(" \e[31mERROR:\e[0m ");
     std::fprintf(stderr, args...);
     std::fprintf(stderr, "\n");
     std::fflush(stderr);
@@ -132,22 +132,22 @@ void _Silent(T... args) {
 
 // redundant, strictly speaking, but avoids the unaesthetic format-string-is-not-a-literal warning
 static void _Debug(const char *arg) {
-    logy_header(" DEBUG: ");
+    logy_header(" \e[32mDEBUG:\e[0m ");
     std::fprintf(stderr, "%s\n", arg);
     std::fflush(stderr);
 }
 static void _Info(const char *arg) {
-    logy_header(" INFO: ");
+    logy_header(" \e[36mINFO:\e[0m ");
     std::fprintf(stderr, "%s\n", arg);
     std::fflush(stderr);
 }
 static void _Warning(const char *arg) {
-    logy_header(" WARNING: ");
+    logy_header(" \e[93mWARNING:\e[0m ");
     std::fprintf(stderr, "%s\n", arg);
     std::fflush(stderr);
 }
 static void _Error(const char *arg) {
-    logy_header(" ERROR: ");
+    logy_header(" \e[31mERROR:\e[0m ");
     std::fprintf(stderr, "%s\n", arg);
     std::fflush(stderr);
 }
@@ -161,25 +161,25 @@ static void _Silent(const char *arg) {
 
 template<typename... T>
 static inline void _Debug2(T... args) {
-    logy_header(" DEBUG:");
+    logy_header(" \e[32mDEBUG:\e[0m");
     logy_helper(std::forward<T>(args)...);
 }
 
 template<typename... T>
 static inline void _Info2(T... args) {
-    logy_header(" INFO:");
+    logy_header(" \e[36mINFO:\e[0m");
     logy_helper(std::forward<T>(args)...);
 }
 
 template<typename... T>
 static inline void _Warning2(T... args) {
-    logy_header(" WARNING:");
+    logy_header(" \e[93mWARNING:\e[0m");
     logy_helper(std::forward<T>(args)...);
 }
 
 template<typename... T>
 static inline void _Error2(T... args) {
-    logy_header(" ERROR:");
+    logy_header(" \e[31mERROR:\e[0m");
     logy_helper(std::forward<T>(args)...);
 }
 

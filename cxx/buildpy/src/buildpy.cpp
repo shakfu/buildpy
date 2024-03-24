@@ -22,11 +22,14 @@ int run_tasks()
     tf::Executor executor;
     tf::Taskflow taskflow;
 
-    auto [A, B, C, D] = taskflow.emplace( // create four tasks
-        task_a, task_b, task_c, PythonBuilder("3.12.2"));
+    auto [ssl, bz2, xz, py] = taskflow.emplace( // create four tasks
+        OpenSSLBuilder("1.1.1"), 
+        Bzip2Builder("1.0.8"), 
+        XzBuilder("5.6.0"), 
+        PythonBuilder("3.12.2")
+    );
 
-    A.precede(B, C); // A runs before B and C
-    D.succeed(B, C); // D runs after  B and C
+    py.succeed(ssl, bz2, xz); // D runs after A, B and C
 
     executor.run(taskflow).wait();
 
@@ -67,9 +70,10 @@ int main(int argc, char* argv[])
 
     run_tasks();
     // cmd({ "/bin/bash", "--version" });
-    // auto p = PythonBuilder("3.12.2");
-    // Info("ver: %s", p.ver().c_str());
-    // Info("name_ver: %s", p.name_ver().c_str());
+    auto p = PythonBuilder("3.12.2");
+    Info("ver: %s", p.ver().c_str());
+    Info("name_ver: %s", p.name_ver().c_str());
+    Info("prefix: %s", p.prefix().c_str());
     // p(); // test () operator overload
     // p.cmd({"/bin/bash", "--version"});
 

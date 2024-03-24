@@ -113,6 +113,7 @@ public:
 };
 
 
+
 class OpenSSLBuilder : public ShellCmd {
     // builds openssl from source
 public:
@@ -155,20 +156,149 @@ public:
     {   // "OpenSSL_1_1_1w"
         std::string s = this->version.str();
         std::replace( s.begin(), s.end(), '.', '_'); // replace all '.' to '_'
-        return fmt::format("OpenSSL_{}", s);
+        return fmt::format("OpenSSL_{}w", s);
     }
 
     std::string download_url()
     {
         return fmt::format(
-            "https://www.openssl.org/source/old/1.1.1/openssl-{}.tar.gz",
+            "https://www.openssl.org/source/old/1.1.1/openssl-{}w.tar.gz",
             this->version.str());
     }
 
     // -----------------------------------------------------------------------
     // methods
 
-    void process() {}
+    void process()
+    {
+        Info("OpenSSLBuilder process starting");
+        Info("OpenSSLBuilder process ending");
+    }
+    
+};
+
+
+class Bzip2Builder : public ShellCmd {
+    // builds bzip2 from source
+public:
+    semver::version version;
+    std::string name;
+    std::string repo_url;
+    Project project;
+
+    // -----------------------------------------------------------------------
+    // constructor
+
+    Bzip2Builder(std::string version)
+    {
+        this->version = semver::version::parse(version);
+        this->name = "bzip2";
+        this->repo_url = "https://github.com/libarchive/bzip2.git";
+        this->project = Project();
+    }
+
+    // -----------------------------------------------------------------------
+    // operators
+
+    void operator()()
+    { 
+        // can be used in taskflow
+        this->process(); 
+    }
+
+    // -----------------------------------------------------------------------
+    // properties
+    
+
+    fs::path src_dir() { return this->project.src / this->name; }
+
+    fs::path build_dir() { return this->src_dir() / std::string("build"); }
+
+    fs::path prefix() { return this->project.install / this->name; }
+
+    std::string repo_branch()
+    {
+        return fmt::format("bzip2-{}", this->version.str());
+    }
+
+    std::string download_url()
+    {
+        return fmt::format(
+            "https://sourceware.org/pub/bzip2/bzip2-{}.tar.gz",
+            this->version.str());
+    }
+
+    // -----------------------------------------------------------------------
+    // methods
+
+    void process()
+    {
+        Info("Bzip2Builder process starting");
+        Info("Bzip2Builder process ending");
+    }
+    
+};
+
+
+
+class XzBuilder : public ShellCmd {
+    // builds xz from source
+public:
+    semver::version version;
+    std::string name;
+    std::string repo_url;
+    Project project;
+
+    // -----------------------------------------------------------------------
+    // constructor
+
+    XzBuilder(std::string version)
+    {
+        this->version = semver::version::parse(version);
+        this->name = "xz";
+        this->repo_url = "https://github.com/tukaani-project/xz.git";
+        this->project = Project();
+    }
+
+    // -----------------------------------------------------------------------
+    // operators
+
+    void operator()()
+    { 
+        // can be used in taskflow
+        this->process(); 
+    }
+
+    // -----------------------------------------------------------------------
+    // properties
+    
+
+    fs::path src_dir() { return this->project.src / this->name; }
+
+    fs::path build_dir() { return this->src_dir() / std::string("build"); }
+
+    fs::path prefix() { return this->project.install / this->name; }
+
+    std::string repo_branch()
+    {
+        return fmt::format("v{}", this->version.str());
+    }
+
+    std::string download_url()
+    {
+        return fmt::format(
+            "https://github.com/tukaani-project/xz/releases/download/v{}/xz-{}.tar.gz",
+            this->version.str(), this->version.str());
+    }
+
+    // -----------------------------------------------------------------------
+    // methods
+
+    void process()
+    {
+        Info("XzBuilder process starting");
+        Info("XzBuilder process ending");
+    }
     
 };
 
@@ -306,7 +436,7 @@ public:
 
     void process()
     {
-        Info("python process starting");
+        Info("PythonBuilder process starting");
         this->preprocess();
         this->setup();
         this->configure();
@@ -314,6 +444,6 @@ public:
         this->install();
         this->clean();
         this->postprocess();
-        Info("python process ending");
+        Info("PythonBuilder process ending");
     }
 };

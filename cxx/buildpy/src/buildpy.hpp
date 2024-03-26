@@ -2,121 +2,95 @@
 #include <fmt/core.h>
 #include <logy.h>
 #include <semver.hpp>
-#include <subprocess.h>
 #include <taskflow/taskflow.hpp>
 
 #include <algorithm>
 #include <initializer_list>
+#include <iostream>
+#include <sstream>
 #include <string>
 #include <vector>
 
-#include <chrono>
-#include <indicators/indicators.hpp>
-#include <thread>
+#define BUFFERSIZE 4096
 
-
-int wait2(std::string text)
-{
-    indicators::IndeterminateProgressBar bar {
-        indicators::option::BarWidth { 40 }, indicators::option::Start { "[" },
-        indicators::option::Fill { "·" },
-        // indicators::option::Lead { "<==>" },
-        indicators::option::Lead { "<==>" }, indicators::option::End { "]" },
-        indicators::option::PostfixText { text },
-        indicators::option::ForegroundColor { indicators::Color::yellow },
-        indicators::option::FontStyles { std::vector<indicators::FontStyle> {
-            indicators::FontStyle::bold } }
-    };
-
-    indicators::show_console_cursor(false);
-
-    auto job = [&bar]() {
-        std::this_thread::sleep_for(std::chrono::milliseconds(10000));
-        bar.mark_as_completed();
-        std::cout << termcolor::bold << termcolor::green << "DONE!"
-                  << termcolor::reset << std::endl;
-    };
-    std::thread job_completion_thread(job);
-
-    // Update bar state
-    while (!bar.is_completed()) {
-        bar.tick();
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    }
-
-    job_completion_thread.join();
-
-    indicators::show_console_cursor(true);
-    return 0;
-}
-
-
-int wait(std::string text)
-{
-    using namespace indicators;
-    indicators::ProgressSpinner spinner {
-        option::PostfixText { text },
-        option::ForegroundColor { Color::yellow },
-        // option::ShowPercentage { false },
-        // option::ShowElapsedTime { true },
-        option::SpinnerStates { std::vector<std::string> {
-            "⠈", "⠐", "⠠", "⢀", "⡀", "⠄", "⠂", "⠁" } },
-        option::FontStyles { std::vector<FontStyle> { FontStyle::bold } }
-    };
-
-    // Update spinner state
-    auto job = [&spinner]() {
-        while (true) {
-            if (spinner.is_completed()) {
-                spinner.set_option(option::ForegroundColor { Color::green });
-                spinner.set_option(option::PrefixText { "✔" });
-                spinner.set_option(option::ShowSpinner { false });
-                spinner.set_option(option::ShowPercentage { false });
-                spinner.set_option(option::PostfixText { "DONE!" });
-                spinner.mark_as_completed();
-                break;
-            } else
-                spinner.tick();
-            std::this_thread::sleep_for(std::chrono::milliseconds(40));
-        }
-    };
-    std::thread thread(job);
-    thread.join();
-
-    return 0;
-}
 
 namespace fs = std::filesystem;
-
 
 class ShellCmd {
     // Utility class to hold common file operations
 public:
-    void cmd(std::vector<std::string> args)
+
+    void cmd_exe(std::string exe, std::vector<std::string> args, fs::path dir = ".")
     {
-        std::vector<char*> vc;
-
-        std::transform(args.begin(), args.end(), std::back_inserter(vc),
-                       [](const std::string& s) -> char* {
-                           char* pc = new char[s.size() + 1];
-                           std::strcpy(pc, s.c_str());
-                           return pc;
-                       });
-
-        struct subprocess_s subprocess;
-        int result = subprocess_create(&vc[0], 0, &subprocess);
-        if (0 != result) {
-            Error("error occurred.\n");
-            FILE* p_stdout = subprocess_stdout(&subprocess);
-            char data[4096];
-            fgets(data, 4096, p_stdout);            
-        }
+        args.insert(args.begin(), exe);
+        this->cmd(args, dir);
     }
 
-    void run(std::initializer_list<std::string> args)
+    void cmd(std::vector<std::string> args, fs::path dir = ".")
+    {
+        fs::path cwd;
+        if (dir != "." ) {
+            cwd = fs::current_path();
+            fs::current_path(dir);            
+        }
+        std::string _cmd = this->join(args, " ");
+        Info("%s", _cmd.c_str());
+        std::system(_cmd.c_str());
+        if (dir != "." )
+            fs:current_path(cwd);
+    }
+
+    void run(std::string shellcmd, fs::path dir = ".")
+    {
+        fs::path cwd;
+        if (dir != "." ) {
+            cwd = fs::current_path();
+            fs::current_path(dir);            
+        }
+        Info("%s", shellcmd.c_str());
+        std::system(shellcmd.c_str());        
+        if (dir != "." )
+            fs:current_path(cwd);
+    }
+
+
+    void run_list(std::initializer_list<std::string> args, fs::path dir = ".")
     {
         std::vector<std::string> vargs = std::vector(args);
-        this->cmd(vargs);
+        this->cmd(vargs, dir);
+    }
+
+    std::vector<std::string> split(std::string s, char delimiter)
+    {
+        std::vector<std::string> output;
+        for (auto cur = std::begin(s), beg = cur;; ++cur) {
+            if (cur == std::end(s) || *cur == delimiter || !*cur) {
+                output.insert(output.end(), std::string(beg, cur));
+                if (cur == std::end(s) || !*cur)
+                    break;
+                else
+                    beg = std::next(cur);
+            }
+        }
+        return output;
+    }
+
+
+    std::string join(std::vector<std::string> elements, const char* const delimiter)
+    {
+        std::ostringstream os;
+        auto b = std::begin(elements);
+        auto e = std::end(elements);
+
+        if (b != e) {
+            std::copy(b, std::prev(e), std::ostream_iterator<std::string>(os, delimiter));
+            b = std::prev(e);
+        }
+        if (b != e) {
+            os << *b;
+        }
+
+        return os.str();
     }
 
     void create_dir(fs::path p)
@@ -126,13 +100,17 @@ public:
         }
     }
 
-    void git_clone(std::string url, std::string branch, std::string dir,
+    void git_clone(std::string url, std::string branch, fs::path dir,
                    bool recurse = false)
     {
+        if (fs::exists(dir)) {
+            Warning("skipping git clone, dir exists: %s", dir.c_str());
+            return;
+        }
         std::vector<std::string> args;
         args.insert(
             args.end(),
-            { "/usr/bin/git", "clone", "--depth=1", "--branch", branch });
+            {"clone", "--depth=1", "-b", branch });
         if (recurse) {
             args.insert(
                 args.end(),
@@ -140,8 +118,7 @@ public:
         } else {
             args.insert(args.end(), { url, dir });
         }
-        this->cmd(args);
-        wait("git clone openssl");
+        this->cmd_exe("/usr/bin/git", args);
     }
 
     std::vector<std::string> split(std::string s, std::string sep)
@@ -240,15 +217,18 @@ public:
     // -----------------------------------------------------------------------
     // properties
 
-
     fs::path src_dir() { return this->project.src / this->name; }
 
     fs::path build_dir() { return this->src_dir() / std::string("build"); }
 
     fs::path prefix() { return this->project.install / this->name; }
 
+    fs::path staticlib() { return this->prefix() / "lib" / "libssl.a"; }
+
+    fs::path dylib() { return this->prefix() / "lib" / "libssl.dylib"; }
+
     std::string repo_branch()
-    { // "OpenSSL_1_1_1w"
+    {
         std::string s = this->version.str();
         std::replace(s.begin(), s.end(), '.', '_'); // replace all '.' to '_'
         return fmt::format("OpenSSL_{}w", s);
@@ -262,14 +242,40 @@ public:
     }
 
     // -----------------------------------------------------------------------
+    // predicates
+    
+    bool libs_exist()
+    {
+        return fs::exists(this->staticlib()) || fs::exists(this->dylib());
+    }
+
+    // -----------------------------------------------------------------------
     // methods
+
+    void download()
+    {
+        Info("OpenSSLBuilder.download()");
+        this->git_clone(this->repo_url, this->repo_branch(), this->src_dir());
+    }
+
+    void build()
+    {
+        Info("OpenSSLBuilder.build()");
+        if (!this->libs_exist()) {
+            std::string _cmd = fmt::format("/bin/bash ./config no-shared no-tests --prefix={}",
+                this->prefix().string());
+            this->run(_cmd, this->src_dir());
+            this->run("make install_sw", this->src_dir());
+        }
+
+    }
 
     void process()
     {
-        Info("OpenSSLBuilder process starting");
-        std::string dir = (this->project.src / this->name).string();
-        this->git_clone(this->repo_url, this->repo_branch(), dir);
-        Info("OpenSSLBuilder process ending");
+        Info("OpenSSLBuilder.process() start");
+        this->download();
+        this->build();
+        Info("OpenSSLBuilder.process() end");
     }
 };
 
@@ -312,6 +318,10 @@ public:
 
     fs::path prefix() { return this->project.install / this->name; }
 
+    fs::path staticlib() { return this->prefix() / "lib" / "libbzip2.a"; }
+
+    fs::path dylib() { return this->prefix() / "lib" / "libbzip2.dylib"; }
+
     std::string repo_branch()
     {
         return fmt::format("bzip2-{}", this->version.str());
@@ -324,11 +334,37 @@ public:
     }
 
     // -----------------------------------------------------------------------
+    // predicates
+    
+    bool libs_exist()
+    {
+        return fs::exists(this->staticlib()) || fs::exists(this->dylib());
+    }
+
+    // -----------------------------------------------------------------------
     // methods
+
+    void download()
+    {
+        Info("Bzip2Builder.download source code");
+        this->git_clone(this->repo_url, this->repo_branch(), this->src_dir());
+    }
+
+    void build()
+    {
+        Info("Bzip2Builder.build()");
+        if (!this->libs_exist()) {
+            std::string _cmd = fmt::format("make install CFLAGS='-fPIC' PREFIX={}",
+                this->prefix().string());
+            this->run(_cmd, this->src_dir());
+        }
+    }
 
     void process()
     {
         Info("Bzip2Builder process starting");
+        this->download();
+        this->build();
         Info("Bzip2Builder process ending");
     }
 };
@@ -372,6 +408,10 @@ public:
 
     fs::path prefix() { return this->project.install / this->name; }
 
+    fs::path staticlib() { return this->prefix() / "lib" / "liblzma.a"; }
+
+    fs::path dylib() { return this->prefix() / "lib" / "liblzma.dylib"; }
+
     std::string repo_branch()
     {
         return fmt::format("v{}", this->version.str());
@@ -385,11 +425,26 @@ public:
     }
 
     // -----------------------------------------------------------------------
+    // predicates
+    
+    bool libs_exist()
+    {
+        return fs::exists(this->staticlib()) || fs::exists(this->dylib());
+    }
+
+    // -----------------------------------------------------------------------
     // methods
+
+    void download()
+    {
+        Info("XzBuilder.download source code");
+        this->git_clone(this->repo_url, this->repo_branch(), this->src_dir());
+    }
 
     void process()
     {
         Info("XzBuilder process starting");
+        this->download();
         Info("XzBuilder process ending");
     }
 };
@@ -518,6 +573,12 @@ public:
     // actions
 
     void preprocess() { }
+    void download()
+    {
+        Info("PythonBuilder.download source code");
+        std::string dir = (this->project.src / this->name).string();
+        this->git_clone(this->repo_url, this->repo_branch(), dir);
+    }
     void setup() { }
     void configure() { }
     void build() { }
@@ -529,6 +590,7 @@ public:
     {
         Info("PythonBuilder process starting");
         this->preprocess();
+        this->download();
         this->setup();
         this->configure();
         this->build();

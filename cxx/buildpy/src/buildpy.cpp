@@ -4,7 +4,7 @@
 const char* VERSION = "1.0.1";
 
 
-int run_tasks()
+int run_tasklow_tasks()
 {
     tf::Executor executor;
     tf::Taskflow taskflow;
@@ -13,10 +13,19 @@ int run_tasks()
         OpenSSLBuilder("1.1.1"), Bzip2Builder("1.0.8"), XzBuilder("5.6.0"),
         PythonBuilder("3.12.2"));
 
-    py.succeed(ssl, bz2, xz); // D runs after A, B and C
+    py.succeed(ssl, bz2, xz); // py runs after ssl, bz2 and xz
 
     executor.run(taskflow).wait();
 
+    return 0;
+}
+
+int run_tasks(std::string pyversion)
+{
+    OpenSSLBuilder("1.1.1").process();
+    Bzip2Builder("1.0.8").process();
+    XzBuilder("5.6.0").process();
+    PythonBuilder(pyversion).process();
     return 0;
 }
 
@@ -25,9 +34,14 @@ int main(int argc, char* argv[])
 {
     argparse::ArgumentParser program("buildpy", VERSION);
 
-    program.add_argument("square")
-        .help("display the square of a given integer")
-        .scan<'i', int>();
+    // program.add_argument("square")
+    //     .help("display the square of a given integer")
+    //     .scan<'i', int>();
+
+    program.add_argument("-p", "--pyversion")
+        .help("python version")
+        .default_value("3.12.2")
+        .implicit_value(true);
 
     program.add_argument("-c", "--config")
         .help("build configuration name")
@@ -38,6 +52,10 @@ int main(int argc, char* argv[])
         .help("optimize python build")
         .flag();
 
+    program.add_argument("-g", "--usegit")
+        .help("download using git")
+        .flag();
+
     try {
         program.parse_args(argc, argv);
     } catch (const std::exception& err) {
@@ -46,15 +64,18 @@ int main(int argc, char* argv[])
         return 1;
     }
 
-    auto input = program.get<int>("square");
-    std::cout << "square: " << (input * input) << std::endl;
+    // auto input = program.get<int>("square");
+    // std::cout << "square: " << (input * input) << std::endl;
+
+    auto pyversion = program.get<std::string>("pyversion");
+    std::cout << "pyversion: " << pyversion << std::endl;
 
     auto config = program.get<std::string>("config");
     std::cout << "config: " << config << std::endl;
 
-    run_tasks();
+    run_tasks(pyversion);
     // cmd({ "/bin/bash", "--version" });
-    auto p = PythonBuilder("3.12.2");
+    auto p = PythonBuilder(pyversion);
     Info("ver: %s", p.ver().c_str());
     Info("name_ver: %s", p.name_ver().c_str());
     Info("prefix: %s", p.prefix().c_str());

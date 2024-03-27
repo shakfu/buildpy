@@ -50,15 +50,15 @@ Feature coverage and notable aspects of `buildpy` variants by language:
 
 | Features                   |  python | golang   | rust     | haskell  | c++    | swift    |
 | :------------------------- | :------:| :------: | :------: | :------: | :------: | :------: |
-| Create Build Env           | x       | x        | x        | x        |          |          |
-| Build Python Dependencies  | x       | x        | x        | x        |          |          |
-| Configure Python Build     | x       | x        | x        |          |          |          |
+| Create Build Env           | x       | x        | x        | x        | x        |          |
+| Build Python Dependencies  | x       | x        | x        | x        | x        |          |
+| Configure Python Build     | x       | x        | x        | x        | x        |          |
 | Build/Install Python       | x       | x        | x        |          |          |          |
 | Clean Python Build         | x       | x        | x        |          |          |          |
 | Zip python library         | x       | x        | x        |          |          |          |
 | # of Dependencies          | x       | x        | x        |          |          |          |
-| Size of executable (macOS) | 48 Kb   | 5.1 MB   | 2.6 MB   | 24.5 MB  | 0.0 MB   | 1.6 MB   |
-| Size of executable (linux) | 48 Kb   | 5.1 MB   | 6.3 MB   | 3.0 MB   | 0.0 MB   | 3.9 MB   |
+| Size of executable (macOS) | 48 Kb   | 5.1 MB   | 2.6 MB   | 24.5 MB  | 0.0 kb   | 1.6 MB   |
+| Size of executable (linux) | 48 Kb   | 5.1 MB   | 6.3 MB   | 3.0 MB   | 438 Kb   | 3.9 MB   |
 | Tested on Linux            | x       | x        | x        | x        |          | x        |
 | Tested on macOS            | x       | x        | x        | x        |          | x        |
 | Tested on Windows          |         |          |          |          |          |          |
@@ -68,11 +68,11 @@ Use of External executables
 
 | External Executable        |  python | golang   | rust     | haskell  | c++      | swift    |
 | :------------------------- | :------:| :------: | :------: | :------: | :------: | :------: |
-| git                        |         | x        | x        | x        |          |          |
-| wget                       |         | x        | x        | x        |          |          |
-| tar                        |         | x        | x        |          |          |          |
+| git                        |         | x        | x        | x        | x        |          |
+| wget                       |         | x        | x        | x        | x        |          |
+| tar                        |         | x        | x        |          | x        |          |
 | zip                        |         | x        | x        |          |          |          |
-| cmake                      |         | x        | x        |          |          |          |
+| cmake                      |         | x        | x        | x        | x        |          |
 | make                       | x       | x        | x        |          |          |          |
 | bash                       | x       | x        | x        |          |          |          |
 
@@ -209,7 +209,7 @@ options:
 ```
 
 
-### buildpy (go-edition)
+### buildpy (golang)
 
 A golang version of `buildpy`.
 
@@ -239,7 +239,7 @@ Mostly mirrors the python version except for the following:
 - Round-trip serialization/deserialization from/to yaml
 
 
-### buildpy (rust-edition)
+### buildpy (rust)
 
 ```bash
 % ./buildpy --help
@@ -269,7 +269,7 @@ Mostly mirrors the python version except for the following:
 - Round-trip serialization/deserialization from/to json
 
 
-### buildpy (swift-edition)
+### buildpy (swift)
 
 ```bash
 % ./buildpy --help

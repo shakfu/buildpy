@@ -13,6 +13,7 @@ ShellCmd
 #include <fmt/core.h>
 #include <logy.h>
 #include <semver.hpp>
+#include <glob/glob.hpp>
 
 #include <algorithm>
 #include <cstdlib>
@@ -679,18 +680,58 @@ public:
         );
         this->run(_cmd, this->src_dir());
     }
+
     void build()
     {
         Info("PythonBuilder.build()");
         this->run("make", this->src_dir());
     }
+    
     void install()
     {
         Info("PythonBuilder.install()");
         this->run("make install", this->src_dir());
     }
 
-    void clean() { }
+    void clean()
+    {
+        Info("PythonBuilder.clean()");
+        std::vector<std::string> patterns = {
+            "**/*.exe",
+            "**/*config-3*",
+            "**/*tcl*",
+            "**/*tdbc*",
+            "**/*tk*",
+            "**/__phello__",
+            "**/__pycache__",
+            "**/_codecs_*.so",
+            "**/_ctypes_test*",
+            "**/_test*",
+            "**/_tk*",
+            "**/_xx*.so",
+            "**/distutils",
+            "**/idlelib",
+            "**/lib2to3",
+            "**/LICENSE.txt",
+            "**/pkgconfig",
+            "**/pydoc_data",
+            "**/site-packages",
+            "**/test",
+            "**/Tk*",
+            "**/turtle*",
+            "**/venv",
+            "**/xx*.so",
+        };
+        fs::path cwd = fs::current_path();
+        fs::current_path(this->prefix());
+        for (auto& p : glob::rglob(patterns)) {
+            std::cout << p << std::endl;
+        }
+        fs::current_path(cwd);
+    }
+
+
+
     void postprocess() { }
 
     void process()

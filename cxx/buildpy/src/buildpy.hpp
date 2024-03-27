@@ -57,15 +57,19 @@ public:
     void run(std::string shellcmd, fs::path dir = ".")
     {
         fs::path cwd;
+        const char* scmd = shellcmd.c_str();
         if (dir != ".") {
             cwd = fs::current_path();
             fs::current_path(dir);
         }
         Info("%s", shellcmd.c_str());
-        std::system(shellcmd.c_str());
-        if (dir != ".")
-        fs:
-            current_path(cwd);
+        if (std::system(shellcmd.c_str()) != 0) {
+            Error("failed: %s", shellcmd.c_str());
+            return;
+        }
+        if (dir != ".") {
+            fs::current_path(cwd);
+        }
     }
 
     void run_list(std::initializer_list<std::string> args, fs::path dir = ".")

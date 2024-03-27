@@ -1,3 +1,17 @@
+/* buildpy - build python3 from source
+ *
+ * class structure :
+ *  
+ * ShellCmd
+ *     Project
+ *     Builder
+ *         OpenSSLBuilder
+ *         Bzip2Builder
+ *         XzBuilder
+ *         PythonBuilder
+ *
+ */
+
 #include <argparse/argparse.hpp>
 #include <fmt/core.h>
 #include <logy.h>
@@ -186,50 +200,100 @@ public:
 };
 
 
-class OpenSSLBuilder : public ShellCmd {
-    // builds openssl from source
+class Builder : public ShellCmd {
+
 public:
-    semver::version version;
-    std::string name;
-    std::string repo_url;
-    Project project;
-
-    // -----------------------------------------------------------------------
-    // constructor
-
-    OpenSSLBuilder(std::string version)
-    {
-        this->version = semver::version::parse(version);
-        this->name = "openssl";
-        this->repo_url = "https://github.com/openssl/openssl.git";
-        this->project = Project();
-    }
-
     // -----------------------------------------------------------------------
     // operators
 
-    void operator()()
+    virtual void operator()()
     {
         // can be used in taskflow
         this->process();
     }
 
     // -----------------------------------------------------------------------
+    // predicates
+
+    virtual bool libs_exist()
+    {
+        return fs::exists(this->staticlib()) || fs::exists(this->dylib());
+    }
+
+    // -----------------------------------------------------------------------
     // properties
 
-    fs::path src_dir() { return this->project.src / this->name; }
+    virtual semver::version version() const = 0;
 
-    fs::path build_dir() { return this->src_dir() / std::string("build"); }
+    virtual std::string name() const = 0;
 
-    fs::path prefix() { return this->project.install / this->name; }
+    virtual std::string repo_url() const = 0;
 
-    fs::path staticlib() { return this->prefix() / "lib" / "libssl.a"; }
+    virtual std::string repo_branch() const = 0;
 
-    fs::path dylib() { return this->prefix() / "lib" / "libssl.dylib"; }
+    virtual Project project() const = 0;
 
-    std::string repo_branch()
+    virtual fs::path src_dir() { return this->project().src / this->name(); }
+
+    virtual fs::path build_dir() { return this->src_dir() / std::string("build"); }
+
+    virtual fs::path prefix() { return this->project().install / this->name(); }
+
+    virtual std::string staticlib_name() { return fmt::format("lib{}.a", this->name()); }
+
+    virtual fs::path staticlib() { return this->prefix() / "lib" / this->staticlib_name(); }
+
+    virtual std::string dylib_name() { return fmt::format("lib{}.dylib", this->name()); }
+
+    virtual fs::path dylib() { return this->prefix() / "lib" / this->dylib_name(); }
+
+    // -----------------------------------------------------------------------
+    // methods
+
+    virtual void download()
     {
-        std::string s = this->version.str();
+        this->git_clone(this->repo_url(), this->repo_branch(), this->src_dir());
+    }
+
+    virtual void process() = 0;
+};
+
+
+class OpenSSLBuilder : public Builder {
+    // builds openssl from source
+private:
+    semver::version _version;
+    std::string _name;
+    std::string _repo_url;
+    Project _project;
+
+public:
+
+    // -----------------------------------------------------------------------
+    // constructor
+
+    OpenSSLBuilder(std::string version)
+    {
+        this->_version = semver::version::parse(version);
+        this->_name = "openssl";
+        this->_repo_url = "https://github.com/openssl/openssl.git";
+        this->_project = Project();
+    }
+
+    // -----------------------------------------------------------------------
+    // properties
+
+    semver::version version() const { return this->_version; }
+
+    std::string name() const { return this->_name; }
+
+    std::string repo_url() const { return this->_repo_url; }
+
+    Project project() const { return this->_project; }
+
+    std::string repo_branch() const
+    {
+        std::string s = this->version().str();
         std::replace(s.begin(), s.end(), '.', '_'); // replace all '.' to '_'
         return fmt::format("OpenSSL_{}w", s);
     }
@@ -238,25 +302,11 @@ public:
     {
         return fmt::format(
             "https://www.openssl.org/source/old/1.1.1/openssl-{}w.tar.gz",
-            this->version.str());
-    }
-
-    // -----------------------------------------------------------------------
-    // predicates
-    
-    bool libs_exist()
-    {
-        return fs::exists(this->staticlib()) || fs::exists(this->dylib());
+            this->version().str());
     }
 
     // -----------------------------------------------------------------------
     // methods
-
-    void download()
-    {
-        Info("OpenSSLBuilder.download()");
-        this->git_clone(this->repo_url, this->repo_branch(), this->src_dir());
-    }
 
     void build()
     {
@@ -280,75 +330,52 @@ public:
 };
 
 
-class Bzip2Builder : public ShellCmd {
+class Bzip2Builder : public Builder {
     // builds bzip2 from source
+
+private:
+    semver::version _version;
+    std::string _name;
+    std::string _repo_url;
+    Project _project;
+
 public:
-    semver::version version;
-    std::string name;
-    std::string repo_url;
-    Project project;
 
     // -----------------------------------------------------------------------
     // constructor
 
     Bzip2Builder(std::string version)
     {
-        this->version = semver::version::parse(version);
-        this->name = "bzip2";
-        this->repo_url = "https://github.com/libarchive/bzip2.git";
-        this->project = Project();
-    }
-
-    // -----------------------------------------------------------------------
-    // operators
-
-    void operator()()
-    {
-        // can be used in taskflow
-        this->process();
+        this->_version = semver::version::parse(version);
+        this->_name = "bzip2";
+        this->_repo_url = "https://github.com/libarchive/bzip2.git";
+        this->_project = Project();
     }
 
     // -----------------------------------------------------------------------
     // properties
 
+    semver::version version() const { return this->_version; }
 
-    fs::path src_dir() { return this->project.src / this->name; }
+    std::string name() const { return this->_name; }
 
-    fs::path build_dir() { return this->src_dir() / std::string("build"); }
+    std::string repo_url() const { return this->_repo_url; }
 
-    fs::path prefix() { return this->project.install / this->name; }
+    Project project() const { return this->_project; }
 
-    fs::path staticlib() { return this->prefix() / "lib" / "libbzip2.a"; }
-
-    fs::path dylib() { return this->prefix() / "lib" / "libbzip2.dylib"; }
-
-    std::string repo_branch()
+    std::string repo_branch() const
     {
-        return fmt::format("bzip2-{}", this->version.str());
+        return fmt::format("bzip2-{}", this->version().str());
     }
 
     std::string download_url()
     {
         return fmt::format("https://sourceware.org/pub/bzip2/bzip2-{}.tar.gz",
-                           this->version.str());
-    }
-
-    // -----------------------------------------------------------------------
-    // predicates
-    
-    bool libs_exist()
-    {
-        return fs::exists(this->staticlib()) || fs::exists(this->dylib());
+                           this->version().str());
     }
 
     // -----------------------------------------------------------------------
     // methods
-
-    void download()
-    {
-        Info("Bzip2Builder.download source code");
-        this->git_clone(this->repo_url, this->repo_branch(), this->src_dir());
-    }
 
     void build()
     {
@@ -370,76 +397,54 @@ public:
 };
 
 
-class XzBuilder : public ShellCmd {
+class XzBuilder : public Builder {
     // builds xz from source
+
+private:
+    semver::version _version;
+    std::string _name;
+    std::string _repo_url;
+    Project _project;
+
 public:
-    semver::version version;
-    std::string name;
-    std::string repo_url;
-    Project project;
 
     // -----------------------------------------------------------------------
     // constructor
 
     XzBuilder(std::string version)
     {
-        this->version = semver::version::parse(version);
-        this->name = "xz";
-        this->repo_url = "https://github.com/tukaani-project/xz.git";
-        this->project = Project();
+        this->_version = semver::version::parse(version);
+        this->_name = "xz";
+        this->_repo_url = "https://github.com/tukaani-project/xz.git";
+        this->_project = Project();
     }
 
-    // -----------------------------------------------------------------------
-    // operators
-
-    void operator()()
-    {
-        // can be used in taskflow
-        this->process();
-    }
 
     // -----------------------------------------------------------------------
     // properties
 
+    semver::version version() const { return this->_version; }
 
-    fs::path src_dir() { return this->project.src / this->name; }
+    std::string name() const { return this->_name; }
 
-    fs::path build_dir() { return this->src_dir() / std::string("build"); }
+    std::string repo_url() const { return this->_repo_url; }
 
-    fs::path prefix() { return this->project.install / this->name; }
+    Project project() const { return this->_project; }
 
-    fs::path staticlib() { return this->prefix() / "lib" / "liblzma.a"; }
-
-    fs::path dylib() { return this->prefix() / "lib" / "liblzma.dylib"; }
-
-    std::string repo_branch()
+    std::string repo_branch() const
     {
-        return fmt::format("v{}", this->version.str());
+        return fmt::format("v{}", this->version().str());
     }
 
     std::string download_url()
     {
         return fmt::format("https://github.com/tukaani-project/xz/releases/"
                            "download/v{}/xz-{}.tar.gz",
-                           this->version.str(), this->version.str());
-    }
-
-    // -----------------------------------------------------------------------
-    // predicates
-    
-    bool libs_exist()
-    {
-        return fs::exists(this->staticlib()) || fs::exists(this->dylib());
+                           this->version().str(), this->version().str());
     }
 
     // -----------------------------------------------------------------------
     // methods
-
-    void download()
-    {
-        Info("XzBuilder.download source code");
-        this->git_clone(this->repo_url, this->repo_branch(), this->src_dir());
-    }
 
     void process()
     {
@@ -450,135 +455,93 @@ public:
 };
 
 
-class PythonBuilder : public ShellCmd {
+class PythonBuilder : public Builder {
     // builds python from source
-public:
-    // -----------------------------------------------------------------------
-    // attributes
 
-    semver::version version;
-    std::string name;
-    std::string repo_url;
-    Project project;
+private:
+    semver::version _version;
+    std::string _name;
+    std::string _repo_url;
+    Project _project;
+
+public:
 
     // -----------------------------------------------------------------------
     // constructor
 
     PythonBuilder(std::string version)
     {
-        this->version = semver::version::parse(version);
-        this->name = "python";
-        this->repo_url = "https://github.com/python/cpython.git";
-        this->project = Project();
+        this->_version = semver::version::parse(version);
+        this->_name = "python";
+        this->_repo_url = "https://github.com/python/cpython.git";
+        this->_project = Project();
     }
 
-    // -----------------------------------------------------------------------
-    // operators
-
-    void operator()()
-    {
-        // can be used in taskflow
-        this->process();
-    }
 
     // -----------------------------------------------------------------------
     // properties
 
+    semver::version version() const { return this->_version; }
+
+    std::string name() const { return this->_name; }
+
+    std::string repo_url() const { return this->_repo_url; }
+
+    Project project() const { return this->_project; }
+
+    std::string repo_branch() const
+    {
+        return fmt::format("v{}", this->version().str());
+    }
+
     std::string ver()
     {
-        return fmt::format("{}.{}", this->version.major(),
-                           this->version.minor());
+        return fmt::format("{}.{}", this->version().major(),
+                           this->version().minor());
     }
 
     std::string ver_nodot()
     {
-        return fmt::format("{}{}", this->version.major(),
-                           this->version.minor());
+        return fmt::format("{}{}", this->version().major(),
+                           this->version().minor());
     }
 
     std::string name_version()
     {
-        return fmt::format("{}{}", this->name, this->version.str());
+        return fmt::format("{}{}", this->name(), this->version().str());
     }
 
     std::string name_ver()
     {
-        return fmt::format("{}{}", this->name, this->ver());
-    }
-
-    fs::path src_dir() { return this->project.src / this->name; }
-
-    fs::path build_dir() { return this->src_dir() / std::string("build"); }
-
-    fs::path prefix() { return this->project.install / this->name; }
-
-    std::string repo_branch()
-    {
-        return fmt::format("v{}", this->version.str());
+        return fmt::format("{}{}", this->name(), this->ver());
     }
 
     std::string download_url()
     {
         return fmt::format(
             "https://www.python.org/ftp/python/{}/Python-{}.tar.xz",
-            this->version.str(), this->version.str());
+            this->version().str(), this->version().str());
     }
 
     std::string executable_name()
     {
         // return fmt::format("python{}", this->version.str());
-        return fmt::format("{}3", this->name);
+        return fmt::format("{}3", this->name());
     }
 
     fs::path executable()
     {
-        return this->project.install / "bin" / this->executable_name();
-    }
-
-    std::string lib_name()
-    {
-        return fmt::format("lib{}{}", this->name, this->version.str());
-    }
-
-    std::string staticlib_name()
-    {
-        return fmt::format("{}.a", this->lib_name());
-    }
-
-    fs::path staticlib()
-    {
-        return this->project.install / "lib" / this->staticlib_name();
-    }
-
-    std::string dylib_name()
-    {
-        return fmt::format("{}.dylib", this->lib_name());
-    }
-
-    fs::path dylib()
-    {
-        return this->project.install / "lib" / this->dylib_name();
+        return this->project().install / "bin" / this->executable_name();
     }
 
     // std::string dylib_link_name() = 0;
     // fs::path dylib_link() = 0;
 
-    // predicates
-    bool libs_exist()
-    {
-        return fs::exists(this->staticlib()) || fs::exists(this->dylib());
-    }
 
     // -----------------------------------------------------------------------
     // actions
 
     void preprocess() { }
-    void download()
-    {
-        Info("PythonBuilder.download source code");
-        std::string dir = (this->project.src / this->name).string();
-        this->git_clone(this->repo_url, this->repo_branch(), dir);
-    }
     void setup() { }
     void configure() { }
     void build() { }

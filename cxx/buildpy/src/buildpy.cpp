@@ -65,8 +65,7 @@ int main(int argc, char* argv[])
     // p.cmd({"/bin/bash", "--version"});
 
     std::map<std::string, std::vector<std::string>> zmap = {
-        {"abc", {"foo", "moo"}},
-        {"def", {"var", "baz"}}     
+        { "abc", { "foo", "moo" } }, { "def", { "var", "baz" } }
     };
     std::cout << zmap["abc"][0] << std::endl;
 

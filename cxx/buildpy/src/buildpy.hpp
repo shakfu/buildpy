@@ -1,13 +1,13 @@
 /* buildpy - build python3 from source
- *
- * ShellCmd
- *     Project
- *     Builder
- *         OpenSSLBuilder
- *         Bzip2Builder
- *         XzBuilder
- *         PythonBuilder
- */
+
+ShellCmd
+    Project
+    Builder
+        OpenSSLBuilder
+        Bzip2Builder
+        XzBuilder
+        PythonBuilder
+*/
 
 #include <argparse/argparse.hpp>
 #include <fmt/core.h>
@@ -118,7 +118,8 @@ public:
 
     void wget(std::string url, fs::path download_dir, fs::path cwd)
     {
-        std::string _cmd = fmt::format("wget -P {} {}", download_dir.string(), url);
+        std::string _cmd = fmt::format("wget -P {} {}", download_dir.string(),
+                                       url);
         this->run(_cmd, cwd.string());
     }
 
@@ -134,8 +135,8 @@ public:
         if (!fs::exists(srcdir)) {
             this->create_dir(srcdir);
         }
-        std::string _cmd = fmt::format("tar xvf {} -C {} --strip-components=1", 
-            archive.string(), srcdir.string());
+        std::string _cmd = fmt::format("tar xvf {} -C {} --strip-components=1",
+                                       archive.string(), srcdir.string());
         this->run(_cmd, ".");
     }
 
@@ -393,10 +394,7 @@ public:
     // -----------------------------------------------------------------------
     // methods
 
-    void setup()
-    {
-        this->project().setup();
-    }
+    void setup() { this->project().setup(); }
 
     void build()
     {
@@ -661,9 +659,25 @@ public:
 
     void preprocess() { }
     void setup() { }
-    void configure() { }
-    void build() { }
-    void install() { }
+    void configure()
+    {
+        Info("PythonBuilder.configure()");
+        std::string _cmd = fmt::format(
+            "/bin/bash ./configure --prefix={}", this->prefix().string()
+        );
+        this->run(_cmd, this->src_dir());
+    }
+    void build()
+    {
+        Info("PythonBuilder.build()");
+        this->run("make", this->src_dir());
+    }
+    void install()
+    {
+        Info("PythonBuilder.install()");
+        this->run("make install", this->src_dir());
+    }
+
     void clean() { }
     void postprocess() { }
 

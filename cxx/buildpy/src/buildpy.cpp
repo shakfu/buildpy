@@ -6,10 +6,10 @@ const char* VERSION = "1.0.1";
 
 int run_tasks(std::string pyversion)
 {
-    // OpenSSLBuilder("1.1.1").process();
-    // Bzip2Builder("1.0.8").process();
+    OpenSSLBuilder("1.1.1").process();
+    Bzip2Builder("1.0.8").process();
     XzBuilder("5.6.0").process();
-    // PythonBuilder(pyversion).process();
+    PythonBuilder(pyversion).process();
     return 0;
 }
 

@@ -211,6 +211,16 @@ public:
         }
         return ret;
     }
+
+    bool globmatch(fs::path name, std::vector<std::string> patterns)
+    {
+        for (auto& p : patterns) {
+            if (glob::fnmatch(name, p)) {
+                return true;
+            }
+        }
+        return false;
+    }
 };
 
 
@@ -725,7 +735,11 @@ public:
         fs::path cwd = fs::current_path();
         fs::current_path(this->prefix());
         for (auto& p : glob::rglob(patterns)) {
-            std::cout << p << std::endl;
+            if (fs::remove_all(p)) {
+                Info("removed: %s", p.c_str());
+            } else {
+                Info("skipped: %s", p.c_str());
+            }
         }
         fs::current_path(cwd);
     }

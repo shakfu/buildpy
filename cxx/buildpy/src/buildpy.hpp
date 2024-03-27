@@ -1,7 +1,5 @@
 /* buildpy - build python3 from source
  *
- * class structure :
- *  
  * ShellCmd
  *     Project
  *     Builder
@@ -9,7 +7,6 @@
  *         Bzip2Builder
  *         XzBuilder
  *         PythonBuilder
- *
  */
 
 #include <argparse/argparse.hpp>
@@ -18,6 +15,7 @@
 #include <semver.hpp>
 #include <taskflow/taskflow.hpp>
 
+#include <cstdlib>
 #include <algorithm>
 #include <initializer_list>
 #include <iostream>
@@ -33,8 +31,8 @@ namespace fs = std::filesystem;
 class ShellCmd {
     // Utility class to hold common file operations
 public:
-
-    void cmd_exe(std::string exe, std::vector<std::string> args, fs::path dir = ".")
+    void cmd_exe(std::string exe, std::vector<std::string> args,
+                 fs::path dir = ".")
     {
         args.insert(args.begin(), exe);
         this->cmd(args, dir);
@@ -43,28 +41,30 @@ public:
     void cmd(std::vector<std::string> args, fs::path dir = ".")
     {
         fs::path cwd;
-        if (dir != "." ) {
+        if (dir != ".") {
             cwd = fs::current_path();
-            fs::current_path(dir);            
+            fs::current_path(dir);
         }
         std::string _cmd = this->join(args, " ");
         Info("%s", _cmd.c_str());
         std::system(_cmd.c_str());
-        if (dir != "." )
-            fs:current_path(cwd);
+        if (dir != ".")
+        fs:
+            current_path(cwd);
     }
 
     void run(std::string shellcmd, fs::path dir = ".")
     {
         fs::path cwd;
-        if (dir != "." ) {
+        if (dir != ".") {
             cwd = fs::current_path();
-            fs::current_path(dir);            
+            fs::current_path(dir);
         }
         Info("%s", shellcmd.c_str());
-        std::system(shellcmd.c_str());        
-        if (dir != "." )
-            fs:current_path(cwd);
+        std::system(shellcmd.c_str());
+        if (dir != ".")
+        fs:
+            current_path(cwd);
     }
 
 
@@ -90,14 +90,16 @@ public:
     }
 
 
-    std::string join(std::vector<std::string> elements, const char* const delimiter)
+    std::string join(std::vector<std::string> elements,
+                     const char* const delimiter)
     {
         std::ostringstream os;
         auto b = std::begin(elements);
         auto e = std::end(elements);
 
         if (b != e) {
-            std::copy(b, std::prev(e), std::ostream_iterator<std::string>(os, delimiter));
+            std::copy(b, std::prev(e),
+                      std::ostream_iterator<std::string>(os, delimiter));
             b = std::prev(e);
         }
         if (b != e) {
@@ -114,6 +116,25 @@ public:
         }
     }
 
+    void wget(std::string url, fs::path download_dir, fs::path cwd)
+    {
+        std::string _cmd = fmt::format("wget -P {} {}", download_dir.string(), url);
+        this->run(_cmd, cwd.string());
+    }
+
+    void curl(std::string url, fs::path download_dir, fs::path cwd)
+    {
+        std::string _cmd = fmt::format("curl -L --output-dir {} -O {}", download_dir.string(), url);
+        this->run(_cmd, cwd.string());
+    }
+
+    void tar(fs::path archive_name, fs::path download_dir, fs::path srcdir)
+    {
+        fs::path archive = download_dir / archive_name;
+        std::string _cmd = fmt::format("tar xvf {} -C {}", archive.string(), srcdir.string());
+        this->run(_cmd, ".");
+    }
+
     void git_clone(std::string url, std::string branch, fs::path dir,
                    bool recurse = false)
     {
@@ -122,9 +143,7 @@ public:
             return;
         }
         std::vector<std::string> args;
-        args.insert(
-            args.end(),
-            {"clone", "--depth=1", "-b", branch });
+        args.insert(args.end(), { "clone", "--depth=1", "-b", branch });
         if (recurse) {
             args.insert(
                 args.end(),
@@ -133,6 +152,25 @@ public:
             args.insert(args.end(), { url, dir });
         }
         this->cmd_exe("/usr/bin/git", args);
+    }
+
+    void cmake_configure(fs::path srcdir, fs::path builddir, std::string options = "")
+    {
+        std::string _cmd = fmt::format("cmake -S {} -B {} {}", srcdir.string(), builddir.string(), options);
+        this->run(_cmd, ".");
+    }
+
+    void cmake_build(fs::path builddir, bool release = false)
+    {
+        std::string release_stmt = release ? "--config Release" : "";
+        std::string _cmd = fmt::format("cmake --build {} {}", builddir.string(), release_stmt);
+        this->run(_cmd, ".");
+    }
+
+    void cmake_install(fs::path builddir, fs::path prefix)
+    {
+        std::string _cmd = fmt::format("cmake --install {} --prefix {}", builddir.string(), prefix.string());
+        this->run(_cmd, ".");
     }
 
     std::vector<std::string> split(std::string s, std::string sep)
@@ -191,7 +229,6 @@ public:
 
     void setup()
     {
-        // create main project directories
         this->create_dir(this->build);
         this->create_dir(this->downloads);
         this->create_dir(this->install);
@@ -235,24 +272,43 @@ public:
 
     virtual fs::path src_dir() { return this->project().src / this->name(); }
 
-    virtual fs::path build_dir() { return this->src_dir() / std::string("build"); }
+    virtual fs::path build_dir()
+    {
+        return this->src_dir() / std::string("build");
+    }
 
-    virtual fs::path prefix() { return this->project().install / this->name(); }
+    virtual fs::path prefix()
+    {
+        return this->project().install / this->name();
+    }
 
-    virtual std::string staticlib_name() { return fmt::format("lib{}.a", this->name()); }
+    virtual std::string staticlib_name()
+    {
+        return fmt::format("lib{}.a", this->name());
+    }
 
-    virtual fs::path staticlib() { return this->prefix() / "lib" / this->staticlib_name(); }
+    virtual fs::path staticlib()
+    {
+        return this->prefix() / "lib" / this->staticlib_name();
+    }
 
-    virtual std::string dylib_name() { return fmt::format("lib{}.dylib", this->name()); }
+    virtual std::string dylib_name()
+    {
+        return fmt::format("lib{}.dylib", this->name());
+    }
 
-    virtual fs::path dylib() { return this->prefix() / "lib" / this->dylib_name(); }
+    virtual fs::path dylib()
+    {
+        return this->prefix() / "lib" / this->dylib_name();
+    }
 
     // -----------------------------------------------------------------------
     // methods
 
     virtual void download()
     {
-        this->git_clone(this->repo_url(), this->repo_branch(), this->src_dir());
+        this->git_clone(this->repo_url(), this->repo_branch(),
+                        this->src_dir());
     }
 
     virtual void process() = 0;
@@ -268,7 +324,6 @@ private:
     Project _project;
 
 public:
-
     // -----------------------------------------------------------------------
     // constructor
 
@@ -312,12 +367,12 @@ public:
     {
         Info("OpenSSLBuilder.build()");
         if (!this->libs_exist()) {
-            std::string _cmd = fmt::format("/bin/bash ./config no-shared no-tests --prefix={}",
+            std::string _cmd = fmt::format(
+                "/bin/bash ./config no-shared no-tests --prefix={}",
                 this->prefix().string());
             this->run(_cmd, this->src_dir());
             this->run("make install_sw", this->src_dir());
         }
-
     }
 
     void process()
@@ -340,7 +395,6 @@ private:
     Project _project;
 
 public:
-
     // -----------------------------------------------------------------------
     // constructor
 
@@ -381,7 +435,8 @@ public:
     {
         Info("Bzip2Builder.build()");
         if (!this->libs_exist()) {
-            std::string _cmd = fmt::format("make install CFLAGS='-fPIC' PREFIX={}",
+            std::string _cmd = fmt::format(
+                "make install CFLAGS='-fPIC' PREFIX={}",
                 this->prefix().string());
             this->run(_cmd, this->src_dir());
         }
@@ -407,7 +462,6 @@ private:
     Project _project;
 
 public:
-
     // -----------------------------------------------------------------------
     // constructor
 
@@ -446,10 +500,24 @@ public:
     // -----------------------------------------------------------------------
     // methods
 
+    void build()
+    {
+        Info("XzBuilder.build()");
+
+        if (!this->libs_exist()) {
+            putenv((char*)"CFLAGS=-fPIC");
+            this->cmake_configure(this->src_dir(), this->build_dir(), 
+                "-DBUILD_SHARED_LIBS=OFF -DENABLE_NLS=OFF -DENABLE_SMALL=ON -DCMAKE_BUILD_TYPE=MinSizeRel");
+            this->cmake_build(this->build_dir());
+            this->cmake_install(this->build_dir(), this->prefix());
+        }
+    }
+
     void process()
     {
         Info("XzBuilder process starting");
         this->download();
+        this->build();
         Info("XzBuilder process ending");
     }
 };
@@ -465,7 +533,6 @@ private:
     Project _project;
 
 public:
-
     // -----------------------------------------------------------------------
     // constructor
 
@@ -476,7 +543,6 @@ public:
         this->_repo_url = "https://github.com/python/cpython.git";
         this->_project = Project();
     }
-
 
     // -----------------------------------------------------------------------
     // properties
@@ -537,9 +603,8 @@ public:
     // std::string dylib_link_name() = 0;
     // fs::path dylib_link() = 0;
 
-
     // -----------------------------------------------------------------------
-    // actions
+    // methods
 
     void preprocess() { }
     void setup() { }

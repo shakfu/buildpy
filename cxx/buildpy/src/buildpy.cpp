@@ -10,8 +10,8 @@ const char* VERSION = "1.0.1";
 //     tf::Taskflow taskflow;
 
 //     auto [ssl, bz2, xz, py] = taskflow.emplace( // create four tasks
-//         OpenSSLBuilder("1.1.1"), 
-//         Bzip2Builder("1.0.8"), 
+//         OpenSSLBuilder("1.1.1"),
+//         Bzip2Builder("1.0.8"),
 //         XzBuilder("5.6.0"),
 //         PythonBuilder(pyversion)
 //     );
@@ -55,9 +55,7 @@ int main(int argc, char* argv[])
         .help("optimize python build")
         .flag();
 
-    program.add_argument("-g", "--usegit")
-        .help("download using git")
-        .flag();
+    program.add_argument("-g", "--usegit").help("download using git").flag();
 
     try {
         program.parse_args(argc, argv);

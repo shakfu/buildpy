@@ -13,10 +13,10 @@
 #include <fmt/core.h>
 #include <logy.h>
 #include <semver.hpp>
-#include <taskflow/taskflow.hpp>
 
-#include <cstdlib>
 #include <algorithm>
+#include <cstdlib>
+#include <filesystem>
 #include <initializer_list>
 #include <iostream>
 #include <sstream>
@@ -24,6 +24,7 @@
 #include <vector>
 
 #define BUFFERSIZE 4096
+#define USE_GIT 0
 
 
 namespace fs = std::filesystem;
@@ -66,7 +67,6 @@ public:
         fs:
             current_path(cwd);
     }
-
 
     void run_list(std::initializer_list<std::string> args, fs::path dir = ".")
     {
@@ -124,14 +124,18 @@ public:
 
     void curl(std::string url, fs::path download_dir, fs::path cwd)
     {
-        std::string _cmd = fmt::format("curl -L --output-dir {} -O {}", download_dir.string(), url);
+        std::string _cmd = fmt::format("curl -L --output-dir {} -O {}",
+                                       download_dir.string(), url);
         this->run(_cmd, cwd.string());
     }
 
-    void tar(fs::path archive_name, fs::path download_dir, fs::path srcdir)
+    void tar(fs::path archive, fs::path srcdir)
     {
-        fs::path archive = download_dir / archive_name;
-        std::string _cmd = fmt::format("tar xvf {} -C {}", archive.string(), srcdir.string());
+        if (!fs::exists(srcdir)) {
+            this->create_dir(srcdir);
+        }
+        std::string _cmd = fmt::format("tar xvf {} -C {} --strip-components=1", 
+            archive.string(), srcdir.string());
         this->run(_cmd, ".");
     }
 
@@ -154,22 +158,26 @@ public:
         this->cmd_exe("/usr/bin/git", args);
     }
 
-    void cmake_configure(fs::path srcdir, fs::path builddir, std::string options = "")
+    void cmake_configure(fs::path srcdir, fs::path builddir,
+                         std::string options = "")
     {
-        std::string _cmd = fmt::format("cmake -S {} -B {} {}", srcdir.string(), builddir.string(), options);
+        std::string _cmd = fmt::format("cmake -S {} -B {} {}", srcdir.string(),
+                                       builddir.string(), options);
         this->run(_cmd, ".");
     }
 
     void cmake_build(fs::path builddir, bool release = false)
     {
         std::string release_stmt = release ? "--config Release" : "";
-        std::string _cmd = fmt::format("cmake --build {} {}", builddir.string(), release_stmt);
+        std::string _cmd = fmt::format("cmake --build {} {}",
+                                       builddir.string(), release_stmt);
         this->run(_cmd, ".");
     }
 
     void cmake_install(fs::path builddir, fs::path prefix)
     {
-        std::string _cmd = fmt::format("cmake --install {} --prefix {}", builddir.string(), prefix.string());
+        std::string _cmd = fmt::format("cmake --install {} --prefix {}",
+                                       builddir.string(), prefix.string());
         this->run(_cmd, ".");
     }
 
@@ -219,7 +227,7 @@ public:
     {
         this->cwd = fs::current_path();
         this->build = this->cwd / "build";
-        this->downloads = this->build / "build";
+        this->downloads = this->build / "downloads";
         this->src = this->build / "src";
         this->install = this->build / "install";
     }
@@ -268,6 +276,15 @@ public:
 
     virtual std::string repo_branch() const = 0;
 
+    virtual std::string download_url() const = 0;
+
+    virtual std::string archive_name() const = 0;
+
+    virtual fs::path archive()
+    {
+        return this->project().downloads / this->archive_name();
+    }
+
     virtual Project project() const = 0;
 
     virtual fs::path src_dir() { return this->project().src / this->name(); }
@@ -307,8 +324,16 @@ public:
 
     virtual void download()
     {
-        this->git_clone(this->repo_url(), this->repo_branch(),
-                        this->src_dir());
+        if (USE_GIT) {
+            this->git_clone(this->repo_url(), this->repo_branch(),
+                            this->src_dir());
+        } else {
+            fs::path downloads = this->project().downloads;
+            if (!fs::exists(this->archive())) {
+                this->wget(this->download_url(), downloads, ".");
+            }
+            this->tar(this->archive(), this->src_dir());
+        }
     }
 
     virtual void process() = 0;
@@ -344,6 +369,11 @@ public:
 
     std::string repo_url() const { return this->_repo_url; }
 
+    std::string archive_name() const
+    {
+        return fmt::format("openssl-{}w.tar.gz", this->version().str());
+    }
+
     Project project() const { return this->_project; }
 
     std::string repo_branch() const
@@ -353,7 +383,7 @@ public:
         return fmt::format("OpenSSL_{}w", s);
     }
 
-    std::string download_url()
+    std::string download_url() const
     {
         return fmt::format(
             "https://www.openssl.org/source/old/1.1.1/openssl-{}w.tar.gz",
@@ -362,6 +392,11 @@ public:
 
     // -----------------------------------------------------------------------
     // methods
+
+    void setup()
+    {
+        this->project().setup();
+    }
 
     void build()
     {
@@ -378,6 +413,7 @@ public:
     void process()
     {
         Info("OpenSSLBuilder.process() start");
+        this->setup();
         this->download();
         this->build();
         Info("OpenSSLBuilder.process() end");
@@ -422,10 +458,15 @@ public:
         return fmt::format("bzip2-{}", this->version().str());
     }
 
-    std::string download_url()
+    std::string download_url() const
     {
         return fmt::format("https://sourceware.org/pub/bzip2/bzip2-{}.tar.gz",
                            this->version().str());
+    }
+
+    std::string archive_name() const
+    {
+        return fmt::format("bzip2-{}.tar.gz", this->version().str());
     }
 
     // -----------------------------------------------------------------------
@@ -490,11 +531,16 @@ public:
         return fmt::format("v{}", this->version().str());
     }
 
-    std::string download_url()
+    std::string download_url() const
     {
         return fmt::format("https://github.com/tukaani-project/xz/releases/"
                            "download/v{}/xz-{}.tar.gz",
                            this->version().str(), this->version().str());
+    }
+
+    std::string archive_name() const
+    {
+        return fmt::format("xz-{}.tar.gz", this->version().str());
     }
 
     // -----------------------------------------------------------------------
@@ -506,8 +552,10 @@ public:
 
         if (!this->libs_exist()) {
             putenv((char*)"CFLAGS=-fPIC");
-            this->cmake_configure(this->src_dir(), this->build_dir(), 
-                "-DBUILD_SHARED_LIBS=OFF -DENABLE_NLS=OFF -DENABLE_SMALL=ON -DCMAKE_BUILD_TYPE=MinSizeRel");
+            this->cmake_configure(
+                this->src_dir(), this->build_dir(),
+                "-DBUILD_SHARED_LIBS=OFF -DENABLE_NLS=OFF -DENABLE_SMALL=ON "
+                "-DCMAKE_BUILD_TYPE=MinSizeRel");
             this->cmake_build(this->build_dir());
             this->cmake_install(this->build_dir(), this->prefix());
         }
@@ -582,11 +630,16 @@ public:
         return fmt::format("{}{}", this->name(), this->ver());
     }
 
-    std::string download_url()
+    std::string download_url() const
     {
         return fmt::format(
             "https://www.python.org/ftp/python/{}/Python-{}.tar.xz",
             this->version().str(), this->version().str());
+    }
+
+    std::string archive_name() const
+    {
+        return fmt::format("Python-{}.tar.xz", this->version().str());
     }
 
     std::string executable_name()

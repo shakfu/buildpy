@@ -474,6 +474,8 @@ public:
     // -----------------------------------------------------------------------
     // methods
 
+    void setup() { this->project().setup(); }
+
     void build()
     {
         Info("Bzip2Builder.build()");
@@ -488,6 +490,7 @@ public:
     void process()
     {
         Info("Bzip2Builder process starting");
+        this->setup();
         this->download();
         this->build();
         Info("Bzip2Builder process ending");
@@ -548,6 +551,8 @@ public:
     // -----------------------------------------------------------------------
     // methods
 
+    void setup() { this->project().setup(); }
+
     void build()
     {
         Info("XzBuilder.build()");
@@ -566,6 +571,7 @@ public:
     void process()
     {
         Info("XzBuilder process starting");
+        this->setup();
         this->download();
         this->build();
         Info("XzBuilder process ending");
@@ -662,12 +668,14 @@ public:
     // methods
 
     void preprocess() { }
-    void setup() { }
+
+    void setup() { this->project().setup(); }
+
     void configure()
     {
         Info("PythonBuilder.configure()");
         std::string _cmd = fmt::format(
-            "/bin/bash ./configure --prefix={}", this->prefix().string()
+            "/bin/bash ./configure --disable-test-modules --prefix={}", this->prefix().string()
         );
         this->run(_cmd, this->src_dir());
     }

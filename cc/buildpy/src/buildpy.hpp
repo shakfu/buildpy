@@ -435,6 +435,16 @@ public:
             this->version().str());
     }
 
+    std::string staticlib_name()
+    {
+        return "libssl.a";
+    }
+
+    std::string dylib_name()
+    {
+        return "libssl.dylib";
+    }
+
     // -----------------------------------------------------------------------
     // methods
 
@@ -646,7 +656,7 @@ public:
         this->_name = "python";
         this->_repo_url = "https://github.com/python/cpython.git";
         this->_project = Project();
-        std::vector<std::string> parsed = this->split(config, "_");
+        std::vector<std::string> parsed = this->split(config, '_');
         this->_build_type = parsed[0];
         this->_size_type = parsed[1];
     }
@@ -714,6 +724,16 @@ public:
 
     // std::string dylib_link_name() = 0;
     // fs::path dylib_link() = 0;
+
+    std::string staticlib_name()
+    {
+        return fmt::format("lib{}.a", this->name_ver());
+    }
+
+    std::string dylib_name()
+    {
+        return fmt::format("lib{}.dylib",  this->name_ver());
+    }
 
     // -----------------------------------------------------------------------
     // methods
@@ -853,14 +873,18 @@ public:
     void process()
     {
         Info("PythonBuilder process starting");
-        this->preprocess();
-        // this->download();
-        this->setup();
-        this->configure();
-        this->build();
-        this->install();
-        this->clean();
-        this->postprocess();
+        if (!this->libs_exist()) {
+            this->preprocess();
+            // this->download();
+            this->setup();
+            this->configure();
+            this->build();
+            this->install();
+            this->clean();
+            this->postprocess();
+        } else {
+            Warning("%s already built", this->name().c_str());
+        }
         Info("PythonBuilder process ending");
     }
 };

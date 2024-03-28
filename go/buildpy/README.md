@@ -2,6 +2,30 @@
 
 An ongoing translation of the python `buildpy.py` into golang
 
+```bash
+% ./buildpy --help
+Builds python from source
+
+Usage:
+  buildpy [command]
+
+Available Commands:
+  build       Build python from source
+  completion  Generate the autocompletion script for the specified shell
+  config      Manage python configuration
+  deps        Build and manage python dependencies
+  help        Help about any command
+
+Flags:
+  -h, --help   help for buildpy
+
+Use "buildpy [command] --help" for more information about a command.
+```
+
+Mostly mirrors the python version except for the following:
+
+- Round-trip serialization/deserialization from/to yaml
+
 
 ## Dev Notes
 

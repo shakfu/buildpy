@@ -48,24 +48,29 @@ public:
             fs::current_path(dir);
         }
         std::string _cmd = this->join(args, " ");
-        Info("%s", _cmd.c_str());
-        std::system(_cmd.c_str());
+        const char* scmd = _cmd.c_str();
+
+        Info("%s", scmd);
+        if (std::system(scmd) != 0) {
+            Error("failed: %s", scmd);
+            return;
+        }
         if (dir != ".")
-        fs:
-            current_path(cwd);
+            fs::current_path(cwd);
     }
 
     void run(std::string shellcmd, fs::path dir = ".")
     {
         fs::path cwd;
         const char* scmd = shellcmd.c_str();
+
         if (dir != ".") {
             cwd = fs::current_path();
             fs::current_path(dir);
         }
-        Info("%s", shellcmd.c_str());
-        if (std::system(shellcmd.c_str()) != 0) {
-            Error("failed: %s", shellcmd.c_str());
+        Info("%s", scmd);
+        if (std::system(scmd) != 0) {
+            Error("failed: %s", scmd);
             return;
         }
         if (dir != ".") {

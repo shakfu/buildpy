@@ -2,6 +2,10 @@
 
 Currently supporting only building python 3.11 or 3.12
 
+Lightest-weight single script/module, a 'modern' rewrite with the simplest interface given collective experience of `builder` and `pybuilder`. The future, so to speak.
+
+Only handles python 3.11 - 3.12 and has a builtin configuration system which handles differences between build variants efficiently.
+
 ## Usage
 
 ```bash
@@ -77,3 +81,32 @@ framework.max
 framework.mid
 framework.min
 ```
+
+
+### buildpy (python)
+
+
+
+```bash
+% ./buildpy.py --help
+usage: buildpy.py [-h] [-a CFG [CFG ...]] [-c NAME] [-d] [-o]
+                  [-p PKG [PKG ...]] [-r] [-v VERSION] [-w]
+
+A python builder
+
+options:
+  -h, --help            show this help message and exit
+  -a CFG [CFG ...], --cfg-opts CFG [CFG ...]
+                        add config options
+  -c NAME, --config NAME
+                        build configuration (default: shared_mid)
+  -d, --debug           build debug python
+  -o, --optimize        optimize build
+  -p PKG [PKG ...], --pkgs PKG [PKG ...]
+                        install pkgs
+  -r, --reset           reset build
+  -v VERSION, --version VERSION
+                        python version (default: 3.11.7)
+  -w, --write           write configuration
+```
+

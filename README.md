@@ -1,4 +1,4 @@
-# pybuild - a bunch of python3 builders
+# buildpy - a bunch of python3 builders
 
 This project provides different language implementations to programmatically configure and build python from source.
 

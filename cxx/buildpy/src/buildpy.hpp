@@ -11,9 +11,9 @@ ShellCmd
 
 #include <argparse/argparse.hpp>
 #include <fmt/core.h>
+#include <glob/glob.hpp>
 #include <logy.h>
 #include <semver.hpp>
-#include <glob/glob.hpp>
 
 #include <algorithm>
 #include <cstdlib>
@@ -194,8 +194,8 @@ public:
         while (pos < s.size()) {
             pos = s.find(sep);
             res.push_back(s.substr(0, pos));
-            s.erase(0,
-                    pos + sep.size()); // length of the seperator, sep
+            // length of the seperator, sep
+            s.erase(0, pos + sep.size());
         }
         return res;
     }
@@ -594,21 +594,31 @@ class PythonBuilder : public Builder {
     // builds python from source
 
 private:
-    semver::version _version;
+    semver::version _version;    
+    std::string _config;
+    bool _optimize;
+    std::vector<std::string> _options;
     std::string _name;
     std::string _repo_url;
     Project _project;
+    std::string _build_type;
+    std::string _size_type;
 
 public:
     // -----------------------------------------------------------------------
     // constructor
 
-    PythonBuilder(std::string version)
+    PythonBuilder(std::string version, std::string config, bool optimize = false)
     {
         this->_version = semver::version::parse(version);
+        this->_config = config;
+        this->_optimize = optimize;
         this->_name = "python";
         this->_repo_url = "https://github.com/python/cpython.git";
         this->_project = Project();
+        std::vector<std::string> parsed = this->split(config, "_");
+        this->_build_type = parsed[0];
+        this->_size_type = parsed[1];
     }
 
     // -----------------------------------------------------------------------
@@ -626,6 +636,10 @@ public:
     {
         return fmt::format("v{}", this->version().str());
     }
+
+    std::string build_type() const { return this->_build_type; }
+
+    std::string size_type() const { return this->_size_type; }
 
     std::string ver()
     {
@@ -663,7 +677,6 @@ public:
 
     std::string executable_name()
     {
-        // return fmt::format("python{}", this->version.str());
         return fmt::format("{}3", this->name());
     }
 
@@ -680,15 +693,51 @@ public:
 
     void preprocess() { }
 
-    void setup() { this->project().setup(); }
+    void install_dependencies() {
+        Info("PythonBuilder.install_dependencies()");
+        OpenSSLBuilder("1.1.1").process();
+        Bzip2Builder("1.0.8").process();
+        XzBuilder("5.6.0").process();
+    }
+
+    void info() {
+        Info("ver: %s", this->ver().c_str());
+        Info("name_ver: %s", this->name_ver().c_str());
+        Info("prefix: %s", this->prefix().c_str());
+    }
+
+    void setup() {
+        Info("PythonBuilder.setup()");
+        this->project().setup();
+        this->install_dependencies();
+        this->download();
+    }
 
     void configure()
     {
         Info("PythonBuilder.configure()");
-        std::string _cmd = fmt::format(
-            "/bin/bash ./configure --disable-test-modules --prefix={}", this->prefix().string()
-        );
-        this->run(_cmd, this->src_dir());
+
+        std::string _prefix = fmt::format("--prefix={}", this->prefix().string());
+        std::vector<std::string> args = {
+            "/bin/bash",
+            "./configure",
+            "--disable-test-modules",
+            "--without-ensurepip",
+        };
+
+
+        if (this->_build_type == "shared") {
+            args.insert(args.end(),
+                {"--enable-shared", "--without-static-libpython"});
+        }
+
+        if (this->_optimize) {
+            args.push_back("--enable-optimizations");
+        }
+
+        args.push_back(_prefix);
+
+        this->cmd(args, this->src_dir());
     }
 
     void build()
@@ -744,15 +793,13 @@ public:
         fs::current_path(cwd);
     }
 
-
-
     void postprocess() { }
 
     void process()
     {
         Info("PythonBuilder process starting");
         this->preprocess();
-        this->download();
+        // this->download();
         this->setup();
         this->configure();
         this->build();

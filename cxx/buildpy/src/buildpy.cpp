@@ -4,16 +4,6 @@
 const char* VERSION = "1.0.1";
 
 
-int run_tasks(std::string pyversion)
-{
-    OpenSSLBuilder("1.1.1").process();
-    Bzip2Builder("1.0.8").process();
-    XzBuilder("5.6.0").process();
-    PythonBuilder(pyversion).process();
-    // PythonBuilder(pyversion).clean();
-    return 0;
-}
-
 
 int main(int argc, char* argv[])
 {
@@ -51,25 +41,20 @@ int main(int argc, char* argv[])
     // std::cout << "square: " << (input * input) << std::endl;
 
     auto pyversion = program.get<std::string>("pyversion");
-    std::cout << "pyversion: " << pyversion << std::endl;
-
     auto config = program.get<std::string>("config");
+    bool optimize = program.get<bool>("optimize");
+
+    std::cout << "pyversion: " << pyversion << std::endl;
     std::cout << "config: " << config << std::endl;
+    std::cout << "optimize: " << optimize << std::endl;
 
-    run_tasks(pyversion);
-    // cmd({ "/bin/bash", "--version" });
-    auto p = PythonBuilder(pyversion);
-    Info("ver: %s", p.ver().c_str());
-    Info("name_ver: %s", p.name_ver().c_str());
-    Info("prefix: %s", p.prefix().c_str());
-    // p(); // test () operator overload
-    // p.cmd({"/bin/bash", "--version"});
+    auto p = PythonBuilder(pyversion, config, optimize);
+    p.process();
 
-    std::map<std::string, std::vector<std::string>> zmap = {
-        { "abc", { "foo", "moo" } }, { "def", { "var", "baz" } }
-    };
-    std::cout << zmap["abc"][0] << std::endl;
-
+    // std::map<std::string, std::vector<std::string>> zmap = {
+    //     { "abc", { "foo", "moo" } }, { "def", { "var", "baz" } }
+    // };
+    // std::cout << zmap["abc"][0] << std::endl;
 
     return 0;
 }

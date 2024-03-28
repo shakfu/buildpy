@@ -217,6 +217,21 @@ public:
         return ret;
     }
 
+    void remove(fs::path target)
+    {
+        if (fs::exists(target)) {
+            if (fs::remove_all(target)) {
+                Info("removed: %s", target.c_str());
+            }
+        }
+    }
+
+    void move(fs::path& src, fs::path& dst)
+    {
+        Info("move %s to %s", src.c_str(), dst.c_str());
+        fs::rename(src, dst);
+    }
+
     bool globmatch(fs::path name, std::vector<std::string> patterns)
     {
         for (auto& p : patterns) {
@@ -226,7 +241,17 @@ public:
         }
         return false;
     }
+
+    void zip(fs::path zip_path, fs::path cwd) 
+    {
+        std::string _cmd = fmt::format("zip -r {} .", zip_path.string());
+
+        this->run(_cmd, cwd);
+    }
+
+
 };
+
 
 
 class Project : public ShellCmd {
@@ -775,16 +800,55 @@ public:
         fs::path cwd = fs::current_path();
         fs::current_path(this->prefix());
         for (auto& p : glob::rglob(patterns)) {
-            if (fs::remove_all(p)) {
-                Info("removed: %s", p.c_str());
-            } else {
-                Info("skipped: %s", p.c_str());
-            }
+            this->remove(p);
         }
         fs::current_path(cwd);
     }
 
-    void postprocess() { }
+    void ziplib()
+    {
+        Info("PythonBuilder.ziplib()");
+
+        fs::path tmp_libdynload = this->project().build /  "lib-dynload";
+        fs::path tmp_os_py = this->project().build /  "os.py";
+
+        // pre-cleanup
+
+        this->remove(tmp_libdynload);
+        this->remove(tmp_os_py);
+
+        fs::path src = this->prefix() / "lib" / this->name_ver();
+
+        fs::path src_libdynload = src / "lib-dynload";
+        fs::path src_os_py = src / "os.py";
+
+        this->move(src_libdynload, tmp_libdynload);
+        this->move(src_os_py, tmp_os_py);
+
+        std::string zipfile = fmt::format("python{}.zip", this->ver_nodot());
+        fs::path zip_path = this->prefix() / "lib" / zipfile;
+
+        this->zip(zip_path, src);
+
+        this->remove(src);
+ 
+        fs::path site_packages = src / "site-packages";
+
+        fs::path pkgconfig = this->prefix() / "lib" / "pkgconfig";
+
+        this->remove(pkgconfig);
+
+        this->create_dir(src);              // perm 0750
+        this->create_dir(site_packages);    // perm 0750
+
+        this->move(tmp_libdynload, src_libdynload);
+        this->move(tmp_os_py, src_os_py);
+    }
+
+    void postprocess() {
+        Info("PythonBuilder.postprocess()");
+        ziplib();
+    }
 
     void process()
     {

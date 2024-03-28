@@ -1,14 +1,14 @@
 # buildpy - a bunch of python3 builders
 
-This project provides different language implementations to programmatically configure and build python from source.
+This project provides different language implementations of a commandline tool which programmatically download, configure and build python from source.
 
-The end product is especially useful for integration or embeddding in another compiled project, and along the way I got to program the same application using different languages which is always fun and educational.
+The end product is especially useful for integration or embeddding in other compiled projects. 
 
-The implementations are so far: {python, golang, rust, haskell, c++ (wip), swift (wip)}
+The implementations so far are: {python, golang, rust, haskell (wip), c++ (wip), swift (wip)}
 
-The initial design, called `buildpy`, was initially implemented in python3 as an improvement on some earlier incarnations (see Background section below).
+The initial design, called `buildpy`, was initially implemented in python3 as an improvement on some earlier incarnations (see Background section below) which are also included in this project.
 
-The design envisions the following general steps:
+The design entails the following general steps to build python from source:
 
 1. Create local build environment / project which consists of the following folder structure
 
@@ -19,20 +19,20 @@ The design envisions the following general steps:
 ./build/install/
 ```
 
-2. Download, build, and install python dependencies {openssl, bzip2, xz, ..} into build project
+2. Download, build, python dependencies {openssl, bzip2, xz, ..} and install into `build/install/<name>`.
 
 3. Download the source code of a particular version of python3 from python.org or from github
 
 4. Configure python3 build using `configure` options and custom `Setup.local` file
 
-5. Build and install python3 into build project
+5. Build python3 and install into `build/install/python`
 
 6. Clean or remove extraneous libraries, extensions, tests, modules
 
 7. Zip standard library
 
 
-## Building
+## Overview
 
 To build all variants type `make release` in the root of this project. This will build all executables and place them in the `bin` directory.
 
@@ -47,7 +47,7 @@ To build a specific case, type the same in the root of the subproject.
 
 Feature coverage and notable aspects of `buildpy` variants by language:
 
-| Features                   |  python | golang   | rust     | haskell  | c++    | swift    |
+| Features                   |  python | golang   | rust     | haskell  | c++      | swift    |
 | :------------------------- | :------:| :------: | :------: | :------: | :------: | :------: |
 | Create Build Env           | x       | x        | x        | x        | x        |          |
 | Build Python Dependencies  | x       | x        | x        | x        | x        |          |
@@ -57,7 +57,7 @@ Feature coverage and notable aspects of `buildpy` variants by language:
 | Zip python library         | x       | x        | x        |          |          |          |
 | # of Dependencies          | x       | x        | x        |          |          |          |
 | Size of executable (macOS) | 48 Kb   | 5.1 MB   | 2.6 MB   | 24.5 MB  | 448 kb   | 1.6 MB   |
-| Size of executable (linux) | 48 Kb   | 5.1 MB   | 6.3 MB   | 3.0 MB   | 438 Kb   | 3.9 MB   |
+| Size of executable (linux) | 48 Kb   | 5.1 MB   | 6.3 MB   | 3.0 MB   | 520 Kb   | 3.9 MB   |
 | Tested on Linux            | x       | x        | x        | x        | x        | x        |
 | Tested on macOS            | x       | x        | x        | x        | x        | x        |
 | Tested on Windows          |         |          |          |          |          |          |
@@ -75,7 +75,7 @@ Use of External executables
 | make                       | x       | x        | x        |          |          |          |
 | bash                       | x       | x        | x        |          |          |          |
 
-The python implementation of `buildpy` uses the capabilities of its stdlib to download python and its dependencies, uncompress the results only uses an external executables when calling `./configure` and `make`.
+The python implementation of `buildpy` uses the capabilities of its stdlib to download python and its dependencies, extract the results and uses external executables when calling `./configure` and `make`.
 
 
 

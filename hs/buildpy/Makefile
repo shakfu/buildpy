@@ -25,7 +25,7 @@ indent:
 	@hindent --indent-size 2 src/*.hs
 	@hindent --indent-size 2 src/Models/*.hs
 
-release:
+release: build
 	@mkdir -p ../../bin
 	@cabal build --enable-optimization=2 --enable-executable-stripping
 	@cp $(EXECUTABLE) ../../bin/buildpy-hs

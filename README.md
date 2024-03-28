@@ -51,12 +51,11 @@ Feature coverage and notable aspects of `buildpy` variants by language:
 | :------------------------- | :------:| :------: | :------: | :------: | :------: | :------: |
 | Create Build Env           | x       | x        | x        | x        | x        |          |
 | Build Python Dependencies  | x       | x        | x        | x        | x        |          |
-| Configure Python Build     | x       | x        | x        |          | x        |          |
-| Build/Install Python       | x       | x        | x        |          |          |          |
-| Clean Python Build         | x       | x        | x        |          |          |          |
-| Zip python library         | x       | x        | x        |          |          |          |
-| # of Dependencies          | x       | x        | x        |          |          |          |
-| Size of executable (macOS) | 48 Kb   | 5.1 MB   | 2.6 MB   | 24.5 MB  | 448 kb   | 1.6 MB   |
+| Configure Python Build     | x       | x        | x        |          |          |          |
+| Build/Install Python       | x       | x        | x        |          | x        |          |
+| Clean Python Build         | x       | x        | x        |          | x        |          |
+| Zip python library         | x       | x        | x        |          | x        |          |
+| Size of executable (macOS) | 48 Kb   | 5.1 MB   | 2.6 MB   | 24.5 MB  | 515 kb   | 1.6 MB   |
 | Size of executable (linux) | 48 Kb   | 5.1 MB   | 6.3 MB   | 3.0 MB   | 520 Kb   | 3.9 MB   |
 | Tested on Linux            | x       | x        | x        | x        | x        | x        |
 | Tested on macOS            | x       | x        | x        | x        | x        | x        |
@@ -70,10 +69,10 @@ Use of External executables
 | git                        |         | x        | x        | x        | x        |          |
 | wget                       |         | x        | x        | x        | x        |          |
 | tar                        |         | x        | x        |          | x        |          |
-| zip                        |         | x        | x        |          |          |          |
+| zip                        |         | x        | x        |          | x        |          |
 | cmake                      |         | x        | x        | x        | x        |          |
-| make                       | x       | x        | x        |          |          |          |
-| bash                       | x       | x        | x        |          |          |          |
+| make                       | x       | x        | x        |          | x        |          |
+| bash                       | x       | x        | x        |          | x        |          |
 
 The python implementation of `buildpy` uses the capabilities of its stdlib to download python and its dependencies, extract the results and uses external executables when calling `./configure` and `make`.
 

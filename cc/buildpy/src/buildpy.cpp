@@ -12,21 +12,19 @@ int main(int argc, char* argv[])
         .help("python version")
         .default_value("3.12.2")
         .nargs(1);
-        // .implicit_value(true);
+    // .implicit_value(true);
 
     program.add_argument("-c", "--config")
         .help("build configuration name")
         .default_value("static_max")
         .nargs(1);
-        // .implicit_value(true);
+    // .implicit_value(true);
 
     program.add_argument("-o", "--optimize")
         .help("optimize python build")
         .flag();
 
-    program.add_argument("-g", "--usegit")
-        .help("download using git")
-        .flag();
+    program.add_argument("-g", "--usegit").help("download using git").flag();
 
     try {
         program.parse_args(argc, argv);

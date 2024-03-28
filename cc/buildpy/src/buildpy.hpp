@@ -24,6 +24,8 @@ ShellCmd
 #include <string>
 #include <vector>
 
+#include "config.hpp"
+
 #define BUFFERSIZE 4096
 #define USE_GIT 0
 
@@ -242,16 +244,13 @@ public:
         return false;
     }
 
-    void zip(fs::path zip_path, fs::path cwd) 
+    void zip(fs::path zip_path, fs::path cwd)
     {
         std::string _cmd = fmt::format("zip -r {} .", zip_path.string());
 
         this->run(_cmd, cwd);
     }
-
-
 };
-
 
 
 class Project : public ShellCmd {
@@ -809,8 +808,8 @@ public:
     {
         Info("PythonBuilder.ziplib()");
 
-        fs::path tmp_libdynload = this->project().build /  "lib-dynload";
-        fs::path tmp_os_py = this->project().build /  "os.py";
+        fs::path tmp_libdynload = this->project().build / "lib-dynload";
+        fs::path tmp_os_py = this->project().build / "os.py";
 
         // pre-cleanup
 
@@ -831,21 +830,22 @@ public:
         this->zip(zip_path, src);
 
         this->remove(src);
- 
+
         fs::path site_packages = src / "site-packages";
 
         fs::path pkgconfig = this->prefix() / "lib" / "pkgconfig";
 
         this->remove(pkgconfig);
 
-        this->create_dir(src);              // perm 0750
-        this->create_dir(site_packages);    // perm 0750
+        this->create_dir(src);           // perm 0750
+        this->create_dir(site_packages); // perm 0750
 
         this->move(tmp_libdynload, src_libdynload);
         this->move(tmp_os_py, src_os_py);
     }
 
-    void postprocess() {
+    void postprocess()
+    {
         Info("PythonBuilder.postprocess()");
         ziplib();
     }

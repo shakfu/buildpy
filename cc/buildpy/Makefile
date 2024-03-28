@@ -20,3 +20,4 @@ clean:
 format:
 	@clang-format -i src/buildpy.cpp
 	@clang-format -i src/buildpy.hpp
+	@clang-format -i src/config.hpp

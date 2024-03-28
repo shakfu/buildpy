@@ -52,15 +52,15 @@ Feature coverage and notable aspects of `buildpy` variants by language:
 | :------------------------- | :------:| :------: | :------: | :------: | :------: | :------: |
 | Create Build Env           | x       | x        | x        | x        | x        |          |
 | Build Python Dependencies  | x       | x        | x        | x        | x        |          |
-| Configure Python Build     | x       | x        | x        | x        | x        |          |
+| Configure Python Build     | x       | x        | x        |          | x        |          |
 | Build/Install Python       | x       | x        | x        |          |          |          |
 | Clean Python Build         | x       | x        | x        |          |          |          |
 | Zip python library         | x       | x        | x        |          |          |          |
 | # of Dependencies          | x       | x        | x        |          |          |          |
-| Size of executable (macOS) | 48 Kb   | 5.1 MB   | 2.6 MB   | 24.5 MB  | 0.0 kb   | 1.6 MB   |
+| Size of executable (macOS) | 48 Kb   | 5.1 MB   | 2.6 MB   | 24.5 MB  | 448 kb   | 1.6 MB   |
 | Size of executable (linux) | 48 Kb   | 5.1 MB   | 6.3 MB   | 3.0 MB   | 438 Kb   | 3.9 MB   |
-| Tested on Linux            | x       | x        | x        | x        |          | x        |
-| Tested on macOS            | x       | x        | x        | x        |          | x        |
+| Tested on Linux            | x       | x        | x        | x        | x        | x        |
+| Tested on macOS            | x       | x        | x        | x        | x        | x        |
 | Tested on Windows          |         |          |          |          |          |          |
 
 

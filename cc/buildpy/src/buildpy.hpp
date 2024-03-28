@@ -594,7 +594,7 @@ class PythonBuilder : public Builder {
     // builds python from source
 
 private:
-    semver::version _version;    
+    semver::version _version;
     std::string _config;
     bool _optimize;
     std::vector<std::string> _options;
@@ -608,7 +608,8 @@ public:
     // -----------------------------------------------------------------------
     // constructor
 
-    PythonBuilder(std::string version, std::string config, bool optimize = false)
+    PythonBuilder(std::string version, std::string config,
+                  bool optimize = false)
     {
         this->_version = semver::version::parse(version);
         this->_config = config;
@@ -675,10 +676,7 @@ public:
         return fmt::format("Python-{}.tar.xz", this->version().str());
     }
 
-    std::string executable_name()
-    {
-        return fmt::format("{}3", this->name());
-    }
+    std::string executable_name() { return fmt::format("{}3", this->name()); }
 
     fs::path executable()
     {
@@ -693,20 +691,23 @@ public:
 
     void preprocess() { }
 
-    void install_dependencies() {
+    void install_dependencies()
+    {
         Info("PythonBuilder.install_dependencies()");
         OpenSSLBuilder("1.1.1").process();
         Bzip2Builder("1.0.8").process();
         XzBuilder("5.6.0").process();
     }
 
-    void info() {
+    void info()
+    {
         Info("ver: %s", this->ver().c_str());
         Info("name_ver: %s", this->name_ver().c_str());
         Info("prefix: %s", this->prefix().c_str());
     }
 
-    void setup() {
+    void setup()
+    {
         Info("PythonBuilder.setup()");
         this->project().setup();
         this->install_dependencies();
@@ -717,7 +718,8 @@ public:
     {
         Info("PythonBuilder.configure()");
 
-        std::string _prefix = fmt::format("--prefix={}", this->prefix().string());
+        std::string _prefix = fmt::format("--prefix={}",
+                                          this->prefix().string());
         std::vector<std::string> args = {
             "/bin/bash",
             "./configure",
@@ -728,7 +730,7 @@ public:
 
         if (this->_build_type == "shared") {
             args.insert(args.end(),
-                {"--enable-shared", "--without-static-libpython"});
+                        { "--enable-shared", "--without-static-libpython" });
         }
 
         if (this->_optimize) {
@@ -745,7 +747,7 @@ public:
         Info("PythonBuilder.build()");
         this->run("make", this->src_dir());
     }
-    
+
     void install()
     {
         Info("PythonBuilder.install()");
@@ -756,30 +758,14 @@ public:
     {
         Info("PythonBuilder.clean()");
         std::vector<std::string> patterns = {
-            "**/*.exe",
-            "**/*config-3*",
-            "**/*tcl*",
-            "**/*tdbc*",
-            "**/*tk*",
-            "**/__phello__",
-            "**/__pycache__",
-            "**/_codecs_*.so",
-            "**/_ctypes_test*",
-            "**/_test*",
-            "**/_tk*",
-            "**/_xx*.so",
-            "**/distutils",
-            "**/idlelib",
-            "**/lib2to3",
-            "**/LICENSE.txt",
-            "**/pkgconfig",
-            "**/pydoc_data",
-            "**/site-packages",
-            "**/test",
-            "**/Tk*",
-            "**/turtle*",
-            "**/venv",
-            "**/xx*.so",
+            "**/*.exe",         "**/*config-3*",   "**/*tcl*",
+            "**/*tdbc*",        "**/*tk*",         "**/__phello__",
+            "**/__pycache__",   "**/_codecs_*.so", "**/_ctypes_test*",
+            "**/_test*",        "**/_tk*",         "**/_xx*.so",
+            "**/distutils",     "**/idlelib",      "**/lib2to3",
+            "**/LICENSE.txt",   "**/pkgconfig",    "**/pydoc_data",
+            "**/site-packages", "**/test",         "**/Tk*",
+            "**/turtle*",       "**/venv",         "**/xx*.so",
         };
         fs::path cwd = fs::current_path();
         fs::current_path(this->prefix());

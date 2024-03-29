@@ -9,17 +9,19 @@ ShellCmd
         PythonBuilder
 */
 
-#include <argparse/argparse.hpp>
 #include <fmt/core.h>
-#include <glob/glob.hpp>
 #include <logy.h>
-#include <semver.hpp>
 
 #include <algorithm>
+#include <argparse/argparse.hpp>
 #include <cstdlib>
 #include <filesystem>
-#include <initializer_list>
-#include <iostream>
+#include <fstream>
+#include <glob/glob.hpp>
+#include <semver.hpp>
+// #include <initializer_list>
+// #include <iostream>
+// #include <iterator>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -29,14 +31,13 @@ ShellCmd
 #define BUFFERSIZE 4096
 #define USE_GIT 0
 
-
 namespace fs = std::filesystem;
 
 class ShellCmd {
     // Utility class to hold common file operations
 public:
     void cmd_exe(std::string exe, std::vector<std::string> args,
-                 fs::path dir = ".")
+        fs::path dir = ".")
     {
         args.insert(args.begin(), exe);
         this->cmd(args, dir);
@@ -101,9 +102,8 @@ public:
         return output;
     }
 
-
     std::string join(std::vector<std::string> elements,
-                     const char* const delimiter)
+        const char* const delimiter)
     {
         std::ostringstream os;
         auto b = std::begin(elements);
@@ -111,7 +111,7 @@ public:
 
         if (b != e) {
             std::copy(b, std::prev(e),
-                      std::ostream_iterator<std::string>(os, delimiter));
+                std::ostream_iterator<std::string>(os, delimiter));
             b = std::prev(e);
         }
         if (b != e) {
@@ -131,14 +131,14 @@ public:
     void wget(std::string url, fs::path download_dir, fs::path cwd)
     {
         std::string _cmd = fmt::format("wget -P {} {}", download_dir.string(),
-                                       url);
+            url);
         this->run(_cmd, cwd.string());
     }
 
     void curl(std::string url, fs::path download_dir, fs::path cwd)
     {
         std::string _cmd = fmt::format("curl -L --output-dir {} -O {}",
-                                       download_dir.string(), url);
+            download_dir.string(), url);
         this->run(_cmd, cwd.string());
     }
 
@@ -148,12 +148,12 @@ public:
             this->create_dir(srcdir);
         }
         std::string _cmd = fmt::format("tar xvf {} -C {} --strip-components=1",
-                                       archive.string(), srcdir.string());
+            archive.string(), srcdir.string());
         this->run(_cmd, ".");
     }
 
     void git_clone(std::string url, std::string branch, fs::path dir,
-                   bool recurse = false)
+        bool recurse = false)
     {
         if (fs::exists(dir)) {
             Warning("skipping git clone, dir exists: %s", dir.c_str());
@@ -172,10 +172,10 @@ public:
     }
 
     void cmake_configure(fs::path srcdir, fs::path builddir,
-                         std::string options = "")
+        std::string options = "")
     {
         std::string _cmd = fmt::format("cmake -S {} -B {} {}", srcdir.string(),
-                                       builddir.string(), options);
+            builddir.string(), options);
         this->run(_cmd, ".");
     }
 
@@ -183,14 +183,14 @@ public:
     {
         std::string release_stmt = release ? "--config Release" : "";
         std::string _cmd = fmt::format("cmake --build {} {}",
-                                       builddir.string(), release_stmt);
+            builddir.string(), release_stmt);
         this->run(_cmd, ".");
     }
 
     void cmake_install(fs::path builddir, fs::path prefix)
     {
         std::string _cmd = fmt::format("cmake --install {} --prefix {}",
-                                       builddir.string(), prefix.string());
+            builddir.string(), prefix.string());
         this->run(_cmd, ".");
     }
 
@@ -208,7 +208,7 @@ public:
     }
 
     std::string join(const std::vector<std::string>& lst,
-                     const std::string& delim)
+        const std::string& delim)
     {
         std::string ret;
         for (const auto& s : lst) {
@@ -252,7 +252,6 @@ public:
     }
 };
 
-
 class Project : public ShellCmd {
     // Utility class to hold project directory structure
 public:
@@ -289,9 +288,7 @@ public:
     }
 };
 
-
 class Builder : public ShellCmd {
-
 public:
     // -----------------------------------------------------------------------
     // operators
@@ -369,21 +366,22 @@ public:
 
     virtual void download()
     {
-        if (USE_GIT) {
-            this->git_clone(this->repo_url(), this->repo_branch(),
-                            this->src_dir());
-        } else {
-            fs::path downloads = this->project().downloads;
-            if (!fs::exists(this->archive())) {
-                this->wget(this->download_url(), downloads, ".");
+        if (!this->libs_exist()) {
+            if (USE_GIT) {
+                this->git_clone(this->repo_url(), this->repo_branch(),
+                    this->src_dir());
+            } else {
+                fs::path downloads = this->project().downloads;
+                if (!fs::exists(this->archive())) {
+                    this->wget(this->download_url(), downloads, ".");
+                }
+                this->tar(this->archive(), this->src_dir());
             }
-            this->tar(this->archive(), this->src_dir());
         }
     }
 
     virtual void process() = 0;
 };
-
 
 class OpenSSLBuilder : public Builder {
     // builds openssl from source
@@ -435,15 +433,9 @@ public:
             this->version().str());
     }
 
-    std::string staticlib_name()
-    {
-        return "libssl.a";
-    }
+    std::string staticlib_name() { return "libssl.a"; }
 
-    std::string dylib_name()
-    {
-        return "libssl.dylib";
-    }
+    std::string dylib_name() { return "libssl.dylib"; }
 
     // -----------------------------------------------------------------------
     // methods
@@ -471,7 +463,6 @@ public:
         Info("OpenSSLBuilder.process() end");
     }
 };
-
 
 class Bzip2Builder : public Builder {
     // builds bzip2 from source
@@ -513,7 +504,7 @@ public:
     std::string download_url() const
     {
         return fmt::format("https://sourceware.org/pub/bzip2/bzip2-{}.tar.gz",
-                           this->version().str());
+            this->version().str());
     }
 
     std::string archive_name() const
@@ -547,7 +538,6 @@ public:
     }
 };
 
-
 class XzBuilder : public Builder {
     // builds xz from source
 
@@ -569,7 +559,6 @@ public:
         this->_project = Project();
     }
 
-
     // -----------------------------------------------------------------------
     // properties
 
@@ -590,13 +579,17 @@ public:
     {
         return fmt::format("https://github.com/tukaani-project/xz/releases/"
                            "download/v{}/xz-{}.tar.gz",
-                           this->version().str(), this->version().str());
+            this->version().str(), this->version().str());
     }
 
     std::string archive_name() const
     {
         return fmt::format("xz-{}.tar.gz", this->version().str());
     }
+
+    std::string staticlib_name() { return fmt::format("liblzma.a"); }
+
+    std::string dylib_name() { return fmt::format("liblzma.dylib"); }
 
     // -----------------------------------------------------------------------
     // methods
@@ -628,7 +621,6 @@ public:
     }
 };
 
-
 class PythonBuilder : public Builder {
     // builds python from source
 
@@ -648,7 +640,7 @@ public:
     // constructor
 
     PythonBuilder(std::string version, std::string config,
-                  bool optimize = false)
+        bool optimize = false)
     {
         this->_version = semver::version::parse(version);
         this->_config = config;
@@ -668,6 +660,8 @@ public:
 
     std::string name() const { return this->_name; }
 
+    std::string config() const { return this->_config; }
+
     std::string repo_url() const { return this->_repo_url; }
 
     Project project() const { return this->_project; }
@@ -684,13 +678,13 @@ public:
     std::string ver()
     {
         return fmt::format("{}.{}", this->version().major(),
-                           this->version().minor());
+            this->version().minor());
     }
 
     std::string ver_nodot()
     {
         return fmt::format("{}{}", this->version().major(),
-                           this->version().minor());
+            this->version().minor());
     }
 
     std::string name_version()
@@ -732,7 +726,7 @@ public:
 
     std::string dylib_name()
     {
-        return fmt::format("lib{}.dylib",  this->name_ver());
+        return fmt::format("lib{}.dylib", this->name_ver());
     }
 
     // -----------------------------------------------------------------------
@@ -763,12 +757,197 @@ public:
         this->download();
     }
 
+    void write_setup_local()
+    {
+        std::vector<std::string> vs;
+
+        // add headers
+        for (const std::string& i : HEADERS) {
+            vs.push_back(i);
+            Info("header: %s", i.c_str());
+        }
+
+        auto add_section = [&vs, this](std::string name,
+                               std::vector<std::string> section) {
+            std::sort(section.begin(), section.end());
+            for (const std::string& k : section) {
+                std::vector<std::string> parts = EXTS[k];
+                parts.insert(parts.begin(), k);
+                std::string line = this->join(parts, " ");
+                vs.push_back(line);
+                Info("%s: %s", name.c_str(), line.c_str());
+            }
+        };
+
+        // add core
+        vs.push_back("\n# core\n");
+        add_section("core", CORE);
+
+        // add static
+        if (!STATIC.empty()) {
+            vs.push_back("\n*static*\n");
+            add_section("static", STATIC);
+        }
+
+        // add shared
+        if (!SHARED.empty()) {
+            vs.push_back("\n*shared*\n");
+            add_section("shared", SHARED);
+        }
+
+        // add disabled
+        vs.push_back("\n*disabled*\n");
+        for (const std::string& i : DISABLED) {
+            vs.push_back(i);
+            Info("disabled: %s", i.c_str());
+        }
+
+        vs.push_back("\n# end\n");
+
+        fs::path setup_local = this->src_dir() / "Modules" / "Setup.local";
+        std::ofstream output_file(setup_local);
+        std::ostream_iterator<std::string> output_iterator(output_file, "\n");
+        std::copy(vs.begin(), vs.end(), output_iterator);
+    }
+
+    void config_setup_local()
+    {
+#if __APPLE__
+        Debug("config.Configure: common > darwin");
+        disabled_to_static("_scproxy");
+
+#elif __linux__
+        Debug("config.Configure: common > linux");
+        disabled_to_static("ossaudiodev");
+
+        EXTS["_ssl"] = {
+            "_ssl.c",
+            "-I$(OPENSSL)/include",
+            "-L$(OPENSSL)/lib",
+            "-l:libssl.a -Wl,--exclude-libs,libssl.a",
+            "-l:libcrypto.a -Wl,--exclude-libs,libcrypto.a",
+        };
+
+        EXTS["_hashlib"] = {
+            "_hashopenssl.c",
+            "-I$(OPENSSL)/include",
+            "-L$(OPENSSL)/lib",
+            "-l:libcrypto.a -Wl,--exclude-libs,libcrypto.a",
+        };
+
+#endif
+
+        if (this->ver() == "3.11") {
+            if (this->config() == "static_max") {
+                Debug("config.Configure: 3.11 -> static_max");
+#if __linux__
+                static_to_disabled("_decimal");
+#endif
+
+            } else if (this->config() == "static_mid") {
+                Debug("config.Configure: 3.11 -> static_mid");
+                static_to_disabled("_decimal");
+
+            } else if (this->config() == "static_min") {
+                Debug("config.Configure: 3.11 -> static_min");
+                static_to_disabled({ "_bz2", "_decimal", "_csv", "_json",
+                    "_lzma", "_scproxy", "_sqlite3", "_ssl",
+                    "pyexpat", "readline" });
+
+            } else if (this->config() == "shared_max") {
+                Debug("config.Configure: 3.11 -> shared_max");
+#if __linux__
+                static_to_disabled("_decimal");
+#else
+                disabled_to_shared("_ctypes");
+                static_to_shared({ "_decimal", "_ssl", "_hashlib" });
+#endif
+
+            } else if (this->config() == "shared_mid") {
+                Debug("config.Configure: 3.11 -> shared_mid");
+                static_to_disabled({ "_decimal", "_ssl", "_hashlib" });
+            }
+
+        } else if (this->ver() == "3.12") {
+            EXTS["_md5"] = {
+                "md5module.c",
+                "-I$(srcdir)/Modules/_hacl/include",
+                "_hacl/Hacl_Hash_MD5.c",
+                "-D_BSD_SOURCE",
+                "-D_DEFAULT_SOURCE",
+            };
+
+            EXTS["_sha1"] = {
+                "sha1module.c",
+                "-I$(srcdir)/Modules/_hacl/include",
+                "_hacl/Hacl_Hash_SHA1.c",
+                "-D_BSD_SOURCE",
+                "-D_DEFAULT_SOURCE",
+            };
+
+            EXTS["_sha2"] = {
+                "sha2module.c",
+                "-I$(srcdir)/Modules/_hacl/include",
+                "_hacl/Hacl_Hash_SHA2.c",
+                "-D_BSD_SOURCE",
+                "-D_DEFAULT_SOURCE",
+                "Modules/_hacl/libHacl_Hash_SHA2.a",
+            };
+
+            EXTS["_sha3"] = {
+                "sha3module.c",
+                "-I$(srcdir)/Modules/_hacl/include",
+                "_hacl/Hacl_Hash_SHA3.c",
+                "-D_BSD_SOURCE",
+                "-D_DEFAULT_SOURCE",
+            };
+
+            EXTS.erase("_sha256");
+            EXTS.erase("_sha512");
+
+            STATIC.push_back("_sha2");
+            DISABLED.push_back("_xxinterpchannels");
+
+            remove_from(STATIC, "_sha256");
+            remove_from(STATIC, "_sha512");
+
+            if (this->config() == "static_max") {
+                Debug("config.Configure: 3.12 -> static_max");
+#if __linux__
+                Debug("config.Configure: 3.12 > static_max > linux");
+                static_to_disabled("_decimal");
+#endif
+            } else if (this->config() == "static_mid") {
+                Debug("config.Configure: 3.12 -> static_mid");
+                static_to_disabled("_decimal");
+
+            } else if (this->config() == "static_min") {
+                Debug("config.Configure: 3.12 > static_min");
+                static_to_disabled({ "_bz2", "_decimal", "_csv", "_json",
+                    "_lzma", "_scproxy", "_sqlite3", "_ssl",
+                    "pyexpat", "readline" });
+
+            } else if (this->config() == "shared_max") {
+                Debug("config.Configure: 3.12 -> shared_max");
+                disabled_to_shared("_ctypes");
+                static_to_shared({ "_decimal", "_ssl", "_hashlib" });
+
+            } else if (this->config() == "shared_mid") {
+                Debug("config.Configure: 3.12 -> shared_max");
+                static_to_disabled({ "_decimal", "_ssl", "_hashlib" });
+            }
+        }
+    }
+
     void configure()
     {
         Info("PythonBuilder.configure()");
 
+        this->config_setup_local();
+        this->write_setup_local();
+
         std::string _prefix = fmt::format("--prefix={}",
-                                          this->prefix().string());
+            this->prefix().string());
         std::vector<std::string> args = {
             "/bin/bash",
             "./configure",
@@ -776,10 +955,9 @@ public:
             "--without-ensurepip",
         };
 
-
         if (this->_build_type == "shared") {
             args.insert(args.end(),
-                        { "--enable-shared", "--without-static-libpython" });
+                { "--enable-shared", "--without-static-libpython" });
         }
 
         if (this->_optimize) {
@@ -807,14 +985,31 @@ public:
     {
         Info("PythonBuilder.clean()");
         std::vector<std::string> patterns = {
-            "**/*.exe",         "**/*config-3*",   "**/*tcl*",
-            "**/*tdbc*",        "**/*tk*",         "**/__phello__",
-            "**/__pycache__",   "**/_codecs_*.so", "**/_ctypes_test*",
-            "**/_test*",        "**/_tk*",         "**/_xx*.so",
-            "**/distutils",     "**/idlelib",      "**/lib2to3",
-            "**/LICENSE.txt",   "**/pkgconfig",    "**/pydoc_data",
-            "**/site-packages", "**/test",         "**/Tk*",
-            "**/turtle*",       "**/venv",         "**/xx*.so",
+            "**/*.exe",
+            "**/*config-3*",
+            "**/*tcl*",
+            "**/*tdbc*",
+            "**/*tk*",
+            "**/__phello__",
+            "**/__pycache__",
+            "**/_codecs_*.so",
+            "**/_ctypes_test*",
+            "**/_test*",
+            "**/_tk*",
+            "**/_xx*.so",
+            "**/distutils",
+            "**/idlelib",
+            "**/lib2to3",
+            "**/LICENSE.txt",
+            "**/pkgconfig",
+            "**/pydoc_data",
+            "**/site-packages",
+            "**/test",
+            "**/Tk*",
+            "**/turtle*",
+            "**/venv",
+            "**/xx*.so",
+            "**/ensurepip",
         };
         fs::path cwd = fs::current_path();
         fs::current_path(this->prefix());
@@ -857,7 +1052,7 @@ public:
 
         this->remove(pkgconfig);
 
-        this->create_dir(src);           // perm 0750
+        this->create_dir(src); // perm 0750
         this->create_dir(site_packages); // perm 0750
 
         this->move(tmp_libdynload, src_libdynload);

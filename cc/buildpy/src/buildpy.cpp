@@ -1,8 +1,6 @@
 #include "buildpy.hpp"
 
-
 const char* VERSION = "1.0.1";
-
 
 int main(int argc, char* argv[])
 {
@@ -10,7 +8,7 @@ int main(int argc, char* argv[])
 
     program.add_argument("-p", "--pyversion")
         .help("python version")
-        .default_value("3.12.2")
+        .default_value("3.11.8")
         .nargs(1);
     // .implicit_value(true);
 
@@ -44,11 +42,6 @@ int main(int argc, char* argv[])
 
     auto p = PythonBuilder(pyversion, config, optimize);
     p.process();
-
-    // std::map<std::string, std::vector<std::string>> zmap = {
-    //     { "abc", { "foo", "moo" } }, { "def", { "var", "baz" } }
-    // };
-    // std::cout << zmap["abc"][0] << std::endl;
 
     return 0;
 }

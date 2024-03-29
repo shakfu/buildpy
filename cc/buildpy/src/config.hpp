@@ -1,7 +1,6 @@
 // config.hpp
 
-
-std::vector<std::string> headers = {
+std::vector<std::string> HEADERS = {
     "DESTLIB=$(LIBDEST)",
     "MACHDESTLIB=$(BINLIBDEST)",
     "DESTPATH=",
@@ -14,7 +13,7 @@ std::vector<std::string> headers = {
     "LZMA=$(srcdir)/../../install/xz",
 };
 
-std::vector<std::string> core = {
+std::vector<std::string> CORE = {
     "_abc",
     "_codecs",
     "_collections",
@@ -38,7 +37,7 @@ std::vector<std::string> core = {
     "time",
 };
 
-std::vector<std::string> statik = {
+std::vector<std::string> STATIC = {
     "_asyncio",
     "_bisect",
     "_blake2",
@@ -88,7 +87,9 @@ std::vector<std::string> statik = {
     "zlib",
 };
 
-std::vector<std::string> disabled = {
+std::vector<std::string> SHARED = {};
+
+std::vector<std::string> DISABLED = {
     "_codecs_cn",
     "_codecs_hk",
     "_codecs_iso2022",
@@ -114,8 +115,7 @@ std::vector<std::string> disabled = {
     "xxlimited_35",
 };
 
-
-std::map<std::string, std::vector<std::string>> cmap = {
+std::map<std::string, std::vector<std::string>> EXTS = {
     { "name", { "name", "dest" } },
     { "_abc", { "_abc.c" } },
     { "_asyncio", { "_asynciomodule.c" } },
@@ -346,3 +346,95 @@ std::map<std::string, std::vector<std::string>> cmap = {
     { "unicodedata", { "unicodedata.c" } },
     { "zlib", { "zlibmodule.c", "-lz" } },
 };
+
+void remove_from(std::vector<std::string> vec, std::string name)
+{
+    auto new_end = std::remove_if(
+        vec.begin(), vec.end(),
+        [&name](const auto& item) { return item == name; });
+    vec.erase(new_end, vec.end());
+}
+
+void static_to_shared(std::string name)
+{
+    remove_from(STATIC, name);
+    SHARED.push_back(name);
+}
+
+void static_to_shared(std::vector<std::string> vec)
+{
+    for (const auto& name : vec) {
+        remove_from(STATIC, name);
+        SHARED.push_back(name);
+    }
+}
+
+void static_to_disabled(std::string name)
+{
+    remove_from(STATIC, name);
+    DISABLED.push_back(name);
+}
+
+void static_to_disabled(std::vector<std::string> vec)
+{
+    for (const auto& name : vec) {
+        remove_from(STATIC, name);
+        DISABLED.push_back(name);
+    }
+}
+
+void shared_to_static(std::string name)
+{
+    remove_from(SHARED, name);
+    STATIC.push_back(name);
+}
+
+void shared_to_static(std::vector<std::string> vec)
+{
+    for (const auto& name : vec) {
+        remove_from(SHARED, name);
+        STATIC.push_back(name);
+    }
+}
+
+void shared_to_disabled(std::string name)
+{
+    remove_from(SHARED, name);
+    DISABLED.push_back(name);
+}
+
+void shared_to_disabled(std::vector<std::string> vec)
+{
+    for (const auto& name : vec) {
+        remove_from(SHARED, name);
+        DISABLED.push_back(name);
+    }
+}
+
+void disabled_to_shared(std::string name)
+{
+    remove_from(DISABLED, name);
+    SHARED.push_back(name);
+}
+
+void disabled_to_shared(std::vector<std::string> vec)
+{
+    for (const auto& name : vec) {
+        remove_from(DISABLED, name);
+        SHARED.push_back(name);
+    }
+}
+
+void disabled_to_static(std::string name)
+{
+    remove_from(DISABLED, name);
+    STATIC.push_back(name);
+}
+
+void disabled_to_static(std::vector<std::string> vec)
+{
+    for (const auto& name : vec) {
+        remove_from(DISABLED, name);
+        STATIC.push_back(name);
+    }
+}

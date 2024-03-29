@@ -9,6 +9,8 @@ ShellCmd
         PythonBuilder
 */
 
+#pragma once
+
 #include <fmt/core.h>
 #include <logy.h>
 
@@ -30,6 +32,8 @@ ShellCmd
 
 #define BUFFERSIZE 4096
 #define USE_GIT 0
+
+namespace buildpy {
 
 namespace fs = std::filesystem;
 
@@ -1083,3 +1087,6 @@ public:
         Info("PythonBuilder process ending");
     }
 };
+
+} // namesapce buildpy
+

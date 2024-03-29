@@ -10,13 +10,11 @@ int main(int argc, char* argv[])
         .help("python version")
         .default_value("3.11.8")
         .nargs(1);
-    // .implicit_value(true);
 
     program.add_argument("-c", "--config")
         .help("build configuration name")
         .default_value("static_max")
         .nargs(1);
-    // .implicit_value(true);
 
     program.add_argument("-o", "--optimize")
         .help("optimize python build")
@@ -40,7 +38,7 @@ int main(int argc, char* argv[])
     std::cout << "config: " << config << std::endl;
     std::cout << "optimize: " << optimize << std::endl;
 
-    auto p = PythonBuilder(pyversion, config, optimize);
+    auto p = buildpy::PythonBuilder(pyversion, config, optimize);
     p.process();
 
     return 0;

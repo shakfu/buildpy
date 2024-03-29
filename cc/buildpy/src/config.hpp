@@ -1,5 +1,9 @@
 // config.hpp
 
+#pragma once
+
+namespace buildpy {
+
 std::vector<std::string> HEADERS = {
     "DESTLIB=$(LIBDEST)",
     "MACHDESTLIB=$(BINLIBDEST)",
@@ -438,3 +442,6 @@ void disabled_to_static(std::vector<std::string> vec)
         STATIC.push_back(name);
     }
 }
+
+} // namespace buildpy
+

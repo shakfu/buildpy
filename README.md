@@ -1,14 +1,12 @@
 # buildpy - a bunch of python3 builders
 
-This project provides different language implementations of a commandline tool which programmatically download, configure and build python from source.
+This project provides different language implementations of a commandline tool which programmatically downloads, configures and builds python from source and also includes some additional features such as reducing build size and zipping the standard library.
 
-The end product is especially useful for integration or embedding in other compiled projects. 
+Such customized builds can be useful for integration or embedding in other compiled projects.
 
-The implementations so far are: {python, golang, rust, haskell (wip), c++ (wip), swift (wip)}
+The implementations so far are: python, golang, rust, c++, haskell (wip), and swift (wip).
 
-The initial design, called `buildpy`, was initially implemented in python3 as an improvement on some earlier incarnations (see Background section below) which are also included in this project.
-
-The design entails the following general steps to build python from source:
+The design for the tool, called `buildpy`, was initially conceived,prototyped and implemented in python3 as an improvement on some earlier incarnations (see Background section below) which are also included in this project. It provides for the following general steps to build python from source:
 
 1. Create local build environment / project which consists of the following folder structure
 

@@ -93,6 +93,7 @@ std::vector<std::string> STATIC = {
 
 std::vector<std::string> SHARED = {};
 
+
 std::vector<std::string> DISABLED = {
     "_codecs_cn",
     "_codecs_hk",
@@ -351,7 +352,7 @@ std::map<std::string, std::vector<std::string>> EXTS = {
     { "zlib", { "zlibmodule.c", "-lz" } },
 };
 
-void remove_from(std::vector<std::string> vec, std::string name)
+void remove_from(std::vector<std::string>& vec, std::string name)
 {
     auto new_end = std::remove_if(
         vec.begin(), vec.end(),

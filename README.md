@@ -51,12 +51,12 @@ Feature coverage and notable aspects of `buildpy` variants by language:
 | :------------------------- | :------:| :------: | :------: | :------: | :------: | :------: |
 | Create Build Env           | x       | x        | x        | x        | x        |          |
 | Build Python Dependencies  | x       | x        | x        | x        | x        |          |
-| Configure Python Build     | x       | x        | x        |          |          |          |
+| Configure Python Build     | x       | x        | x        |          | x        |          |
 | Build/Install Python       | x       | x        | x        |          | x        |          |
 | Clean Python Build         | x       | x        | x        |          | x        |          |
 | Zip python library         | x       | x        | x        |          | x        |          |
 | Size of executable (macOS) | 48 Kb   | 5.1 MB   | 2.6 MB   | 24.5 MB  | 535 kb   | 1.6 MB   |
-| Size of executable (linux) | 48 Kb   | 5.1 MB   | 6.3 MB   | 3.0 MB   | 540 Kb   | 3.9 MB   |
+| Size of executable (linux) | 48 Kb   | 5.1 MB   | 6.3 MB   | 3.0 MB   | 484 Kb   | 3.9 MB   |
 | Tested on Linux            | x       | x        | x        | x        | x        | x        |
 | Tested on macOS            | x       | x        | x        | x        | x        | x        |
 | Tested on Windows          |         |          |          |          |          |          |
@@ -75,6 +75,10 @@ Use of External executables
 | bash                       | x       | x        | x        | x        | x        |          |
 
 The python implementation of `buildpy` uses the capabilities of its stdlib to download python and its dependencies, extract the results and uses external executables when calling `./configure` and `make`.
+
+In most cases, if `tar` and `wget` are not available, then `git` suffices to download source code.
+
+Note that it was not a goal to make the non-python versions to be similarly 'self-contained' as the python version, which relies on the python stdlib, and reduce the need for external executables. This may change in the future if it is not too much work.
 
 
 

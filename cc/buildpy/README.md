@@ -6,15 +6,16 @@ A minimal c++ implementation
 
 ```bash
 $ ./buildpy --help
-Usage: buildpy [--help] [--version] [--pyversion VAR] [--config VAR] [--optimize] [--usegit]
+Usage: buildpy [--help] [--version] [--pyversion VAR] [--config VAR] [--optimize] [--git] [--reset]
 
 Optional arguments:
   -h, --help       shows help message and exits 
   -v, --version    prints version information and exits 
-  -p, --pyversion  python version [default: "3.12.2"]
+  -p, --pyversion  python version [default: "3.11.8"]
   -c, --config     build configuration name [default: "static_max"]
   -o, --optimize   optimize python build 
-  -g, --usegit     download using git 
+  -g, --git        download using git 
+  -r, --reset      reset build environment
 ```
 
 
@@ -28,5 +29,6 @@ Optional arguments:
 maybe used later
 
 - [indicators](https://github.com/p-ranav/indicators)
+- [thread-pool](https://github.com/bshoshany/thread-pool)
 - [taskflow](https://github.com/taskflow/taskflow)
 - [tiny-process-library](https://gitlab.com/eidheim/tiny-process-library)

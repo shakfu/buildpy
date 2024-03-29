@@ -11,19 +11,16 @@ ShellCmd
 
 #pragma once
 
+#include <argparse/argparse.hpp>
 #include <fmt/core.h>
+#include <glob/glob.hpp>
 #include <logy.h>
+#include <semver.hpp>
 
 #include <algorithm>
-#include <argparse/argparse.hpp>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
-#include <glob/glob.hpp>
-#include <semver.hpp>
-// #include <initializer_list>
-// #include <iostream>
-// #include <iterator>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -290,6 +287,14 @@ public:
         this->create_dir(this->install);
         this->create_dir(this->src);
     }
+
+    void reset()
+    {
+        fs::path python_prefix = this->install / "python";
+        this->remove(this->src);
+        this->remove(python_prefix);
+    }
+
 };
 
 class Builder : public ShellCmd {
@@ -299,7 +304,6 @@ public:
 
     virtual void operator()()
     {
-        // can be used in taskflow
         this->process();
     }
 
@@ -345,9 +349,14 @@ public:
         return this->project().install / this->name();
     }
 
+    virtual std::string lib_name()
+    {
+        return fmt::format("lib{}", this->name());
+    }
+
     virtual std::string staticlib_name()
     {
-        return fmt::format("lib{}.a", this->name());
+        return fmt::format("{}.a", this->lib_name());
     }
 
     virtual fs::path staticlib()
@@ -357,7 +366,11 @@ public:
 
     virtual std::string dylib_name()
     {
-        return fmt::format("lib{}.dylib", this->name());
+#if __linux__
+        return fmt::format("{}.so", this->name());
+#else
+        return fmt::format("{}.dylib", this->name());
+#endif
     }
 
     virtual fs::path dylib()
@@ -437,9 +450,7 @@ public:
             this->version().str());
     }
 
-    std::string staticlib_name() { return "libssl.a"; }
-
-    std::string dylib_name() { return "libssl.dylib"; }
+    std::string lib_name() { return "libssl"; }
 
     // -----------------------------------------------------------------------
     // methods
@@ -516,6 +527,9 @@ public:
         return fmt::format("bzip2-{}.tar.gz", this->version().str());
     }
 
+    std::string lib_name() { return "libbz2"; }
+
+
     // -----------------------------------------------------------------------
     // methods
 
@@ -591,9 +605,7 @@ public:
         return fmt::format("xz-{}.tar.gz", this->version().str());
     }
 
-    std::string staticlib_name() { return fmt::format("liblzma.a"); }
-
-    std::string dylib_name() { return fmt::format("liblzma.dylib"); }
+    std::string lib_name() { return "liblzma"; }
 
     // -----------------------------------------------------------------------
     // methods
@@ -632,6 +644,7 @@ private:
     semver::version _version;
     std::string _config;
     bool _optimize;
+    bool _reset;
     std::vector<std::string> _options;
     std::string _name;
     std::string _repo_url;
@@ -644,11 +657,12 @@ public:
     // constructor
 
     PythonBuilder(std::string version, std::string config,
-        bool optimize = false)
+        bool optimize = false, bool reset = false)
     {
         this->_version = semver::version::parse(version);
         this->_config = config;
         this->_optimize = optimize;
+        this->_reset = reset;
         this->_name = "python";
         this->_repo_url = "https://github.com/python/cpython.git";
         this->_project = Project();
@@ -723,20 +737,15 @@ public:
     // std::string dylib_link_name() = 0;
     // fs::path dylib_link() = 0;
 
-    std::string staticlib_name()
-    {
-        return fmt::format("lib{}.a", this->name_ver());
-    }
-
-    std::string dylib_name()
-    {
-        return fmt::format("lib{}.dylib", this->name_ver());
+    std::string lib_name()
+    {   
+        return fmt::format("lib{}", this->name_ver());
     }
 
     // -----------------------------------------------------------------------
     // methods
 
-    void preprocess() { }
+    void preprocess() {}
 
     void install_dependencies()
     {
@@ -817,11 +826,11 @@ public:
     void config_setup_local()
     {
 #if __APPLE__
-        Debug("config.Configure: common > darwin");
+        Debug("config_setup_local: common > darwin");
         disabled_to_static("_scproxy");
 
 #elif __linux__
-        Debug("config.Configure: common > linux");
+        Debug("config_setup_local: common > linux");
         disabled_to_static("ossaudiodev");
 
         EXTS["_ssl"] = {
@@ -843,23 +852,23 @@ public:
 
         if (this->ver() == "3.11") {
             if (this->config() == "static_max") {
-                Debug("config.Configure: 3.11 -> static_max");
+                Debug("config_setup_local: 3.11 -> static_max");
 #if __linux__
                 static_to_disabled("_decimal");
 #endif
 
             } else if (this->config() == "static_mid") {
-                Debug("config.Configure: 3.11 -> static_mid");
+                Debug("config_setup_local: 3.11 -> static_mid");
                 static_to_disabled("_decimal");
 
             } else if (this->config() == "static_min") {
-                Debug("config.Configure: 3.11 -> static_min");
+                Debug("config_setup_local: 3.11 -> static_min");
                 static_to_disabled({ "_bz2", "_decimal", "_csv", "_json",
                     "_lzma", "_scproxy", "_sqlite3", "_ssl",
                     "pyexpat", "readline" });
 
             } else if (this->config() == "shared_max") {
-                Debug("config.Configure: 3.11 -> shared_max");
+                Debug("config_setup_local: 3.11 -> shared_max");
 #if __linux__
                 static_to_disabled("_decimal");
 #else
@@ -868,7 +877,7 @@ public:
 #endif
 
             } else if (this->config() == "shared_mid") {
-                Debug("config.Configure: 3.11 -> shared_mid");
+                Debug("config_setup_local: 3.11 -> shared_mid");
                 static_to_disabled({ "_decimal", "_ssl", "_hashlib" });
             }
 
@@ -916,28 +925,28 @@ public:
             remove_from(STATIC, "_sha512");
 
             if (this->config() == "static_max") {
-                Debug("config.Configure: 3.12 -> static_max");
+                Debug("config_setup_local: 3.12 -> static_max");
 #if __linux__
-                Debug("config.Configure: 3.12 > static_max > linux");
+                Debug("config_setup_local: 3.12 > static_max > linux");
                 static_to_disabled("_decimal");
 #endif
             } else if (this->config() == "static_mid") {
-                Debug("config.Configure: 3.12 -> static_mid");
+                Debug("config_setup_local: 3.12 -> static_mid");
                 static_to_disabled("_decimal");
 
             } else if (this->config() == "static_min") {
-                Debug("config.Configure: 3.12 > static_min");
+                Debug("config_setup_local: 3.12 > static_min");
                 static_to_disabled({ "_bz2", "_decimal", "_csv", "_json",
                     "_lzma", "_scproxy", "_sqlite3", "_ssl",
                     "pyexpat", "readline" });
 
             } else if (this->config() == "shared_max") {
-                Debug("config.Configure: 3.12 -> shared_max");
+                Debug("config_setup_local: 3.12 -> shared_max");
                 disabled_to_shared("_ctypes");
                 static_to_shared({ "_decimal", "_ssl", "_hashlib" });
 
             } else if (this->config() == "shared_mid") {
-                Debug("config.Configure: 3.12 -> shared_max");
+                Debug("config_setup_local: 3.12 -> shared_max");
                 static_to_disabled({ "_decimal", "_ssl", "_hashlib" });
             }
         }
@@ -1071,6 +1080,10 @@ public:
 
     void process()
     {
+        if (this->_reset) {
+            this->project().reset();
+        }
+
         Info("PythonBuilder process starting");
         if (!this->libs_exist()) {
             this->preprocess();
@@ -1088,5 +1101,5 @@ public:
     }
 };
 
-} // namesapce buildpy
+} // namespace buildpy
 

@@ -20,7 +20,13 @@ int main(int argc, char* argv[])
         .help("optimize python build")
         .flag();
 
-    program.add_argument("-g", "--usegit").help("download using git").flag();
+    program.add_argument("-g", "--git")
+        .help("download using git")
+        .flag();
+
+    program.add_argument("-r", "--reset")
+        .help("reset build environment")
+        .flag();
 
     try {
         program.parse_args(argc, argv);
@@ -33,12 +39,14 @@ int main(int argc, char* argv[])
     auto pyversion = program.get<std::string>("pyversion");
     auto config = program.get<std::string>("config");
     bool optimize = program.get<bool>("optimize");
+    bool reset = program.get<bool>("reset");
 
     std::cout << "pyversion: " << pyversion << std::endl;
     std::cout << "config: " << config << std::endl;
     std::cout << "optimize: " << optimize << std::endl;
+    std::cout << "reset: " << reset << std::endl;
 
-    auto p = buildpy::PythonBuilder(pyversion, config, optimize);
+    auto p = buildpy::PythonBuilder(pyversion, config, optimize, reset);
     p.process();
 
     return 0;

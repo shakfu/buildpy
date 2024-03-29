@@ -1,6 +1,7 @@
 module Log where
 
 import Data.Time
+    ( defaultTimeLocale, diffUTCTime, getCurrentTime, formatTime )
 
 data LogLevel
   = DEBUG

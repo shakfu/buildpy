@@ -1,9 +1,11 @@
 module Shell where
 
 import System.Directory
-import System.FilePattern
+    ( createDirectoryIfMissing, removePathForcibly, renamePath )
+import System.FilePattern ( (?==), FilePattern )
 
 import Process (cmd, run)
+
 
 makedir :: FilePath -> IO ()
 makedir = createDirectoryIfMissing True
@@ -56,7 +58,5 @@ cmakeInstall :: String -> String -> IO ()
 cmakeInstall build_dir prefix =
   cmd "cmake" ["--install", build_dir, "--prefix", prefix] Nothing Nothing
 
--- isGlobMatch :: FilePath -> [String] -> Bool
--- isGlobMatch f patterns = any ((== True) . flip (?==) f) patterns
-isGlobMatch :: FilePath -> [String] -> Bool
+isGlobMatch :: FilePath -> [FilePattern] -> Bool
 isGlobMatch f = any (?== f)

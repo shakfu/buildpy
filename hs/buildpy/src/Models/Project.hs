@@ -3,7 +3,7 @@ module Models.Project where
 import System.Directory (getCurrentDirectory)
 import System.FilePath (joinPath)
 
-import Shell (makedir)
+import Shell (makedir, remove)
 
 data Project = Project
   { projectCwd :: FilePath
@@ -32,3 +32,10 @@ setupProject p = do
   mapM_
     makedir
     [projectBuild p, projectDownloads p, projectSrc p, projectInstall p]
+
+resetProject :: Project -> IO ()
+resetProject p = do
+  mapM_ remove [projectSrc p, pythonPrefix]
+  where
+    pythonPrefix = joinPath [projectInstall p, "python"]
+

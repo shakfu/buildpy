@@ -135,7 +135,7 @@ impl PythonBuilder {
     fn install_dependencies(&self) {
         builders::Bzip2Builder::new("1.0.8").process();
         builders::OpensslBuilder::new("1.1.1w").process();
-        builders::XzBuilder::new("5.6.0").process();
+        builders::XzBuilder::new("5.4.6").process();
     }
 
     fn download(&self) {

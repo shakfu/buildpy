@@ -115,10 +115,10 @@ func InstallBzip2Async(wg *sync.WaitGroup) {
 func InstallXz() {
 	xz := Dependency{
 		Name:        "xz",
-		Version:     "5.6.0",
-		DownloadUrl: "https://github.com/tukaani-project/xz/releases/download/v5.6.0/xz-5.6.0.tar.gz",
+		Version:     "5.4.6",
+		DownloadUrl: "https://github.com/tukaani-project/xz/releases/download/v5.4.6/xz-5.4.6.tar.gz",
 		RepoUrl:     "https://github.com/tukaani-project/xz.git",
-		RepoBranch:  "v5.6.0",
+		RepoBranch:  "v5.4.6",
 		StaticLibs:  []string{"liblzma.a"},
 		Project:     NewProject(),
 		BuildSys:    CMAKE,

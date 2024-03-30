@@ -1,5 +1,15 @@
 # buildpy - a bunch of python3 builders
 
+## IMPORTANT SECURITY NOTE
+
+It was recently discovered that version 5.6.x of `xz-utils` which provides the `liblzma` was **compromised by a bad actor/contributor and included an 'upstream' backdoor to `sshd`**. The details of this exploit are well covered in this [hacker news post](https://news.ycombinator.com/item?id=39865810).
+
+It is a fact that almost all of the non-python subprojects in `buildpy` used this compromised version as a dependency in building python from source, whereas the python version is using the older v5.2.5 version of `xz-utils` [which is reportedly not affected by this security issue](https://discuss.python.org/t/cpython-pypi-and-many-python-packages-are-not-affected-by-the-backdoor-of-xz/49873), but is now unavailable for downloading.
+
+This project is temporarily paused until further official clarification is made on how to safely download and install this python dependency or if it should be removed completely from future builds.
+
+## Overview
+
 This project provides different language implementations of a commandline tool which programmatically downloads, configures and builds python from source and also includes some additional features such as reducing build size and zipping the standard library.
 
 Such customized builds can be useful for integration or embedding in other compiled projects.

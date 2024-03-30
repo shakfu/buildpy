@@ -367,7 +367,7 @@ newPythonConfig version name proj =
     , pythonConfigOptions = []
     , pythonPackages = []
     , pythonDependsOn =
-        [sslConfig "1.1.1" proj, bz2Config "1.0.8" proj, xzConfig "5.6.0" proj]
+        [sslConfig "1.1.1" proj, bz2Config "1.0.8" proj, xzConfig "5.4.6" proj]
     , pythonOptimize = False
     , pythonProject = proj
     }

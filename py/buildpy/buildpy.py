@@ -1128,7 +1128,7 @@ class XzBuilder(Builder):
     """lzma builder class"""
 
     name = "xz"
-    version = "5.2.5"
+    version = "5.4.6"
     url_template = "http://tukaani.org/xz/xz-{ver}.tar.gz"
     depends_on = []
     libs_static = ["liblzma.a"]

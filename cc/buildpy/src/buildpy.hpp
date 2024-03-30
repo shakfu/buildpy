@@ -595,9 +595,8 @@ public:
 
     std::string download_url() const
     {
-        return fmt::format("https://github.com/tukaani-project/xz/releases/"
-                           "download/v{}/xz-{}.tar.gz",
-            this->version().str(), this->version().str());
+        return fmt::format("http://tukaani.org/xz/xz-{}.tar.gz",
+            this->version().str());
     }
 
     std::string archive_name() const
@@ -605,7 +604,8 @@ public:
         return fmt::format("xz-{}.tar.gz", this->version().str());
     }
 
-    std::string lib_name() { return "liblzma"; }
+    // std::string lib_name() { return "liblzma"; }
+    std::string lib_name() { return "libxz"; }
 
     // -----------------------------------------------------------------------
     // methods
@@ -752,7 +752,7 @@ public:
         Info("PythonBuilder.install_dependencies()");
         OpenSSLBuilder("1.1.1").process();
         Bzip2Builder("1.0.8").process();
-        XzBuilder("5.6.0").process();
+        XzBuilder("5.4.6").process();
     }
 
     void info()

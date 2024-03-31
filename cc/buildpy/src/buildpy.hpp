@@ -294,7 +294,6 @@ public:
         this->remove(this->src);
         this->remove(python_prefix);
     }
-
 };
 
 class Builder : public ShellCmd {
@@ -462,7 +461,7 @@ public:
         Info("OpenSSLBuilder.build()");
         if (!this->libs_exist()) {
             std::string _cmd = fmt::format(
-                "/bin/bash ./config no-shared no-tests --prefix={}",
+                "/bin/sh ./config no-shared no-tests --prefix={}",
                 this->prefix().string());
             this->run(_cmd, this->src_dir());
             this->run("make install_sw", this->src_dir());
@@ -529,7 +528,6 @@ public:
 
     std::string lib_name() { return "libbz2"; }
 
-
     // -----------------------------------------------------------------------
     // methods
 
@@ -557,7 +555,7 @@ public:
 };
 
 class XzBuilder : public Builder {
-    // builds xz from source
+    // builds libzma from source
 
 private:
     semver::version _version;
@@ -606,8 +604,7 @@ public:
         return fmt::format("xz-{}.tar.gz", this->version().str());
     }
 
-    // std::string lib_name() { return "liblzma"; }
-    std::string lib_name() { return "libxz"; }
+    std::string lib_name() { return "liblzma"; }
 
     // -----------------------------------------------------------------------
     // methods
@@ -618,8 +615,23 @@ public:
     {
         Info("XzBuilder.build()");
         if (!this->libs_exist()) {
+            fs::path configure = this->src_dir() / "configure";
+            fs::path install_sh = this->src_dir() / "build-aux" / "install-sh";
+            fs::permissions(
+                configure,
+                fs::perms::owner_exec | fs::perms::group_exec,
+                fs::perm_options::add);
+            fs::permissions(
+                install_sh,
+                fs::perms::owner_exec | fs::perms::group_exec,
+                fs::perm_options::add);
             std::string prefix = fmt::format("--prefix={}", this->prefix().string());
-            this->cmd_exe("/bin/bash", {"./configure", "--disable-shared", "--enable-static", prefix}, this->src_dir());
+            this->cmd_exe("/bin/sh", {
+                "./configure",
+                "--disable-dependency-tracking",
+                "--disable-xzdec", "--disable-lzmadec",
+                "--disable-nls", "--enable-small",
+                "--disable-shared", prefix }, this->src_dir());
             this->run("make install", this->src_dir());
         }
     }
@@ -750,14 +762,14 @@ public:
     // fs::path dylib_link() = 0;
 
     std::string lib_name()
-    {   
+    {
         return fmt::format("lib{}", this->name_ver());
     }
 
     // -----------------------------------------------------------------------
     // methods
 
-    void preprocess() {}
+    void preprocess() { }
 
     void install_dependencies()
     {
@@ -974,7 +986,7 @@ public:
         std::string _prefix = fmt::format("--prefix={}",
             this->prefix().string());
         std::vector<std::string> args = {
-            "/bin/bash",
+            "/bin/sh",
             "./configure",
             "--disable-test-modules",
             "--without-ensurepip",
@@ -1114,4 +1126,3 @@ public:
 };
 
 } // namespace buildpy
-

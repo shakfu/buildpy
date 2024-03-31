@@ -93,7 +93,6 @@ std::vector<std::string> STATIC = {
 
 std::vector<std::string> SHARED = {};
 
-
 std::vector<std::string> DISABLED = {
     "_codecs_cn",
     "_codecs_hk",
@@ -445,4 +444,3 @@ void disabled_to_static(std::vector<std::string> vec)
 }
 
 } // namespace buildpy
-

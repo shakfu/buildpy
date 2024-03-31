@@ -7,6 +7,8 @@ project(
     LANGUAGES CXX
 )
 
+option(ENABLE_ADDRESS_SANITIZER "enable clang address sanitizer" OFF)
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -30,7 +32,16 @@ target_include_directories(${PROJECT_NAME}
 
 target_compile_options(${PROJECT_NAME}
     PUBLIC
-    -O2
+    $<IF:$<BOOL:${ENABLE_ADDRESS_SANITIZER}>,-O1,-O2>
+    $<$<BOOL:${ENABLE_ADDRESS_SANITIZER}>:-g>
+    $<$<BOOL:${ENABLE_ADDRESS_SANITIZER}>:-fsanitize=address>
+    $<$<BOOL:${ENABLE_ADDRESS_SANITIZER}>:-fno-omit-frame-pointer>
+)
+
+target_link_options(${PROJECT_NAME}
+    PUBLIC
+    $<$<BOOL:${ENABLE_ADDRESS_SANITIZER}>:-g>
+    $<$<BOOL:${ENABLE_ADDRESS_SANITIZER}>:-fsanitize=address>
 )
 
 target_compile_definitions(${PROJECT_NAME}

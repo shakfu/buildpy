@@ -44,7 +44,7 @@ func CmdEnv(cwd string, exe string, envars []string, args ...string) {
 }
 
 func ShellCmd(cwd string, args ...string) {
-	Cmd(cwd, "bash", args...)
+	Cmd(cwd, "/bin/sh", args...)
 }
 
 func GetFilepathStem(fileName string) string {

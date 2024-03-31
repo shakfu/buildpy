@@ -174,7 +174,7 @@ impl PythonBuilder {
             self.config_options
                 .push("--enable-optimizations".to_string());
         }
-        if !self.packages.is_empty() {
+        if self.packages.is_empty() {
             self.config_options.push("--without-ensurepip".to_string());
             self.remove_patterns.push("ensurepip".to_string());
         }

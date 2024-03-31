@@ -4,9 +4,14 @@
 
 It was recently discovered that version 5.6.x of `xz-utils` which provides the `liblzma` was **compromised by a bad actor/contributor and included an 'upstream' backdoor to `sshd`**. The details of this exploit are well covered in this [hacker news post](https://news.ycombinator.com/item?id=39865810).
 
-It is a fact that almost all of the non-python subprojects in `buildpy` used this compromised version as a dependency in building python from source, whereas the python version is using the older v5.2.5 version of `xz-utils` [which is reportedly not affected by this security issue](https://discuss.python.org/t/cpython-pypi-and-many-python-packages-are-not-affected-by-the-backdoor-of-xz/49873), but is now unavailable for downloading.
+It is a fact that almost all of the non-python subprojects in `buildpy` used this compromised version as a dependency in building python from source, whereas the python version used the older v5.2.5 version of `xz-utils` [which is reportedly not affected by this security issue](https://discuss.python.org/t/cpython-pypi-and-many-python-packages-are-not-affected-by-the-backdoor-of-xz/49873), but is now unavailable for downloading.
 
-This project is temporarily paused until further official clarification is made on how to safely download and install this python dependency or if it should be removed completely from future builds.
+...
+
+UPDATE: After requesting [advice on the python dev forums](https://discuss.python.org/t/cpython-pypi-and-many-python-packages-are-not-affected-by-the-backdoor-of-xz/49873/2), most of the subprojects at risk (with the exception of `py/pybuild` and `py/builder` which are really just there for historical reference) are now converted to use the [official cpython repo](https://github.com/python/cpython-source-deps) archive of python dependencies.
+
+While the risk is mostly applicable for the those who have built `systemd` using the compromised `lzma` which then backdoors into `sshd`, if you have cloned this repo previously, **do not use earlier versions of the code of the python builds which the prior version made** and just use the current 'fixed' version which does not include the compromised version 5.6.0 of the `xz` library.
+
 
 ## Overview
 

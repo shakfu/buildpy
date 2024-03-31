@@ -5,7 +5,7 @@ module Models.Dependency where
 import Log (info)
 import Models.Project ( Project(projectInstall, projectSrc) )
 import Process ( cmd )
-import Shell ( cmakeBuild, cmakeConfig, cmakeInstall, gitClone )
+import Shell ( gitClone )
 import System.FilePath (joinPath)
 import Text.Show.Functions ()
 import Types ( Name, Url, Version, Buildable(..) )
@@ -79,9 +79,9 @@ xzConfig version proj =
   Dependency
     { depName = "xz"
     , depVersion = version
-    , depRepoUrl = "https://github.com/tukaani-project/xz.git"
-    , depRepoBranch = "v" ++ version
-    , depDownloadUrl =
+    , depRepoUrl = "https://github.com/python/cpython-source-deps.git"
+    , depRepoBranch = "xz"
+    , depDownloadUrl = -- not used
         "https://github.com/tukaani-project/xz/releases/download/v"
           ++ version
           ++ "/xz-"
@@ -97,17 +97,33 @@ buildXz :: Dependency -> IO ()
 buildXz d = do
   info $ "building " ++ depName d
   download d
-  Shell.cmakeConfig
-    (srcDir d)
-    (buildDir d)
-    [ "-DBUILD_SHARED_LIBS=OFF"
-    , "-DENABLE_NLS=OFF"
-    , "-DENABLE_SMALL=ON"
-    , "-DCMAKE_BUILD_TYPE=MinSizeRel"
-    ]
-    (Just [("CFLAGS", "-fPIC")])
-  Shell.cmakeBuild (buildDir d) False
-  Shell.cmakeInstall (buildDir d) (prefix d)
+  let args = [ "configure"
+             , "--disable-dependency-tracking"
+             , "--disable-xzdec"
+             , "--disable-lzmadec"
+             , "--disable-nls"
+             , "--enable-small"
+             , "--disable-shared"
+             ] ++ ["--prefix=" ++ prefix d]
+  let srcdir = Just $ srcDir d
+  Process.cmd "/bin/sh" args srcdir Nothing
+  Process.cmd "make" ["install"] srcdir Nothing
+
+-- buildXz :: Dependency -> IO ()
+-- buildXz d = do
+--   info $ "building " ++ depName d
+--   download d
+--   Shell.cmakeConfig
+--     (srcDir d)
+--     (buildDir d)
+--     [ "-DBUILD_SHARED_LIBS=OFF"
+--     , "-DENABLE_NLS=OFF"
+--     , "-DENABLE_SMALL=ON"
+--     , "-DCMAKE_BUILD_TYPE=MinSizeRel"
+--     ]
+--     (Just [("CFLAGS", "-fPIC")])
+--   Shell.cmakeBuild (buildDir d) False
+--   Shell.cmakeInstall (buildDir d) (prefix d)
 
 -- ----------------------------------------------------------------------------
 -- bzip2

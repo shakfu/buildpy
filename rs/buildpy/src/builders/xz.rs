@@ -1,11 +1,11 @@
-use std::collections::HashMap;
+
 use std::path::PathBuf;
 
 use crate::config::Project;
 use crate::ops;
 use crate::ops::log;
 use crate::ops::process;
-use crate::ops::shell;
+
 
 // use crate::builders::api::Builder;
 
@@ -31,8 +31,8 @@ impl XzBuilder {
             download_url:
                 format!("https://github.com/tukaani-project/xz/releases/download/v{version}/xz-{version}.tar.gz")
                     .to_string(),
-            repo_url: "https://github.com/tukaani-project/xz.git".to_string(),
-            repo_branch: format!("v{version}").to_string(),
+            repo_url: "https://github.com/python/cpython-source-deps.git".to_string(),
+            repo_branch: "xz".to_string(),
             config_options: vec![],
             staticlibs: vec!["liblzma.a".to_string()],
             use_git: true,
@@ -64,8 +64,7 @@ impl XzBuilder {
             &self.repo_branch,
             "--depth=1",
         ];
-        let name = self.name.to_lowercase();
-        if let Some(target) = self.project.src.join(name).into_os_string().to_str() {
+        if let Some(target) = self.src_dir().into_os_string().to_str() {
             args.push(target);
             process::cmd("git", args, ".");
         }
@@ -89,36 +88,59 @@ impl XzBuilder {
 
     fn configure(&self) {
         println!("configuring...{} {}", self.name, self.version);
-        let envs = HashMap::from([("CFLAGS".to_string(), "-fPIC".to_string())]);
+        let prefixopt = format!("--prefix={}", self.prefix().display());
         let opts = vec![
-            "-DBUILD_SHARED_LIBS=OFF",
-            "-DENABLE_NLS=OFF",
-            "-DENABLE_SMALL=ON",
-            "-DCMAKE_BUILD_TYPE=MinSizeRel",
+            "configure",
+            "--disable-dependency-tracking",
+            "--disable-xzdec",
+            "--disable-lzmadec",
+            "--disable-nls",
+            "--enable-small",
+            "--disable-shared",
+             &prefixopt
         ];
-        if let Some(sdir) = self.src_dir().to_str() {
-            if let Some(bdir) = self.build_dir().to_str() {
-                shell::cmake_configure_env(sdir, bdir, opts, envs.clone());
-            }
-        }
+        process::cmd("/bin/sh", opts, self.src_dir());
     }
 
     fn build(&self) {
         println!("building...{} {}", self.name, self.version);
-        let envs = HashMap::from([("CFLAGS".to_string(), "-fPIC".to_string())]);
-        if let Some(bdir) = self.build_dir().to_str() {
-            shell::cmake_build_env(bdir, true, envs);
-        }
+        process::cmd("make", vec!["install"], self.src_dir());
     }
 
-    fn install(&self) {
-        println!("installing...{} {}", self.name, self.version);
-        if let Some(bdir) = self.build_dir().to_str() {
-            if let Some(pdir) = self.prefix().to_str() {
-                shell::cmake_install(bdir, pdir);
-            }
-        }
-    }
+    fn install(&self) {}
+
+    // fn configure(&self) {
+    //     println!("configuring...{} {}", self.name, self.version);
+    //     let envs = HashMap::from([("CFLAGS".to_string(), "-fPIC".to_string())]);
+    //     let opts = vec![
+    //         "-DBUILD_SHARED_LIBS=OFF",
+    //         "-DENABLE_NLS=OFF",
+    //         "-DENABLE_SMALL=ON",
+    //         "-DCMAKE_BUILD_TYPE=MinSizeRel",
+    //     ];
+    //     if let Some(sdir) = self.src_dir().to_str() {
+    //         if let Some(bdir) = self.build_dir().to_str() {
+    //             shell::cmake_configure_env(sdir, bdir, opts, envs.clone());
+    //         }
+    //     }
+    // }
+
+    // fn build(&self) {
+    //     println!("building...{} {}", self.name, self.version);
+    //     let envs = HashMap::from([("CFLAGS".to_string(), "-fPIC".to_string())]);
+    //     if let Some(bdir) = self.build_dir().to_str() {
+    //         shell::cmake_build_env(bdir, true, envs);
+    //     }
+    // }
+
+    // fn install(&self) {
+    //     println!("installing...{} {}", self.name, self.version);
+    //     if let Some(bdir) = self.build_dir().to_str() {
+    //         if let Some(pdir) = self.prefix().to_str() {
+    //             shell::cmake_install(bdir, pdir);
+    //         }
+    //     }
+    // }
 
     pub fn process(&self) {
         if !self.is_built() {

@@ -13,8 +13,8 @@ Config
     PythonConfig311
     PythonConfig312
 
-Project
 ShellCmd
+    Project
     AbstractBuilder
         Builder
             OpensslBuilder
@@ -689,8 +689,9 @@ class ShellCmd:
     def git_clone(
         self,
         url: str,
-        recurse: bool = False,
         branch: Optional[str] = None,
+        directory: Optional[str] = None,
+        recurse: bool = False,
         cwd: Pathlike = ".",
     ):
         """git clone a repository source tree from a url"""
@@ -700,6 +701,8 @@ class ShellCmd:
         if recurse:
             _cmds.append("--recurse-submodules --shallow-submodules")
         _cmds.append(url)
+        if directory:
+            _cmds.append(str(directory))
         self.cmd(" ".join(_cmds), cwd=cwd)
 
     def getenv(self, key: str, default: bool = False) -> bool:
@@ -878,7 +881,7 @@ class ShellCmd:
 # ----------------------------------------------------------------------------
 # main classes
 
-class Project:
+class Project(ShellCmd):
     """Utility class to hold project directory structure"""
 
     def __init__(self):
@@ -895,13 +898,19 @@ class Project:
         self.install.mkdir(exist_ok=True)
         self.src.mkdir(exist_ok=True)
 
+    def reset(self):
+        """prepare project for a rebuild"""
+        self.remove(self.src)
+        self.remove(self.install / "python")
+
 
 class AbstractBuilder(ShellCmd):
     """Abstract builder class with additional methods common to subclasses."""
 
     name: str
     version: str
-    url_template: str
+    repo_url: str
+    download_url_template: str
     libs_static: list[str]
     depends_on: list[type["Builder"]]
 
@@ -956,19 +965,24 @@ class AbstractBuilder(ShellCmd):
         return f"{self.name.lower()}{self.ver}"
 
     @property
-    def url(self):
+    def download_url(self):
         """return download url with version interpolated"""
-        return self.url_template.format(ver=self.version)
+        return self.download_url_template.format(ver=self.version)
 
     @property
-    def src_path(self):
+    def repo_branch(self):
+        """return repo branch"""
+        return self.name.lower()
+
+    @property
+    def src_dir(self):
         """return extracted source folder of build target"""
         return self.project.src / self.name_version
 
     @property
     def build_dir(self):
         """return 'build' folder src dir of build target"""
-        return self.src_path / "build"
+        return self.src_dir / "build"
 
     @property
     def executable_name(self):
@@ -1079,11 +1093,11 @@ class Builder(AbstractBuilder):
     def setup(self):
         """setup build environment"""
         self.project.setup()
-        archive = self.download(self.url, tofolder=self.project.downloads)
+        archive = self.download(self.download_url, tofolder=self.project.downloads)
         self.log.info("downloaded %s", archive)
-        if not self.src_path.exists():
+        if not self.src_dir.exists():
             self.extract(archive, tofolder=self.project.src)
-            assert self.src_path.exists(), f"could not extract from {archive}"
+            assert self.src_dir.exists(), f"could not extract from {archive}"
 
 
 class OpensslBuilder(Builder):
@@ -1091,7 +1105,8 @@ class OpensslBuilder(Builder):
 
     name = "openssl"
     version = "1.1.1w"
-    url_template = "https://www.openssl.org/source/old/1.1.1/openssl-{ver}.tar.gz"
+    repo_url = "https://github.com/openssl/openssl.git"
+    download_url_template = "https://www.openssl.org/source/old/1.1.1/openssl-{ver}.tar.gz"
     depends_on = []
     libs_static = ["libssl.a", "libcrypto.a"]
 
@@ -1100,9 +1115,9 @@ class OpensslBuilder(Builder):
         if not self.libs_static_exist():
             self.cmd(
                 f"./config no-shared no-tests --prefix={self.prefix}",
-                cwd=self.src_path
+                cwd=self.src_dir
             )
-            self.cmd("make install_sw", cwd=self.src_path)
+            self.cmd("make install_sw", cwd=self.src_dir)
 
 
 class Bzip2Builder(Builder):
@@ -1110,7 +1125,8 @@ class Bzip2Builder(Builder):
 
     name = "bzip2"
     version = "1.0.8"
-    url_template = "https://sourceware.org/pub/bzip2/bzip2-{ver}.tar.gz"
+    repo_url = "https://github.com/libarchive/bzip2.git"
+    download_url_template = "https://sourceware.org/pub/bzip2/bzip2-{ver}.tar.gz"
     depends_on = []
     libs_static = ["libbz2.a"]
 
@@ -1120,7 +1136,7 @@ class Bzip2Builder(Builder):
             cflags = "-fPIC"
             self.cmd(
                 f"make install PREFIX={self.prefix} CFLAGS='{cflags}'",
-                cwd=self.src_path,
+                cwd=self.src_dir,
             )
 
 
@@ -1129,28 +1145,54 @@ class XzBuilder(Builder):
 
     name = "xz"
     version = "5.4.6"
-    url_template = "http://tukaani.org/xz/xz-{ver}.tar.gz"
+    repo_url = "https://github.com/python/cpython-source-deps.git"
+    download_url_template = "http://tukaani.org/xz/xz-{ver}.tar.gz" # not used
     depends_on = []
     libs_static = ["liblzma.a"]
+
+    @property
+    def repo_branch(self):
+        """branch of git repository to use"""
+        return self.name
+
+    def setup(self):
+        """setup build environment"""
+        self.project.setup()
+        if not self.src_dir.exists():
+            self.git_clone(self.repo_url, self.repo_branch, self.src_dir)
+            assert self.src_dir.exists(), f"could not git clone {self.download_url}"
 
     def build(self):
         """main build method"""
         if not self.libs_static_exist():
+            configure = self.src_dir / "configure"
+            install_sh = self.src_dir / "build-aux" / "install-sh"
+            for f in [configure, install_sh]:
+                self.chmod(f, 0o755)
             self.cmd(
-                f"./configure --disable-shared --enable-static --prefix={self.prefix}",
-                cwd=self.src_path,
+                " ".join([
+                    "/bin/sh",
+                    "configure",
+                    "--disable-dependency-tracking",
+                    "--disable-xzdec", 
+                    "--disable-lzmadec",
+                    "--disable-nls", 
+                    "--enable-small",
+                    "--disable-shared",
+                    f"--prefix={self.prefix}",
+                    ]),
+                cwd=self.src_dir,
             )
-            self.cmd("make && make install", cwd=self.src_path)
+            self.cmd("make && make install", cwd=self.src_dir)
 
 
 class PythonBuilder(Builder):
     """Builds python locally"""
 
     name = "Python"
-
     version = DEFAULT_PY_VERSION
-
-    url_template = "https://www.python.org/ftp/python/{ver}/Python-{ver}.tar.xz"
+    repo_url = "https://github.com/python/cpython.git"
+    download_url_template = "https://www.python.org/ftp/python/{ver}/Python-{ver}.tar.xz"
 
     config_options: list[str] = [
         # "--disable-ipv6",
@@ -1301,20 +1343,20 @@ class PythonBuilder(Builder):
                 if cfg_opt not in self.config_options:
                      self.config_options.append(cfg_opt)
 
-        config.write(self.config, to=self.src_path / "Modules" / "Setup.local")
+        config.write(self.config, to=self.src_dir / "Modules" / "Setup.local")
         config_opts = " ".join(self.config_options)
         self.cmd(f"./configure --prefix={prefix} {config_opts}",
-                 cwd=self.src_path)
+                 cwd=self.src_dir)
 
     def build(self):
         """main build process"""
-        self.cmd(f"make -j{self.jobs}", cwd=self.src_path)
+        self.cmd(f"make -j{self.jobs}", cwd=self.src_dir)
 
     def install(self):
         """install to prefix"""
         if self.prefix.exists():
             self.remove(self.prefix)
-        self.cmd("make install", cwd=self.src_path)
+        self.cmd("make install", cwd=self.src_dir)
 
     def clean(self):
         """clean installed build"""

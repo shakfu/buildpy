@@ -54,7 +54,6 @@ func (d *Dependency) StaticLibsExist() bool {
 
 func (d *Dependency) GitClone() {
 	shell.GitClone(d.RepoUrl, d.RepoBranch, d.SrcDir(), false)
-	// shell.GitClone(d.RepoUrl, d.RepoBranch, d.Project.Src, false)
 }
 
 func InstallOpenssl() {
@@ -115,10 +114,10 @@ func InstallBzip2Async(wg *sync.WaitGroup) {
 func InstallXz() {
 	xz := Dependency{
 		Name:        "xz",
-		Version:     "5.4.6",
-		DownloadUrl: "https://github.com/tukaani-project/xz/releases/download/v5.4.6/xz-5.4.6.tar.gz",
-		RepoUrl:     "https://github.com/tukaani-project/xz.git",
-		RepoBranch:  "v5.4.6",
+		Version:     "5.2.5",
+		DownloadUrl: "https://github.com/tukaani-project/xz/releases/download/v5.2.5/xz-5.2.5.tar.gz",
+		RepoUrl:     "https://github.com/python/cpython-source-deps.git",
+		RepoBranch:  "xz",
 		StaticLibs:  []string{"liblzma.a"},
 		Project:     NewProject(),
 		BuildSys:    CMAKE,
@@ -126,17 +125,36 @@ func InstallXz() {
 	if !xz.StaticLibsExist() {
 		xz.Project.Setup()
 		xz.GitClone()
-		var envars = []string{"CFLAGS=-fPIC"}
-		shell.CmakeConfigureEnv(xz.SrcDir(), xz.BuildDir(), envars,
-			"-DBUILD_SHARED_LIBS=OFF", "-DENABLE_NLS=OFF", "-DENABLE_SMALL=ON",
-			"-DCMAKE_BUILD_TYPE=MinSizeRel",
+		prefixOpt := fmt.Sprintf("--prefix=%s", xz.Prefix())
+		shell.ShellCmd(xz.SrcDir(), "./configure", 
+            "--disable-dependency-tracking",
+            "--disable-xzdec",
+            "--disable-lzmadec",
+            "--disable-nls",
+            "--enable-small",
+            "--disable-shared",
+			prefixOpt,
 		)
-		shell.CmakeBuildEnv(xz.BuildDir(), true, envars)
-		shell.CmakeInstall(xz.BuildDir(), xz.Prefix())
+		shell.Make(xz.SrcDir(), "install")
 		if !xz.StaticLibsExist() {
 			log.Fatal("could not build lzma")
 		}
 	}
+
+	// if !xz.StaticLibsExist() {
+	// 	xz.Project.Setup()
+	// 	xz.GitClone()
+	// 	var envars = []string{"CFLAGS=-fPIC"}
+	// 	shell.CmakeConfigureEnv(xz.SrcDir(), xz.BuildDir(), envars,
+	// 		"-DBUILD_SHARED_LIBS=OFF", "-DENABLE_NLS=OFF", "-DENABLE_SMALL=ON",
+	// 		"-DCMAKE_BUILD_TYPE=MinSizeRel",
+	// 	)
+	// 	shell.CmakeBuildEnv(xz.BuildDir(), true, envars)
+	// 	shell.CmakeInstall(xz.BuildDir(), xz.Prefix())
+	// 	if !xz.StaticLibsExist() {
+	// 		log.Fatal("could not build lzma")
+	// 	}
+	// }
 }
 
 func InstallXzAsync(wg *sync.WaitGroup) {

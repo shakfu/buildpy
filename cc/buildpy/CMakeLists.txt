@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.12...3.21)
 
 project(
-    buildpy
+    buildpy_project
     VERSION 14.2.4
     DESCRIPTION "builds python from source"
     LANGUAGES CXX

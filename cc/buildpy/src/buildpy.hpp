@@ -28,7 +28,7 @@ ShellCmd
 #include "config.hpp"
 
 #define BUFFERSIZE 4096
-#define USE_GIT 0
+#define USE_GIT 1
 
 namespace buildpy {
 
@@ -573,7 +573,8 @@ public:
     {
         this->_version = semver::version::parse(version);
         this->_name = "xz";
-        this->_repo_url = "https://github.com/tukaani-project/xz.git";
+        // this->_repo_url = "https://github.com/tukaani-project/xz.git";
+        this->_repo_url = "https://github.com/python/cpython-source-deps.git";
         this->_project = Project();
     }
 
@@ -590,7 +591,8 @@ public:
 
     std::string repo_branch() const
     {
-        return fmt::format("v{}", this->version().str());
+        // return fmt::format("v{}", this->version().str());
+        return this->name();
     }
 
     std::string download_url() const
@@ -615,17 +617,27 @@ public:
     void build()
     {
         Info("XzBuilder.build()");
-
         if (!this->libs_exist()) {
-            putenv((char*)"CFLAGS=-fPIC");
-            this->cmake_configure(
-                this->src_dir(), this->build_dir(),
-                "-DBUILD_SHARED_LIBS=OFF -DENABLE_NLS=OFF -DENABLE_SMALL=ON "
-                "-DCMAKE_BUILD_TYPE=MinSizeRel");
-            this->cmake_build(this->build_dir());
-            this->cmake_install(this->build_dir(), this->prefix());
+            std::string prefix = fmt::format("--prefix={}", this->prefix().string());
+            this->cmd_exe("/bin/bash", {"./configure", "--disable-shared", "--enable-static", prefix}, this->src_dir());
+            this->run("make install", this->src_dir());
         }
     }
+
+    // void build()
+    // {
+    //     Info("XzBuilder.build()");
+
+    //     if (!this->libs_exist()) {
+    //         putenv((char*)"CFLAGS=-fPIC");
+    //         this->cmake_configure(
+    //             this->src_dir(), this->build_dir(),
+    //             "-DBUILD_SHARED_LIBS=OFF -DENABLE_NLS=OFF -DENABLE_SMALL=ON "
+    //             "-DCMAKE_BUILD_TYPE=MinSizeRel");
+    //         this->cmake_build(this->build_dir());
+    //         this->cmake_install(this->build_dir(), this->prefix());
+    //     }
+    // }
 
     void process()
     {
@@ -752,7 +764,7 @@ public:
         Info("PythonBuilder.install_dependencies()");
         OpenSSLBuilder("1.1.1").process();
         Bzip2Builder("1.0.8").process();
-        XzBuilder("5.4.6").process();
+        XzBuilder("5.2.5").process();
     }
 
     void info()

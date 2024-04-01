@@ -724,13 +724,14 @@ processPython :: IO ()
 processPython = do
     p <- defaultProject
     let c = configurePython "3.12.2" "static_max" p
+    writeSetupLocal "out.txt" $ configSetupLocal c
     -- writeSetupLocal "out.txt" $ staticToDisabled ["_decimal"] c
-    setupProject $ pythonProject c
-    processPythonDependencies c
-    downloadPython c
-    doConfigurePython c
-    buildPython c
-    installPython c
+    -- setupProject $ pythonProject c
+    -- processPythonDependencies c
+    -- downloadPython c
+    -- doConfigurePython c
+    -- buildPython c
+    -- installPython c
 
   -- cleanPython c
   -- zipPython c

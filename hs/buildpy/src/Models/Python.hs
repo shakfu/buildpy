@@ -6,7 +6,7 @@
 module Models.Python where
 
 import Control.Monad
-import Data.List (intercalate, nub)
+import Data.List (nub)
 import Data.Map ( delete, fromList, insert, lookup, Map )
 import Data.Maybe
 import System.FilePath (joinPath)
@@ -416,9 +416,9 @@ pythonSetupLocal :: PythonConfig -> FilePath
 pythonSetupLocal c = joinPath [srcDir c, "Modules", "Setup.local"]
 
 pythonVer :: PythonConfig -> String
-pythonVer c = ver $ pythonVersion c
+pythonVer c = v !! 0 ++ "." ++ v !! 1
   where
-    ver v = intercalate "." $ wordsWhen (== '.') v
+    v = wordsWhen (== '.') $ pythonVersion c
 
 -- ----------------------------------------------------------------------------
 -- methods
@@ -449,9 +449,6 @@ configurePython version name project = do
                   then pythonRemovePatterns c ++ ["ensurepip"]
                   else pythonRemovePatterns c
         }
-
--- dropAll :: [String] -> [String] -> [String]
--- dropAll xs = dropWhile (`elem` xs)
 
 dropAll :: (Foldable t, Eq a) => t a -> [a] -> [a]
 dropAll xs = filter (f xs)
@@ -554,15 +551,13 @@ configSetupLocal =
 updatePythonExts :: String -> [String] -> PythonConfig -> PythonConfig
 updatePythonExts k v c = c {pythonExts = insert k v $ pythonExts c}
 
-withVersion ::
-       Version -> [PythonConfig -> PythonConfig] -> PythonConfig -> PythonConfig
+withVersion :: Version -> [PythonConfig -> PythonConfig] -> PythonConfig -> PythonConfig
 withVersion v fs c =
     if pythonVer c == v
         then compose fs c
         else c
 
-withConfig ::
-       Name -> [PythonConfig -> PythonConfig] -> PythonConfig -> PythonConfig
+withConfig :: Name -> [PythonConfig -> PythonConfig] -> PythonConfig -> PythonConfig
 withConfig name fs c =
     if pythonConfig c == name
         then compose fs c
@@ -720,19 +715,26 @@ doConfigurePython c = do
     writeSetupLocal file $ configSetupLocal c
     cmd "bash" (pythonConfigOptions c) (Just $ srcDir c) Nothing
 
+
+getDefault :: IO PythonConfig
+getDefault = do
+    p <- defaultProject
+    let c = configurePython "3.12.2" "static_max" p
+    return c
+
+
 processPython :: IO ()
 processPython = do
     p <- defaultProject
     let c = configurePython "3.12.2" "static_max" p
-    writeSetupLocal "out.txt" $ configSetupLocal c
+    -- writeSetupLocal "out.txt" $ configSetupLocal c
     -- writeSetupLocal "out.txt" $ staticToDisabled ["_decimal"] c
-    -- setupProject $ pythonProject c
-    -- processPythonDependencies c
-    -- downloadPython c
-    -- doConfigurePython c
-    -- buildPython c
-    -- installPython c
-
+    setupProject $ pythonProject c
+    processPythonDependencies c
+    downloadPython c
+    doConfigurePython c
+    buildPython c
+    installPython c
   -- cleanPython c
   -- zipPython c
 

@@ -1,11 +1,13 @@
 module Shell where
 
 import System.Directory
-    ( createDirectoryIfMissing, removePathForcibly, renamePath )
-import System.FilePattern ( (?==), FilePattern )
+    ( createDirectoryIfMissing
+    , removePathForcibly
+    , renamePath
+    )
+import System.FilePattern (FilePattern, (?==))
 
 import Process (cmd, run)
-
 
 makedir :: FilePath -> IO ()
 makedir = createDirectoryIfMissing True
@@ -34,29 +36,29 @@ ziplib libpath zippath = cmd "zip" ["-r", zippath, "."] (Just libpath) Nothing
 
 gitClone :: String -> String -> String -> Bool -> IO ()
 gitClone url branch dir recurse = do
-  let args = ["clone", "--depth=1", "--branch", branch]
-  let extras =
-        if recurse
-          then ["--recurse-submodules", "--shallow-submodules", url, dir]
-          else [url, dir]
-  cmd "git" (args ++ extras) Nothing Nothing
+    let args = ["clone", "--depth=1", "--branch", branch]
+    let extras =
+            if recurse
+                then ["--recurse-submodules", "--shallow-submodules", url, dir]
+                else [url, dir]
+    cmd "git" (args ++ extras) Nothing Nothing
 
 cmakeConfig :: String -> String -> [String] -> Maybe [(String, String)] -> IO ()
 cmakeConfig src_dir build_dir opts =
-  cmd "cmake" (["-S", src_dir, "-B", build_dir] ++ opts) Nothing
+    cmd "cmake" (["-S", src_dir, "-B", build_dir] ++ opts) Nothing
 
 cmakeBuild :: String -> Bool -> IO ()
 cmakeBuild build_dir release =
-  cmd "cmake" (["--build", build_dir] ++ extras) Nothing Nothing
+    cmd "cmake" (["--build", build_dir] ++ extras) Nothing Nothing
   where
     extras =
-      if release
-        then ["--config", "Release"]
-        else []
+        if release
+            then ["--config", "Release"]
+            else []
 
 cmakeInstall :: String -> String -> IO ()
 cmakeInstall build_dir prefix =
-  cmd "cmake" ["--install", build_dir, "--prefix", prefix] Nothing Nothing
+    cmd "cmake" ["--install", build_dir, "--prefix", prefix] Nothing Nothing
 
 isGlobMatch :: FilePath -> [FilePattern] -> Bool
 isGlobMatch f = any (?== f)

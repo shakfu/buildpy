@@ -12,11 +12,10 @@ lowercase = map toLower
 -- 
 replace :: Eq b => b -> b -> [b] -> [b]
 replace a b =
-  map
-    (\c ->
-       if c == a
-         then b
-         else c)
+    map (\c ->
+             if c == a
+                 then b
+                 else c)
 
 -- | takes function an splits string
 --
@@ -25,7 +24,7 @@ replace a b =
 --
 wordsWhen :: (Char -> Bool) -> String -> [String]
 wordsWhen p s =
-  case dropWhile p s of
-    "" -> []
-    s' -> w : wordsWhen p s''
-      where (w, s'') = break p s'
+    case dropWhile p s of
+        "" -> []
+        s' -> w : wordsWhen p s''
+            where (w, s'') = break p s'

@@ -7,7 +7,7 @@ module Models.Python where
 
 import Control.Monad
 import Data.List (intercalate, nub)
-import Data.Map hiding (compose)
+import Data.Map ( delete, fromList, insert, lookup, Map )
 import Data.Maybe
 import System.FilePath (joinPath)
 
@@ -385,6 +385,7 @@ newPythonConfig version name proj =
 
 -- ----------------------------------------------------------------------------
 -- properties
+
 instance Buildable PythonConfig where
     prefix :: PythonConfig -> FilePath
     prefix c = joinPath [projectInstall p, lowercase $ pythonName c]
@@ -421,6 +422,7 @@ pythonVer c = ver $ pythonVersion c
 
 -- ----------------------------------------------------------------------------
 -- methods
+
 configurePython :: Version -> Name -> Project -> PythonConfig
 configurePython version name project = do
     let c = newPythonConfig version name project
@@ -448,11 +450,25 @@ configurePython version name project = do
                   else pythonRemovePatterns c
         }
 
-dropAll :: [String] -> [String] -> [String]
-dropAll xs = dropWhile (`elem` xs)
+-- dropAll :: [String] -> [String] -> [String]
+-- dropAll xs = dropWhile (`elem` xs)
+
+dropAll :: (Foldable t, Eq a) => t a -> [a] -> [a]
+dropAll xs = filter (f xs)
+  where
+    f ys x = not $ flip elem ys x
 
 addAll :: [String] -> [String] -> [String]
 addAll xs ys = nub $ xs ++ ys
+
+dropFromStatic :: [String] -> PythonConfig -> PythonConfig
+dropFromStatic xs c = c { pythonStatic = dropAll xs (pythonStatic c)}
+
+addToStatic :: [String] -> PythonConfig -> PythonConfig
+addToStatic xs c = c { pythonStatic = addAll xs (pythonStatic c) }
+
+addToDisabled :: [String] -> PythonConfig -> PythonConfig
+addToDisabled xs c = c { pythonDisabled = addAll xs (pythonDisabled c) }
 
 staticToShared :: [String] -> PythonConfig -> PythonConfig
 staticToShared xs c =
@@ -496,22 +512,25 @@ disabledToShared xs c =
         , pythonShared = addAll xs (pythonShared c)
         }
 
+delMapEntries :: Ord k => [k] -> Map k a -> Map k a
+delMapEntries ks m = Prelude.foldl (flip delete) m ks
+
+deleteExts :: [String] -> PythonConfig -> PythonConfig
+deleteExts ks c = c { pythonExts = delMapEntries ks (pythonExts c) }
+
 compose :: [a -> a] -> a -> a
 compose = Prelude.foldl (flip (.)) id
 
+
+
 configSetupLocal :: PythonConfig -> PythonConfig
-configSetupLocal c
-    | pythonVer c == "3.12" =
-        compose [disabledToStatic ["_scproxy"], staticToShared ["_blake2"]] c
-    | otherwise = disabledToStatic ["_scproxy"] c
-
-updatePythonExts :: String -> [String] -> PythonConfig -> PythonConfig
-updatePythonExts k v c = c {pythonExts = insert k v $ pythonExts c}
-
-linuxCommon :: PythonConfig -> PythonConfig
-linuxCommon =
+configSetupLocal = 
     compose
-        [ updatePythonExts
+        [ id -- does nothing (just a passthrough)
+#if __APPLE__
+        , disabledToStatic ["_scproxy"]
+#elif __linux__
+        , updatePythonExts
               "_ssl"
               [ "_ssl.c"
               , "-I$(OPENSSL)/include"
@@ -526,7 +545,14 @@ linuxCommon =
               , "-L$(OPENSSL)/lib"
               , "-l:libcrypto.a -Wl,--exclude-libs,libcrypto.a"
               ]
+#endif
+        , py311
+        , py312
         ]
+
+
+updatePythonExts :: String -> [String] -> PythonConfig -> PythonConfig
+updatePythonExts k v c = c {pythonExts = insert k v $ pythonExts c}
 
 withVersion ::
        Version -> [PythonConfig -> PythonConfig] -> PythonConfig -> PythonConfig
@@ -542,11 +568,6 @@ withConfig name fs c =
         then compose fs c
         else c
 
-staticMax :: PythonConfig -> PythonConfig
-staticMax =
-    withConfig
-        "static-max"
-        [disabledToShared ["_decimal"], staticToDisabled ["_decimal"]]
 
 py311 :: PythonConfig -> PythonConfig
 py311 =
@@ -571,9 +592,13 @@ py311 =
               ]
         , withConfig
               "shared_max"
-              [ staticToDisabled ["_decimal"]
+              [ id -- just a pass through 
+#if __linux__
+              , staticToDisabled ["_decimal"]
+#else
               , disabledToStatic ["_ctypes"]
               , staticToShared ["_decimal", "_ssl", "_hashlib"]
+#endif
               ]
         , withConfig
               "shared_mid"
@@ -617,13 +642,59 @@ py312 =
               , "-D_BSD_SOURCE"
               , "-D_DEFAULT_SOURCE"
               ]
+        , deleteExts ["_sha256", "_sha512"]
+        , addToStatic ["_sha2"]
+        , addToDisabled ["_xxinterpchannels"]
+        , dropFromStatic ["_sha256", "_sha512"]
         , withConfig
               "static-max"
-              [disabledToStatic ["_decimal"], staticToDisabled ["_decimal"]]
+              [id -- passthrough 
+#if __linux__
+              , staticToDisabled ["_decimal"]
+#endif
+              ]
+        , withConfig
+            "static_mid"
+            [staticToDisabled ["_decimal"]]
+        , withConfig
+            "static_min"
+            [ staticToDisabled
+                [ "_bz2"
+                , "_decimal"
+                , "_csv"
+                , "_json"
+                , "_lzma"
+                , "_scproxy"
+                , "_sqlite3"
+                , "_ssl"
+                , "pyexpat"
+                , "readline"
+                ]
+            ]
+        , withConfig
+            "shared_max"
+            [ disabledToShared ["_ctypes"]
+            , staticToShared 
+                [ "_decimal"
+                , "_ssl"
+                , "_hashlib"
+                ]
+            ]
+
+        , withConfig
+            "shared_mid"
+            [ staticToShared 
+                [ "_decimal"
+                , "_ssl"
+                , "_hashlib"
+                ]
+            ] 
         ]
 
-writeSetupLocal :: PythonConfig -> IO ()
-writeSetupLocal c = do
+
+
+writeSetupLocal :: FilePath -> PythonConfig -> IO ()
+writeSetupLocal file c = do
     let out =
             ["# -*- makefile -*-"]
                 ++ pythonHeaders c
@@ -635,31 +706,32 @@ writeSetupLocal c = do
                 ++ getEntries (pythonStatic c)
                 ++ ["\n*disabled*\n"]
                 ++ pythonDisabled c
-    writeFile (pythonSetupLocal c) (unlines out)
+    writeFile file (unlines out)
   where
     extlookup k = k : fromJust (Data.Map.lookup k (pythonExts c))
     getEntries = Prelude.map (unwords . extlookup)
 
 doConfigurePython :: PythonConfig -> IO ()
 doConfigurePython c = do
-  --     let mut cfg = config::Config::new(self.config.clone(), self.ver());
-  --     cfg.configure();
     debug $ "buildtype: " ++ pythonBuildType c
     debug $ "config opts: " ++ show (pythonConfigOptions c)
     info "writing Setup.local"
-    writeSetupLocal c
+    let file = pythonSetupLocal c
+    writeSetupLocal file $ configSetupLocal c
     cmd "bash" (pythonConfigOptions c) (Just $ srcDir c) Nothing
 
 processPython :: IO ()
 processPython = do
     p <- defaultProject
     let c = configurePython "3.12.2" "static_max" p
+    -- writeSetupLocal "out.txt" $ staticToDisabled ["_decimal"] c
     setupProject $ pythonProject c
     processPythonDependencies c
     downloadPython c
     doConfigurePython c
     buildPython c
     installPython c
+
   -- cleanPython c
   -- zipPython c
 

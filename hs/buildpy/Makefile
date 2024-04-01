@@ -27,6 +27,7 @@ indent:
 	@hindent --indent-size $(INDENT_SIZE) src/Models/*.hs
 
 link:
+	@rm ./buildpy
 	@ln -s $(EXECUTABLE) .
 
 release: build

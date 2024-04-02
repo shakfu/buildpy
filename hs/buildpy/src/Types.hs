@@ -8,6 +8,24 @@ type Url = String
 
 type Platform = String
 
+data BuildType
+    = Static
+    | Shared
+    | Framework
+    deriving (Eq, Ord, Enum, Show)
+
+data SizeType
+    = Max
+    | Mid
+    | Min
+    deriving (Eq, Ord, Enum, Show)
+
+data PyVer
+    = Py311
+    | Py312
+    | Py313
+    deriving (Eq, Ord, Enum, Show)
+
 class Buildable a where
     prefix :: a -> FilePath
     srcDir :: a -> FilePath

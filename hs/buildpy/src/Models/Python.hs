@@ -4,29 +4,35 @@
 
 module Models.Python where
 
-import Control.Monad ( forM_ )
+import Control.Monad (forM_)
 import Data.List (nub)
 import Data.Map (Map, delete, fromList, insert, lookup)
-import Data.Maybe ( fromJust )
+import Data.Maybe (fromJust)
 import System.FilePath (joinPath)
 import System.Info (os)
 
-import Log ( debug, info )
+import Log (debug, info)
 import Models.Dependency
-    ( bz2Config, sslConfig, xzConfig, Dependency(depBuildFunc) )
+    ( Dependency(depBuildFunc)
+    , bz2Config
+    , sslConfig
+    , xzConfig
+    )
 import Models.Project
-    ( defaultProject,
-      setupProject,
-      Project(projectInstall, projectSrc) )
-import Process ( cmd )
-import Shell ( gitClone )
-import Types ( Buildable(..), Name, Url, Version, Platform )
-import Utils ( lowercase, wordsWhen )
+    ( Project(projectInstall, projectSrc)
+    , defaultProject
+    , setupProject
+    )
+import Process (cmd)
+import Shell (gitClone)
+import Types
+import Utils (lowercase, wordsWhen)
 
 data PythonConfig = PythonConfig
     { pythonName :: Name
     , pythonVersion :: Version
-    , pythonConfig :: Name
+    , pythonBuildType :: BuildType
+    , pythonSizeType :: SizeType
     , pythonRepoUrl :: Url
     , pythonRepoBranch :: String
     , pythonDownloadUrl :: Url
@@ -44,12 +50,13 @@ data PythonConfig = PythonConfig
     , pythonProject :: Project
     } deriving (Show)
 
-newPythonConfig :: Version -> Name -> Project -> PythonConfig
-newPythonConfig version name proj =
+newPythonConfig :: Version -> BuildType -> SizeType -> Project -> PythonConfig
+newPythonConfig version build_type size_type proj =
     PythonConfig
         { pythonName = "Python"
         , pythonVersion = version
-        , pythonConfig = name
+        , pythonBuildType = build_type
+        , pythonSizeType = size_type
         , pythonRepoUrl = "https://github.com/python/cpython.git"
         , pythonRepoBranch = "v" ++ version
         , pythonDownloadUrl =
@@ -389,7 +396,6 @@ newPythonConfig version name proj =
 
 -- ----------------------------------------------------------------------------
 -- properties
-
 instance Buildable PythonConfig where
     prefix :: PythonConfig -> FilePath
     prefix c = joinPath [projectInstall p, lowercase $ pythonName c]
@@ -413,8 +419,8 @@ instance Buildable PythonConfig where
         info ("bui  lding python " ++ show (pythonVersion c))
         cmd "make" [] (Just $ srcDir c) Nothing
 
-pythonBuildType :: PythonConfig -> String
-pythonBuildType c = head $ wordsWhen (== '_') (pythonConfig c)
+-- pythonBuildType :: PythonConfig -> String
+-- pythonBuildType c = head $ wordsWhen (== '_') (pythonConfig c)
 
 pythonSetupLocal :: PythonConfig -> FilePath
 pythonSetupLocal c = joinPath [srcDir c, "Modules", "Setup.local"]
@@ -427,15 +433,15 @@ pythonVer c = head v ++ "." ++ v !! 1
 -- ----------------------------------------------------------------------------
 -- methods
 
-configurePython :: Version -> Name -> Project -> PythonConfig
-configurePython version name project = do
-    let c = newPythonConfig version name project
+configurePython :: Version -> BuildType -> SizeType -> Project -> PythonConfig
+configurePython version btype stype project = do
+    let c = newPythonConfig version btype stype project
     let baseOpts =
             ["./configure", "--prefix=" ++ prefix c] ++ pythonConfigOptions c
     let typeOpts =
-            if | pythonBuildType c == "shared" ->
+            if | pythonBuildType c == Shared ->
                    baseOpts ++ ["--enable-shared", "--without-static-libpython"]
-               | pythonBuildType c == "framework" ->
+               | pythonBuildType c == Framework ->
                    baseOpts ++ ["--enable-framework=" ++ prefix c]
                | otherwise -> baseOpts
     let opts =
@@ -458,6 +464,7 @@ configurePython version name project = do
 -- dropAll xs = filter (f xs)
 --   where
 --     f ys x = not $ flip elem ys x
+
 dropAll :: (Foldable t, Eq a) => t a -> [a] -> [a]
 dropAll xs = filter (f xs)
   where
@@ -537,9 +544,33 @@ withVersion v fs c =
         else c
 
 withConfig ::
-       Name -> [PythonConfig -> PythonConfig] -> PythonConfig -> PythonConfig
-withConfig name fs c =
-    if pythonConfig c == name
+       BuildType
+    -> SizeType
+    -> [PythonConfig -> PythonConfig]
+    -> PythonConfig
+    -> PythonConfig
+withConfig btype stype fs c =
+    if (pythonBuildType c == btype) && (pythonSizeType c == stype)
+        then compose fs c
+        else c
+
+withBuildType ::
+       BuildType
+    -> [PythonConfig -> PythonConfig]
+    -> PythonConfig
+    -> PythonConfig
+withBuildType btype fs c =
+    if pythonBuildType c == btype
+        then compose fs c
+        else c
+
+withSizeType ::
+       SizeType
+    -> [PythonConfig -> PythonConfig]
+    -> PythonConfig
+    -> PythonConfig
+withSizeType stype fs c =
+    if pythonSizeType c == stype
         then compose fs c
         else c
 
@@ -573,7 +604,7 @@ writeSetupLocal file c = do
 
 doConfigurePython :: PythonConfig -> IO ()
 doConfigurePython c = do
-    debug $ "buildtype: " ++ pythonBuildType c
+    debug $ "buildtype: " ++ show (pythonBuildType c)
     debug $ "config opts: " ++ show (pythonConfigOptions c)
     info "writing Setup.local"
     let file = pythonSetupLocal c
@@ -583,13 +614,13 @@ doConfigurePython c = do
 getDefault :: IO PythonConfig
 getDefault = do
     p <- defaultProject
-    let c = configurePython "3.12.2" "static_max" p
+    let c = configurePython "3.12.2" Static Max p
     return c
 
 processPython :: IO ()
 processPython = do
     p <- defaultProject
-    let c = configurePython "3.12.2" "static_max" p
+    let c = configurePython "3.12.2" Static Max p
     -- writeSetupLocal "out.txt" $ configSetupLocal c
     -- writeSetupLocal "out.txt" $ staticToDisabled ["_decimal"] c
     setupProject $ pythonProject c
@@ -637,8 +668,6 @@ zipPython c = do
 
 -- ------------------------------------------------------------
 -- setup.local configuration
-
-
 configSetupLocal :: PythonConfig -> PythonConfig
 configSetupLocal =
     compose
@@ -671,10 +700,11 @@ py311 :: PythonConfig -> PythonConfig
 py311 =
     withVersion
         "3.11"
-        [ withConfig "static_max" [staticToDisabled ["_decimal"]]
-        , withConfig "static_mid" [staticToDisabled ["_decimal"]]
+        [ withConfig Static Max [staticToDisabled ["_decimal"]]
+        , withConfig Static Mid [staticToDisabled ["_decimal"]]
         , withConfig
-              "static_min"
+              Static
+              Min
               [ staticToDisabled
                     [ "_bz2"
                     , "_decimal"
@@ -689,7 +719,8 @@ py311 =
                     ]
               ]
         , withConfig
-              "shared_max"
+              Shared
+              Max
               [ withPlatform "linux" [staticToDisabled ["_decimal"]]
               , withPlatform
                     "darwin"
@@ -698,7 +729,8 @@ py311 =
                     ]
               ]
         , withConfig
-              "shared_mid"
+              Shared
+              Min
               [staticToDisabled ["_decimal", "_ssl", "_hashlib"]]
         ]
 
@@ -744,11 +776,13 @@ py312 =
         , addToDisabled ["_xxinterpchannels"]
         , dropFromStatic ["_sha256", "_sha512"]
         , withConfig
-              "static_max"
+              Static
+              Max
               [withPlatform "linux" [staticToDisabled ["_decimal"]]]
-        , withConfig "static_mid" [staticToDisabled ["_decimal"]]
+        , withConfig Static Mid [staticToDisabled ["_decimal"]]
         , withConfig
-              "static_min"
+              Static
+              Min
               [ staticToDisabled
                     [ "_bz2"
                     , "_decimal"
@@ -763,11 +797,13 @@ py312 =
                     ]
               ]
         , withConfig
-              "shared_max"
+              Shared
+              Max
               [ disabledToShared ["_ctypes"]
               , staticToShared ["_decimal", "_ssl", "_hashlib"]
               ]
         , withConfig
-              "shared_mid"
+              Shared
+              Mid
               [staticToShared ["_decimal", "_ssl", "_hashlib"]]
         ]

@@ -20,11 +20,12 @@ data SizeType
     | Min
     deriving (Eq, Ord, Enum, Show)
 
-data PyVer
+data PythonVersion
     = Py311
     | Py312
     | Py313
     deriving (Eq, Ord, Enum, Show)
+
 
 class Buildable a where
     prefix :: a -> FilePath

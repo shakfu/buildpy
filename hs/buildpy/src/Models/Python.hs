@@ -530,8 +530,13 @@ delMapEntries ks m = Prelude.foldl (flip delete) m ks
 deleteExts :: [String] -> PythonConfig -> PythonConfig
 deleteExts ks c = c {pythonExts = delMapEntries ks (pythonExts c)}
 
-compose :: [a -> a] -> a -> a
+-- compose :: [a -> a] -> a -> a
+compose :: Foldable t => t (b -> b) -> b -> b
 compose = Prelude.foldl (flip (.)) id
+
+-- same as 
+compose' :: Foldable t => t (b -> b) -> b -> b
+compose' = foldr (.) id
 
 updatePythonExts :: String -> [String] -> PythonConfig -> PythonConfig
 updatePythonExts k v c = c {pythonExts = insert k v $ pythonExts c}

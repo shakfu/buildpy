@@ -1,23 +1,27 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE InstanceSigs #-}
-{-# LANGUAGE CPP #-}
 
 module Models.Python where
 
-import Control.Monad
+import Control.Monad ( forM_ )
 import Data.List (nub)
-import Data.Map ( delete, fromList, insert, lookup, Map )
-import Data.Maybe
+import Data.Map (Map, delete, fromList, insert, lookup)
+import Data.Maybe ( fromJust )
 import System.FilePath (joinPath)
+import System.Info (os)
 
-import Log
+import Log ( debug, info )
 import Models.Dependency
+    ( bz2Config, sslConfig, xzConfig, Dependency(depBuildFunc) )
 import Models.Project
-import Process
-import Shell
-import Types
-import Utils
+    ( defaultProject,
+      setupProject,
+      Project(projectInstall, projectSrc) )
+import Process ( cmd )
+import Shell ( gitClone )
+import Types ( Buildable(..), Name, Url, Version, Platform )
+import Utils ( lowercase, wordsWhen )
 
 data PythonConfig = PythonConfig
     { pythonName :: Name
@@ -416,7 +420,7 @@ pythonSetupLocal :: PythonConfig -> FilePath
 pythonSetupLocal c = joinPath [srcDir c, "Modules", "Setup.local"]
 
 pythonVer :: PythonConfig -> String
-pythonVer c = v !! 0 ++ "." ++ v !! 1
+pythonVer c = head v ++ "." ++ v !! 1
   where
     v = wordsWhen (== '.') $ pythonVersion c
 
@@ -450,22 +454,26 @@ configurePython version name project = do
                   else pythonRemovePatterns c
         }
 
+-- dropAll :: (Foldable t, Eq a) => t a -> [a] -> [a]
+-- dropAll xs = filter (f xs)
+--   where
+--     f ys x = not $ flip elem ys x
 dropAll :: (Foldable t, Eq a) => t a -> [a] -> [a]
 dropAll xs = filter (f xs)
   where
-    f ys x = not $ flip elem ys x
+    f ys x = x `notElem` ys
 
 addAll :: [String] -> [String] -> [String]
 addAll xs ys = nub $ xs ++ ys
 
 dropFromStatic :: [String] -> PythonConfig -> PythonConfig
-dropFromStatic xs c = c { pythonStatic = dropAll xs (pythonStatic c)}
+dropFromStatic xs c = c {pythonStatic = dropAll xs (pythonStatic c)}
 
 addToStatic :: [String] -> PythonConfig -> PythonConfig
-addToStatic xs c = c { pythonStatic = addAll xs (pythonStatic c) }
+addToStatic xs c = c {pythonStatic = addAll xs (pythonStatic c)}
 
 addToDisabled :: [String] -> PythonConfig -> PythonConfig
-addToDisabled xs c = c { pythonDisabled = addAll xs (pythonDisabled c) }
+addToDisabled xs c = c {pythonDisabled = addAll xs (pythonDisabled c)}
 
 staticToShared :: [String] -> PythonConfig -> PythonConfig
 staticToShared xs c =
@@ -513,180 +521,37 @@ delMapEntries :: Ord k => [k] -> Map k a -> Map k a
 delMapEntries ks m = Prelude.foldl (flip delete) m ks
 
 deleteExts :: [String] -> PythonConfig -> PythonConfig
-deleteExts ks c = c { pythonExts = delMapEntries ks (pythonExts c) }
+deleteExts ks c = c {pythonExts = delMapEntries ks (pythonExts c)}
 
 compose :: [a -> a] -> a -> a
 compose = Prelude.foldl (flip (.)) id
 
-
-
-configSetupLocal :: PythonConfig -> PythonConfig
-configSetupLocal = 
-    compose
-        [ id -- does nothing (just a passthrough)
-#if __APPLE__
-        , disabledToStatic ["_scproxy"]
-#elif __linux__
-        , updatePythonExts
-              "_ssl"
-              [ "_ssl.c"
-              , "-I$(OPENSSL)/include"
-              , "-L$(OPENSSL)/lib"
-              , "-l:libssl.a -Wl,--exclude-libs,libssl.a"
-              , "-l:libcrypto.a -Wl,--exclude-libs,libcrypto.a"
-              ]
-        , updatePythonExts
-              "_hashlib"
-              [ "_hashopenssl.c"
-              , "-I$(OPENSSL)/include"
-              , "-L$(OPENSSL)/lib"
-              , "-l:libcrypto.a -Wl,--exclude-libs,libcrypto.a"
-              ]
-#endif
-        , py311
-        , py312
-        ]
-
-
 updatePythonExts :: String -> [String] -> PythonConfig -> PythonConfig
 updatePythonExts k v c = c {pythonExts = insert k v $ pythonExts c}
 
-withVersion :: Version -> [PythonConfig -> PythonConfig] -> PythonConfig -> PythonConfig
+withVersion ::
+       Version -> [PythonConfig -> PythonConfig] -> PythonConfig -> PythonConfig
 withVersion v fs c =
     if pythonVer c == v
         then compose fs c
         else c
 
-withConfig :: Name -> [PythonConfig -> PythonConfig] -> PythonConfig -> PythonConfig
+withConfig ::
+       Name -> [PythonConfig -> PythonConfig] -> PythonConfig -> PythonConfig
 withConfig name fs c =
     if pythonConfig c == name
         then compose fs c
         else c
 
-
-py311 :: PythonConfig -> PythonConfig
-py311 =
-    withVersion
-        "3.11"
-        [ withConfig "static_max" [staticToDisabled ["_decimal"]]
-        , withConfig "static_mid" [staticToDisabled ["_decimal"]]
-        , withConfig
-              "static_min"
-              [ staticToDisabled
-                    [ "_bz2"
-                    , "_decimal"
-                    , "_csv"
-                    , "_json"
-                    , "_lzma"
-                    , "_scproxy"
-                    , "_sqlite3"
-                    , "_ssl"
-                    , "pyexpat"
-                    , "readline"
-                    ]
-              ]
-        , withConfig
-              "shared_max"
-              [ id -- just a pass through 
-#if __linux__
-              , staticToDisabled ["_decimal"]
-#else
-              , disabledToStatic ["_ctypes"]
-              , staticToShared ["_decimal", "_ssl", "_hashlib"]
-#endif
-              ]
-        , withConfig
-              "shared_mid"
-              [staticToDisabled ["_decimal", "_ssl", "_hashlib"]]
-        ]
-
-py312 :: PythonConfig -> PythonConfig
-py312 =
-    withVersion
-        "3.12"
-        [ updatePythonExts
-              "_md5"
-              [ "md5module.c"
-              , "-I$(srcdir)/Modules/_hacl/include"
-              , "_hacl/Hacl_Hash_MD5.c"
-              , "-D_BSD_SOURCE"
-              , "-D_DEFAULT_SOURCE"
-              ]
-        , updatePythonExts
-              "_sha1"
-              [ "sha1module.c"
-              , "-I$(srcdir)/Modules/_hacl/include"
-              , "_hacl/Hacl_Hash_SHA1.c"
-              , "-D_BSD_SOURCE"
-              , "-D_DEFAULT_SOURCE"
-              ]
-        , updatePythonExts
-              "_sha2"
-              [ "sha2module.c"
-              , "-I$(srcdir)/Modules/_hacl/include"
-              , "_hacl/Hacl_Hash_SHA2.c"
-              , "-D_BSD_SOURCE"
-              , "-D_DEFAULT_SOURCE"
-              , "Modules/_hacl/libHacl_Hash_SHA2.a"
-              ]
-        , updatePythonExts
-              "_sha3"
-              [ "sha3module.c"
-              , "-I$(srcdir)/Modules/_hacl/include"
-              , "_hacl/Hacl_Hash_SHA3.c"
-              , "-D_BSD_SOURCE"
-              , "-D_DEFAULT_SOURCE"
-              ]
-        , deleteExts ["_sha256", "_sha512"]
-        , addToStatic ["_sha2"]
-        , addToDisabled ["_xxinterpchannels"]
-        , dropFromStatic ["_sha256", "_sha512"]
-        , withConfig
-              "static-max"
-              [id -- passthrough 
-#if __linux__
-              , staticToDisabled ["_decimal"]
-#endif
-              ]
-        , withConfig
-            "static_mid"
-            [staticToDisabled ["_decimal"]]
-        , withConfig
-            "static_min"
-            [ staticToDisabled
-                [ "_bz2"
-                , "_decimal"
-                , "_csv"
-                , "_json"
-                , "_lzma"
-                , "_scproxy"
-                , "_sqlite3"
-                , "_ssl"
-                , "pyexpat"
-                , "readline"
-                ]
-            ]
-        , withConfig
-            "shared_max"
-            [ disabledToShared ["_ctypes"]
-            , staticToShared 
-                [ "_decimal"
-                , "_ssl"
-                , "_hashlib"
-                ]
-            ]
-
-        , withConfig
-            "shared_mid"
-            [ staticToShared 
-                [ "_decimal"
-                , "_ssl"
-                , "_hashlib"
-                ]
-            ] 
-        ]
-
-
+withPlatform ::
+       Platform
+    -> [PythonConfig -> PythonConfig]
+    -> PythonConfig
+    -> PythonConfig
+withPlatform p fs c =
+    if p == os
+        then compose fs c
+        else c
 
 writeSetupLocal :: FilePath -> PythonConfig -> IO ()
 writeSetupLocal file c = do
@@ -715,13 +580,11 @@ doConfigurePython c = do
     writeSetupLocal file $ configSetupLocal c
     cmd "bash" (pythonConfigOptions c) (Just $ srcDir c) Nothing
 
-
 getDefault :: IO PythonConfig
 getDefault = do
     p <- defaultProject
     let c = configurePython "3.12.2" "static_max" p
-    return c
-
+    return $ configSetupLocal c
 
 processPython :: IO ()
 processPython = do
@@ -771,3 +634,140 @@ cleanPython c = do
 zipPython :: PythonConfig -> IO ()
 zipPython c = do
     print c
+
+-- ------------------------------------------------------------
+-- setup.local configuration
+
+
+configSetupLocal :: PythonConfig -> PythonConfig
+configSetupLocal =
+    compose
+        -- common platform-specific
+        [ withPlatform "darwin" [disabledToStatic ["_scproxy"]]
+        , withPlatform
+              "linux"
+              [ updatePythonExts
+                    "_ssl"
+                    [ "_ssl.c"
+                    , "-I$(OPENSSL)/include"
+                    , "-L$(OPENSSL)/lib"
+                    , "-l:libssl.a -Wl,--exclude-libs,libssl.a"
+                    , "-l:libcrypto.a -Wl,--exclude-libs,libcrypto.a"
+                    ]
+              , updatePythonExts
+                    "_hashlib"
+                    [ "_hashopenssl.c"
+                    , "-I$(OPENSSL)/include"
+                    , "-L$(OPENSSL)/lib"
+                    , "-l:libcrypto.a -Wl,--exclude-libs,libcrypto.a"
+                    ]
+              ]
+        -- version-specific
+        , py311
+        , py312
+        ]
+
+py311 :: PythonConfig -> PythonConfig
+py311 =
+    withVersion
+        "3.11"
+        [ withConfig "static_max" [staticToDisabled ["_decimal"]]
+        , withConfig "static_mid" [staticToDisabled ["_decimal"]]
+        , withConfig
+              "static_min"
+              [ staticToDisabled
+                    [ "_bz2"
+                    , "_decimal"
+                    , "_csv"
+                    , "_json"
+                    , "_lzma"
+                    , "_scproxy"
+                    , "_sqlite3"
+                    , "_ssl"
+                    , "pyexpat"
+                    , "readline"
+                    ]
+              ]
+        , withConfig
+              "shared_max"
+              [ withPlatform "linux" [staticToDisabled ["_decimal"]]
+              , withPlatform
+                    "darwin"
+                    [ disabledToStatic ["_ctypes"]
+                    , staticToShared ["_decimal", "_ssl", "_hashlib"]
+                    ]
+              ]
+        , withConfig
+              "shared_mid"
+              [staticToDisabled ["_decimal", "_ssl", "_hashlib"]]
+        ]
+
+py312 :: PythonConfig -> PythonConfig
+py312 =
+    withVersion
+        "3.12"
+        [ updatePythonExts
+              "_md5"
+              [ "md5module.c"
+              , "-I$(srcdir)/Modules/_hacl/include"
+              , "_hacl/Hacl_Hash_MD5.c"
+              , "-D_BSD_SOURCE"
+              , "-D_DEFAULT_SOURCE"
+              ]
+        , updatePythonExts
+              "_sha1"
+              [ "sha1module.c"
+              , "-I$(srcdir)/Modules/_hacl/include"
+              , "_hacl/Hacl_Hash_SHA1.c"
+              , "-D_BSD_SOURCE"
+              , "-D_DEFAULT_SOURCE"
+              ]
+        , updatePythonExts
+              "_sha2"
+              [ "sha2module.c"
+              , "-I$(srcdir)/Modules/_hacl/include"
+              , "_hacl/Hacl_Hash_SHA2.c"
+              , "-D_BSD_SOURCE"
+              , "-D_DEFAULT_SOURCE"
+              , "Modules/_hacl/libHacl_Hash_SHA2.a"
+              ]
+        , updatePythonExts
+              "_sha3"
+              [ "sha3module.c"
+              , "-I$(srcdir)/Modules/_hacl/include"
+              , "_hacl/Hacl_Hash_SHA3.c"
+              , "-D_BSD_SOURCE"
+              , "-D_DEFAULT_SOURCE"
+              ]
+        , deleteExts ["_sha256", "_sha512"]
+        , addToStatic ["_sha2"]
+        , addToDisabled ["_xxinterpchannels"]
+        , dropFromStatic ["_sha256", "_sha512"]
+        , withConfig
+              "static-max"
+              [withPlatform "linux" [staticToDisabled ["_decimal"]]]
+        , withConfig "static_mid" [staticToDisabled ["_decimal"]]
+        , withConfig
+              "static_min"
+              [ staticToDisabled
+                    [ "_bz2"
+                    , "_decimal"
+                    , "_csv"
+                    , "_json"
+                    , "_lzma"
+                    , "_scproxy"
+                    , "_sqlite3"
+                    , "_ssl"
+                    , "pyexpat"
+                    , "readline"
+                    ]
+              ]
+        , withConfig
+              "shared_max"
+              [ disabledToShared ["_ctypes"]
+              , staticToShared ["_decimal", "_ssl", "_hashlib"]
+              ]
+        , withConfig
+              "shared_mid"
+              [staticToShared ["_decimal", "_ssl", "_hashlib"]]
+        ]

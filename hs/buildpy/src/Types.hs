@@ -6,6 +6,8 @@ type Name = String
 
 type Url = String
 
+type Platform = String
+
 class Buildable a where
     prefix :: a -> FilePath
     srcDir :: a -> FilePath

@@ -584,7 +584,7 @@ getDefault :: IO PythonConfig
 getDefault = do
     p <- defaultProject
     let c = configurePython "3.12.2" "static_max" p
-    return $ configSetupLocal c
+    return c
 
 processPython :: IO ()
 processPython = do
@@ -744,7 +744,7 @@ py312 =
         , addToDisabled ["_xxinterpchannels"]
         , dropFromStatic ["_sha256", "_sha512"]
         , withConfig
-              "static-max"
+              "static_max"
               [withPlatform "linux" [staticToDisabled ["_decimal"]]]
         , withConfig "static_mid" [staticToDisabled ["_decimal"]]
         , withConfig

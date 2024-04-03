@@ -19,14 +19,15 @@ import Models.Dependency
     , xzConfig
     )
 import Models.Project
-    ( Project(projectInstall, projectSrc)
+    ( Project(projectInstall, projectSrc, projectBuild)
     , defaultProject
     , setupProject
     )
 import Process (cmd)
-import Shell (gitClone)
+import Shell
 import Types
 import Utils (lowercase, wordsWhen)
+
 
 data PythonConfig = PythonConfig
     { pythonName :: Name
@@ -427,8 +428,16 @@ pythonSetupLocal c = joinPath [srcDir c, "Modules", "Setup.local"]
 
 pythonVer :: PythonConfig -> String
 pythonVer c = head v ++ "." ++ v !! 1
-  where
-    v = wordsWhen (== '.') $ pythonVersion c
+    where
+        v = wordsWhen (== '.') $ pythonVersion c
+
+nameVer :: PythonConfig -> String
+nameVer c = "python" ++ pythonVer c
+
+nameVerNoDot  :: PythonConfig -> String
+nameVerNoDot c = "python" ++ head v ++ v !! 1
+    where
+        v = wordsWhen (== '.') $ pythonVersion c
 
 -- ----------------------------------------------------------------------------
 -- methods
@@ -630,16 +639,14 @@ processPython :: IO ()
 processPython = do
     p <- defaultProject
     let c = configurePython "3.12.2" Static Max p
-    -- writeSetupLocal "out.txt" $ configSetupLocal c
-    -- writeSetupLocal "out.txt" $ staticToDisabled ["_decimal"] c
     setupProject $ pythonProject c
     processPythonDependencies c
     downloadPython c
     doConfigurePython c
     buildPython c
     installPython c
-  -- cleanPython c
-  -- zipPython c
+    cleanPython c
+    zipPythonLib c
 
 processPythonDependencies :: PythonConfig -> IO ()
 processPythonDependencies c = do
@@ -669,14 +676,30 @@ installPython c = do
 
 cleanPython :: PythonConfig -> IO ()
 cleanPython c = do
-    print c
+    let path = joinPath [prefix c, "lib", nameVer c]
+    globRemove (pythonRemovePatterns c) path
 
-zipPython :: PythonConfig -> IO ()
-zipPython c = do
-    print c
+zipPythonLib :: PythonConfig -> IO ()
+zipPythonLib c = do
+    let src = joinPath [prefix c, "lib", nameVer c]
+    let src_libdynload = joinPath [src, "lib-dynload"]
+    let src_os_py = joinPath [src, "os.py"]
+    let tmp_libdynload = joinPath [projectBuild $ pythonProject c, "lib-dynload"]
+    let tmp_os_py = joinPath [projectBuild $ pythonProject c, "os.py"]
+    let zip_file = joinPath [prefix c, "lib" , nameVerNoDot c ++ ".zip"]
+    let site_packages = joinPath [src, "site-packages"]
+    let pkgconfig = joinPath [prefix c, "lib", "pkgconfig"]
+    Shell.move src_libdynload tmp_libdynload
+    Shell.move src_os_py tmp_os_py
+    Shell.zipLib zip_file src
+    mapM_ Shell.remove [src, pkgconfig]
+    mapM_ Shell.makedir [src, site_packages]
+    Shell.move tmp_libdynload src_libdynload
+    Shell.move tmp_os_py src_os_py
 
 -- ------------------------------------------------------------
 -- setup.local configuration
+
 configSetupLocal :: PythonConfig -> PythonConfig
 configSetupLocal =
     compose

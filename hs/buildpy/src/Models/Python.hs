@@ -538,6 +538,10 @@ compose = Prelude.foldl (flip (.)) id
 compose' :: Foldable t => t (b -> b) -> b -> b
 compose' = foldr (.) id
 
+pipe :: Foldable t => b -> t (b -> b) -> b
+pipe = foldl (flip id)
+
+
 updatePythonExts :: String -> [String] -> PythonConfig -> PythonConfig
 updatePythonExts k v c = c {pythonExts = insert k v $ pythonExts c}
 

@@ -1,17 +1,14 @@
 module Shell where
 
 import System.Directory
-    ( createDirectoryIfMissing
-    , removePathForcibly
-    , renamePath
-    )
 import System.FilePath (joinPath)
 import System.FilePattern (FilePattern, (?==))
-import System.Directory.PathWalk
-import Control.Monad
+import System.Directory.PathWalk ( pathWalk )
+import Control.Monad ( when, forM_ )
 
 import Process (cmd, run)
-import Types
+import Types ( Name, Url )
+import Log
 
 makedir :: FilePath -> IO ()
 makedir = createDirectoryIfMissing True
@@ -70,12 +67,45 @@ cmakeInstall build_dir prefixPath =
 globMatch :: [FilePattern] -> FilePath -> Bool
 globMatch fs f = any (?== f) fs
 
+-- walk :: (FilePath -> Bool) -> (FilePath -> IO ()) -> FilePath -> IO ()
+-- walk match action root = do
+--     pathWalk root $ \dir _ files -> do
+--         forM_ files $ \file -> do
+--             let target = joinPath [dir, file]
+--             debug $ "searching: " ++ target
+--             when (match file) $ do
+--                 -- let target = joinPath [dir, file]
+--                 info $ "found: " ++ target
+--                 action target
+
 walk :: (FilePath -> Bool) -> (FilePath -> IO ()) -> FilePath -> IO ()
 walk match action root = do
-    pathWalk root $ \dir _ files -> do
+    pathWalk root $ \dir subdirs files -> do
+        forM_ subdirs $ \subdir -> do
+            let current_dir = joinPath [dir, subdir]
+            -- info $ "searching: " ++ current_dir
+            when (match current_dir) $ do
+                -- info $ "rm: " ++ current_dir
+                action current_dir
+            -- debug $ "searching: " ++ target
         forM_ files $ \file -> do
+            let current_file = joinPath [dir, file]
             when (match file) $ do
-                action $ joinPath [dir, file]
+                -- info $ "rm: " ++ current_file
+                action current_file
 
 globRemove :: [FilePattern] -> FilePath -> IO ()
-globRemove ps = walk (globMatch ps) remove
+globRemove ps = walk (globMatch ps) action
+    where
+        -- action f = do 
+        --     exists <- doesPathExist f
+        --     if exists then info $ "exists: " ++ f else warn $ "skipping: " ++ f
+
+        action f = do 
+            exists <- doesPathExist f
+            if exists then removeDirectoryRecursive f else warn $ "skipping: " ++ f
+
+        -- action f = warn $ "skipping: " ++ f
+        -- action f = do 
+        --     exists <- doesPathExist f
+        --     if exists then removePathForcibly f else warn $ "skipping: " ++ f

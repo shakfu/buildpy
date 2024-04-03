@@ -359,37 +359,41 @@ newPythonConfig version build_type size_type proj =
               , "xxlimited_35"
               ]
         , pythonRemovePatterns =
-              [ "*.exe"
-              , "*config-3*"
-              , "*tcl*"
-              , "*tdbc*"
-              , "*tk*"
-              , "__phello__"
-              , "__pycache__"
-              , "_codecs_*.so"
-              , "_ctypes_test*"
-              , "_test*"
-              , "_tk*"
-              , "_xx*.so"
-              , "distutils"
-              , "idlelib"
-              , "lib2to3"
-              , "LICENSE.txt"
-              , "pkgconfig"
-              , "pydoc_data"
-              , "site-packages"
-              , "test"
-              , "Tk*"
-              , "turtle*"
-              , "venv"
-              , "xx*.so"
+              [ "__phello__"
+              , "**/__pycache__"
               ]
+        -- , pythonRemovePatterns =
+        --       [ "*.exe"
+        --       , "*config-3*"
+        --       , "*tcl*"
+        --       , "*tdbc*"
+        --       , "*tk*"
+        --       , "__phello__"
+        --       , "__pycache__"
+        --       , "_codecs_*.so"
+        --       , "_ctypes_test*"
+        --       , "_test*"
+        --       , "_tk*"
+        --       , "_xx*.so"
+        --       , "distutils"
+        --       , "idlelib"
+        --       , "lib2to3"
+        --       , "LICENSE.txt"
+        --       , "pkgconfig"
+        --       , "pydoc_data"
+        --       , "site-packages"
+        --       , "test"
+        --       , "Tk*"
+        --       , "turtle*"
+        --       , "venv"
+        --       , "xx*.so"
+        --       ]
         , pythonConfigOptions = []
         , pythonPackages = []
         , pythonDependsOn =
               [ sslConfig "1.1.1" proj
               , bz2Config "1.0.8" proj
-              , xzConfig "5.4.6" proj
+              , xzConfig "5.2.5" proj
               ]
         , pythonOptimize = False
         , pythonProject = proj
@@ -629,25 +633,6 @@ doConfigurePython c = do
     writeSetupLocal file $ configSetupLocal c
     cmd "bash" (pythonConfigOptions c) (Just $ srcDir c) Nothing
 
-getDefault :: IO PythonConfig
-getDefault = do
-    p <- defaultProject
-    let c = configurePython "3.12.2" Static Max p
-    return c
-
-processPython :: IO ()
-processPython = do
-    p <- defaultProject
-    let c = configurePython "3.12.2" Static Max p
-    setupProject $ pythonProject c
-    processPythonDependencies c
-    downloadPython c
-    doConfigurePython c
-    buildPython c
-    installPython c
-    cleanPython c
-    zipPythonLib c
-
 processPythonDependencies :: PythonConfig -> IO ()
 processPythonDependencies c = do
     forM_ (pythonDependsOn c) $ \dep -> do
@@ -661,9 +646,11 @@ downloadPython c = do
     branch = pythonRepoBranch c
     dir = srcDir c
 
--- setupPython :: PythonConfig -> IO ()
--- setupPython c = do
---   print c
+setupPython :: PythonConfig -> IO ()
+setupPython c = do
+    setupProject $ pythonProject c
+    processPythonDependencies c
+
 buildPython :: PythonConfig -> IO ()
 buildPython c = do
     info ("building python " ++ show (pythonVersion c))
@@ -676,11 +663,13 @@ installPython c = do
 
 cleanPython :: PythonConfig -> IO ()
 cleanPython c = do
+    info "cleanPython"
     let path = joinPath [prefix c, "lib", nameVer c]
     globRemove (pythonRemovePatterns c) path
 
 zipPythonLib :: PythonConfig -> IO ()
 zipPythonLib c = do
+    info "zipPythonLib"
     let src = joinPath [prefix c, "lib", nameVer c]
     let src_libdynload = joinPath [src, "lib-dynload"]
     let src_os_py = joinPath [src, "os.py"]
@@ -696,6 +685,24 @@ zipPythonLib c = do
     mapM_ Shell.makedir [src, site_packages]
     Shell.move tmp_libdynload src_libdynload
     Shell.move tmp_os_py src_os_py
+
+getDefault :: IO PythonConfig
+getDefault = do
+    p <- defaultProject
+    let c = configurePython "3.12.2" Static Max p
+    return c
+
+processPython :: IO ()
+processPython = do
+    p <- defaultProject
+    let c = configurePython "3.12.2" Static Max p
+    -- setupPython c
+    -- downloadPython c
+    -- doConfigurePython c
+    -- buildPython c
+    -- installPython c
+    cleanPython c
+    -- zipPythonLib c
 
 -- ------------------------------------------------------------
 -- setup.local configuration

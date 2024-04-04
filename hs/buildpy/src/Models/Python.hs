@@ -25,7 +25,15 @@ import Models.Project
     )
 import Process (cmd)
 import Shell
+    ( makedir, remove, move, zipLib, gitClone, globRemove )
 import Types
+    ( Buildable(..),
+      SizeType(..),
+      BuildType(..),
+      Platform,
+      Url,
+      Name,
+      Version )
 import Utils (lowercase, wordsWhen)
 
 
@@ -696,12 +704,12 @@ processPython :: IO ()
 processPython = do
     p <- defaultProject
     let c = configurePython "3.12.2" Static Max p
-    -- setupPython c
-    -- downloadPython c
-    -- doConfigurePython c
-    -- buildPython c
-    -- installPython c
-    cleanPython c
+    setupPython c
+    downloadPython c
+    doConfigurePython c
+    buildPython c
+    installPython c
+    -- cleanPython c
     -- zipPythonLib c
 
 -- ------------------------------------------------------------

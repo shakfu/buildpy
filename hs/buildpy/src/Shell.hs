@@ -72,7 +72,7 @@ globMatch fs f = any (?== f) fs
 --     pathWalk root $ \dir _ files -> do
 --         forM_ files $ \file -> do
 --             let target = joinPath [dir, file]
---             debug $ "searching: " ++ target
+--             -- debug $ "searching: " ++ target
 --             when (match file) $ do
 --                 -- let target = joinPath [dir, file]
 --                 info $ "found: " ++ target
@@ -80,7 +80,7 @@ globMatch fs f = any (?== f) fs
 
 walk :: (FilePath -> Bool) -> (FilePath -> IO ()) -> FilePath -> IO ()
 walk match action root = do
-    pathWalk root $ \dir subdirs files -> do
+    pathWalk root $ \dir subdirs _ -> do
         forM_ subdirs $ \subdir -> do
             let current_dir = joinPath [dir, subdir]
             -- info $ "searching: " ++ current_dir
@@ -88,22 +88,24 @@ walk match action root = do
                 -- info $ "rm: " ++ current_dir
                 action current_dir
             -- debug $ "searching: " ++ target
-        forM_ files $ \file -> do
-            let current_file = joinPath [dir, file]
-            when (match file) $ do
-                -- info $ "rm: " ++ current_file
-                action current_file
+        -- forM_ files $ \file -> do
+        --     let current_file = joinPath [dir, file]
+        --     when (match file) $ do
+        --         -- info $ "rm: " ++ current_file
+        --         action current_file
 
 globRemove :: [FilePattern] -> FilePath -> IO ()
 globRemove ps = walk (globMatch ps) action
     where
-        -- action f = do 
-        --     exists <- doesPathExist f
-        --     if exists then info $ "exists: " ++ f else warn $ "skipping: " ++ f
+        -- action = remove
 
         action f = do 
             exists <- doesPathExist f
-            if exists then removeDirectoryRecursive f else warn $ "skipping: " ++ f
+            if exists then info $ "exists: " ++ f else warn $ "skipping: " ++ f
+
+        -- action f = do 
+        --     exists <- doesPathExist f
+        --     if exists then removeDirectoryRecursive f else warn $ "skipping: " ++ f
 
         -- action f = warn $ "skipping: " ++ f
         -- action f = do 

@@ -1,2 +1,4 @@
 python3.12
 *.zip
+dist-newstyle
+

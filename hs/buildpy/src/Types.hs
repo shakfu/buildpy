@@ -26,7 +26,6 @@ data PythonVersion
     | Py313
     deriving (Eq, Ord, Enum, Show)
 
-
 class Buildable a where
     prefix :: a -> FilePath
     srcDir :: a -> FilePath

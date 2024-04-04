@@ -1,63 +1,39 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE MultiWayIf #-}
-{-# LANGUAGE InstanceSigs #-}
 
-module Models.Python where
+module Python.Config where
 
-import Control.Monad (forM_)
 import Data.List (nub)
-import Data.Map (Map, delete, fromList, insert, lookup)
-import Data.Maybe (fromJust)
-import System.FilePath (joinPath)
+import Data.Map (Map, delete, fromList, insert)
 import System.Info (os)
 
-import Log (debug, info)
-import Models.Dependency
-    ( Dependency(depBuildFunc)
-    , bz2Config
-    , sslConfig
-    , xzConfig
-    )
-import Models.Project
-    ( Project(projectInstall, projectSrc, projectBuild)
-    , defaultProject
-    , setupProject
-    )
-import Process (cmd)
-import Shell
-    ( makedir, remove, move, zipLib, gitClone, globRemove )
+import Python.Model
+    ( PythonConfig(..), pythonSetupLocal, pythonVer, writeSetupLocal )
+import Dependency.Config ( sslConfig, xzConfig, bz2Config )
+import Project ( Project, defaultProject )
 import Types
-    ( Buildable(..),
+    ( Buildable(prefix, srcDir),
       SizeType(..),
       BuildType(..),
       Platform,
-      Url,
-      Name,
       Version )
-import Utils (lowercase, wordsWhen)
+import Log ( info, debug )
+import Process ( cmd )
 
+getDefault :: IO PythonConfig
+getDefault = do
+    p <- defaultProject
+    let c = configurePython "3.12.2" Static Max p
+    return c
 
-data PythonConfig = PythonConfig
-    { pythonName :: Name
-    , pythonVersion :: Version
-    , pythonBuildType :: BuildType
-    , pythonSizeType :: SizeType
-    , pythonRepoUrl :: Url
-    , pythonRepoBranch :: String
-    , pythonDownloadUrl :: Url
-    , pythonHeaders :: [String]
-    , pythonExts :: Map String [String]
-    , pythonCore :: [String]
-    , pythonStatic :: [String]
-    , pythonShared :: [String]
-    , pythonDisabled :: [String]
-    , pythonRemovePatterns :: [String]
-    , pythonConfigOptions :: [String]
-    , pythonPackages :: [String]
-    , pythonDependsOn :: [Dependency]
-    , pythonOptimize :: Bool
-    , pythonProject :: Project
-    } deriving (Show)
+doConfigurePython :: PythonConfig -> IO ()
+doConfigurePython c = do
+    debug $ "buildtype: " ++ show (pythonBuildType c)
+    debug $ "config opts: " ++ show (pythonConfigOptions c)
+    info "writing Setup.local"
+    let file = pythonSetupLocal c
+    writeSetupLocal file $ configSetupLocal c
+    cmd "bash" (pythonConfigOptions c) (Just $ srcDir c) Nothing
 
 newPythonConfig :: Version -> BuildType -> SizeType -> Project -> PythonConfig
 newPythonConfig version build_type size_type proj =
@@ -366,10 +342,7 @@ newPythonConfig version build_type size_type proj =
               , "xxlimited"
               , "xxlimited_35"
               ]
-        , pythonRemovePatterns =
-              [ "__phello__"
-              , "**/__pycache__"
-              ]
+        , pythonRemovePatterns = ["__phello__", "**/__pycache__"]
         -- , pythonRemovePatterns =
         --       [ "*.exe"
         --       , "*config-3*"
@@ -408,52 +381,7 @@ newPythonConfig version build_type size_type proj =
         }
 
 -- ----------------------------------------------------------------------------
--- properties
-instance Buildable PythonConfig where
-    prefix :: PythonConfig -> FilePath
-    prefix c = joinPath [projectInstall p, lowercase $ pythonName c]
-      where
-        p = pythonProject c
-    srcDir :: PythonConfig -> FilePath
-    srcDir c = joinPath [projectSrc p, lowercase $ pythonName c]
-      where
-        p = pythonProject c
-    buildDir :: PythonConfig -> FilePath
-    buildDir c = joinPath [srcDir c, "build"]
-    download :: PythonConfig -> IO ()
-    download c = do
-        Shell.gitClone url branch dir False
-      where
-        url = pythonRepoUrl c
-        branch = pythonRepoBranch c
-        dir = srcDir c
-    build :: PythonConfig -> IO ()
-    build c = do
-        info ("bui  lding python " ++ show (pythonVersion c))
-        cmd "make" [] (Just $ srcDir c) Nothing
-
--- pythonBuildType :: PythonConfig -> String
--- pythonBuildType c = head $ wordsWhen (== '_') (pythonConfig c)
-
-pythonSetupLocal :: PythonConfig -> FilePath
-pythonSetupLocal c = joinPath [srcDir c, "Modules", "Setup.local"]
-
-pythonVer :: PythonConfig -> String
-pythonVer c = head v ++ "." ++ v !! 1
-    where
-        v = wordsWhen (== '.') $ pythonVersion c
-
-nameVer :: PythonConfig -> String
-nameVer c = "python" ++ pythonVer c
-
-nameVerNoDot  :: PythonConfig -> String
-nameVerNoDot c = "python" ++ head v ++ v !! 1
-    where
-        v = wordsWhen (== '.') $ pythonVersion c
-
--- ----------------------------------------------------------------------------
 -- methods
-
 configurePython :: Version -> BuildType -> SizeType -> Project -> PythonConfig
 configurePython version btype stype project = do
     let c = newPythonConfig version btype stype project
@@ -485,7 +413,6 @@ configurePython version btype stype project = do
 -- dropAll xs = filter (f xs)
 --   where
 --     f ys x = not $ flip elem ys x
-
 dropAll :: (Foldable t, Eq a) => t a -> [a] -> [a]
 dropAll xs = filter (f xs)
   where
@@ -562,7 +489,6 @@ compose' = foldr (.) id
 pipe :: Foldable t => b -> t (b -> b) -> b
 pipe = foldl (flip id)
 
-
 updatePythonExts :: String -> [String] -> PythonConfig -> PythonConfig
 updatePythonExts k v c = c {pythonExts = insert k v $ pythonExts c}
 
@@ -614,107 +540,8 @@ withPlatform p fs c =
         then compose fs c
         else c
 
-writeSetupLocal :: FilePath -> PythonConfig -> IO ()
-writeSetupLocal file c = do
-    let out =
-            ["# -*- makefile -*-"]
-                ++ pythonHeaders c
-                ++ ["\n# core\n"]
-                ++ getEntries (pythonCore c)
-                ++ ["\n*shared*\n"]
-                ++ getEntries (pythonShared c)
-                ++ ["\n*static*\n"]
-                ++ getEntries (pythonStatic c)
-                ++ ["\n*disabled*\n"]
-                ++ pythonDisabled c
-    writeFile file (unlines out)
-  where
-    extlookup k = k : fromJust (Data.Map.lookup k (pythonExts c))
-    getEntries = Prelude.map (unwords . extlookup)
-
-doConfigurePython :: PythonConfig -> IO ()
-doConfigurePython c = do
-    debug $ "buildtype: " ++ show (pythonBuildType c)
-    debug $ "config opts: " ++ show (pythonConfigOptions c)
-    info "writing Setup.local"
-    let file = pythonSetupLocal c
-    writeSetupLocal file $ configSetupLocal c
-    cmd "bash" (pythonConfigOptions c) (Just $ srcDir c) Nothing
-
-processPythonDependencies :: PythonConfig -> IO ()
-processPythonDependencies c = do
-    forM_ (pythonDependsOn c) $ \dep -> do
-        depBuildFunc dep dep
-
-downloadPython :: PythonConfig -> IO ()
-downloadPython c = do
-    Shell.gitClone url branch dir False
-  where
-    url = pythonRepoUrl c
-    branch = pythonRepoBranch c
-    dir = srcDir c
-
-setupPython :: PythonConfig -> IO ()
-setupPython c = do
-    setupProject $ pythonProject c
-    processPythonDependencies c
-
-buildPython :: PythonConfig -> IO ()
-buildPython c = do
-    info ("building python " ++ show (pythonVersion c))
-    cmd "make" [] (Just $ srcDir c) Nothing
-
-installPython :: PythonConfig -> IO ()
-installPython c = do
-    info ("install python " ++ show (pythonVersion c))
-    cmd "make" ["install"] (Just $ srcDir c) Nothing
-
-cleanPython :: PythonConfig -> IO ()
-cleanPython c = do
-    info "cleanPython"
-    let path = joinPath [prefix c, "lib", nameVer c]
-    globRemove (pythonRemovePatterns c) path
-
-zipPythonLib :: PythonConfig -> IO ()
-zipPythonLib c = do
-    info "zipPythonLib"
-    let src = joinPath [prefix c, "lib", nameVer c]
-    let src_libdynload = joinPath [src, "lib-dynload"]
-    let src_os_py = joinPath [src, "os.py"]
-    let tmp_libdynload = joinPath [projectBuild $ pythonProject c, "lib-dynload"]
-    let tmp_os_py = joinPath [projectBuild $ pythonProject c, "os.py"]
-    let zip_file = joinPath [prefix c, "lib" , nameVerNoDot c ++ ".zip"]
-    let site_packages = joinPath [src, "site-packages"]
-    let pkgconfig = joinPath [prefix c, "lib", "pkgconfig"]
-    Shell.move src_libdynload tmp_libdynload
-    Shell.move src_os_py tmp_os_py
-    Shell.zipLib zip_file src
-    mapM_ Shell.remove [src, pkgconfig]
-    mapM_ Shell.makedir [src, site_packages]
-    Shell.move tmp_libdynload src_libdynload
-    Shell.move tmp_os_py src_os_py
-
-getDefault :: IO PythonConfig
-getDefault = do
-    p <- defaultProject
-    let c = configurePython "3.12.2" Static Max p
-    return c
-
-processPython :: IO ()
-processPython = do
-    p <- defaultProject
-    let c = configurePython "3.12.2" Static Max p
-    setupPython c
-    downloadPython c
-    doConfigurePython c
-    buildPython c
-    installPython c
-    -- cleanPython c
-    -- zipPythonLib c
-
 -- ------------------------------------------------------------
 -- setup.local configuration
-
 configSetupLocal :: PythonConfig -> PythonConfig
 configSetupLocal =
     compose

@@ -1,49 +1,21 @@
-{-# LANGUAGE InstanceSigs #-}
+module Dependency.Config where
 
-module Models.Dependency where
 
-import Log (info)
-import Models.Project (Project(projectInstall, projectSrc))
-import Process (cmd)
-import Shell
 import System.FilePath (joinPath)
 import Text.Show.Functions ()
-import Types (Buildable(..), Name, Url, Version)
+
+
+import Dependency.Model ( Dependency(..) )
+import Log (info)
+import Process (cmd)
+import Project ( Project )
+import Shell ( cmakeConfig, cmakeBuild, cmakeInstall )
+import Types
+    ( Buildable(srcDir, buildDir, download, prefix), Version )
 import Utils (replace)
-
-data Dependency = Dependency
-    { depName :: Name
-    , depVersion :: Version
-    , depRepoUrl :: Url
-    , depRepoBranch :: String
-    , depDownloadUrl :: Url
-    , depOptions :: [String]
-    , depLibs :: [String]
-    , depProject :: Project
-    , depBuildFunc :: Dependency -> IO ()
-    } deriving (Show)
-
-instance Buildable Dependency where
-    prefix :: Dependency -> FilePath
-    prefix d = joinPath [projectInstall $ depProject d, depName d]
-    srcDir :: Dependency -> FilePath
-    srcDir d = joinPath [projectSrc $ depProject d, depName d]
-    buildDir :: Dependency -> FilePath
-    buildDir d = joinPath [srcDir d, "build"]
-    download :: Dependency -> IO ()
-    download d = do
-        Shell.gitClone url branch dir False
-      where
-        url = depRepoUrl d
-        branch = depRepoBranch d
-        dir = srcDir d
-    build :: Dependency -> IO ()
-    build d = depBuildFunc d d
-
 
 -- ----------------------------------------------------------------------------
 -- openssl
-
 sslConfig :: Version -> Project -> Dependency
 sslConfig version proj =
     Dependency
@@ -75,7 +47,6 @@ buildSsl d = do
 
 -- ----------------------------------------------------------------------------
 -- xz (lzma)
-
 xzConfig :: Version -> Project -> Dependency
 xzConfig version proj =
     Dependency
@@ -110,31 +81,33 @@ buildXz d = do
             ]
                 ++ ["--prefix=" ++ prefix d]
     let srcdir = Just $ srcDir d
-    Process.cmd "chmod" ["+x", joinPath["build-aux", "install-sh"]] srcdir Nothing
+    Process.cmd
+        "chmod"
+        ["+x", joinPath ["build-aux", "install-sh"]]
+        srcdir
+        Nothing
     Process.cmd "/bin/sh" args srcdir Nothing
     Process.cmd "make" ["install"] srcdir Nothing
 
 -- only to be used with SAFE newer versions of xz
 buildXz' :: Dependency -> IO ()
 buildXz' d = do
-  info $ "building " ++ depName d
-  download d
-  Shell.cmakeConfig
-    (srcDir d)
-    (buildDir d)
-    [ "-DBUILD_SHARED_LIBS=OFF"
-    , "-DENABLE_NLS=OFF"
-    , "-DENABLE_SMALL=ON"
-    , "-DCMAKE_BUILD_TYPE=MinSizeRel"
-    ]
-    (Just [("CFLAGS", "-fPIC")])
-  Shell.cmakeBuild (buildDir d) False
-  Shell.cmakeInstall (buildDir d) (prefix d)
-
+    info $ "building " ++ depName d
+    download d
+    Shell.cmakeConfig
+        (srcDir d)
+        (buildDir d)
+        [ "-DBUILD_SHARED_LIBS=OFF"
+        , "-DENABLE_NLS=OFF"
+        , "-DENABLE_SMALL=ON"
+        , "-DCMAKE_BUILD_TYPE=MinSizeRel"
+        ]
+        (Just [("CFLAGS", "-fPIC")])
+    Shell.cmakeBuild (buildDir d) False
+    Shell.cmakeInstall (buildDir d) (prefix d)
 
 -- ----------------------------------------------------------------------------
 -- bzip2
-
 bz2Config :: Version -> Project -> Dependency
 bz2Config version proj =
     Dependency

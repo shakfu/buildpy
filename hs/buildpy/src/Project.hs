@@ -1,4 +1,4 @@
-module Models.Project where
+module Project where
 
 import System.Directory (getCurrentDirectory)
 import System.FilePath (joinPath)

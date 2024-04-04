@@ -1,14 +1,14 @@
 module Shell where
 
+import Control.Monad (forM_, when)
 import System.Directory
+import System.Directory.PathWalk (pathWalk)
 import System.FilePath (joinPath)
 import System.FilePattern (FilePattern, (?==))
-import System.Directory.PathWalk ( pathWalk )
-import Control.Monad ( when, forM_ )
 
-import Process (cmd, run)
-import Types ( Name, Url )
 import Log
+import Process (cmd, run)
+import Types (Name, Url)
 
 makedir :: FilePath -> IO ()
 makedir = createDirectoryIfMissing True
@@ -47,7 +47,8 @@ gitClone url branch dir recurse = do
                 else [url, dir]
     cmd "git" (args ++ extras) Nothing Nothing
 
-cmakeConfig :: FilePath -> FilePath -> [String] -> Maybe [(String, String)] -> IO ()
+cmakeConfig ::
+       FilePath -> FilePath -> [String] -> Maybe [(String, String)] -> IO ()
 cmakeConfig src_dir build_dir opts =
     cmd "cmake" (["-S", src_dir, "-B", build_dir] ++ opts) Nothing
 
@@ -77,7 +78,6 @@ globMatch fs f = any (?== f) fs
 --                 -- let target = joinPath [dir, file]
 --                 info $ "found: " ++ target
 --                 action target
-
 walk :: (FilePath -> Bool) -> (FilePath -> IO ()) -> FilePath -> IO ()
 walk match action root = do
     pathWalk root $ \dir subdirs _ -> do
@@ -96,17 +96,16 @@ walk match action root = do
 
 globRemove :: [FilePattern] -> FilePath -> IO ()
 globRemove ps = walk (globMatch ps) action
-    where
         -- action = remove
-
-        action f = do 
-            exists <- doesPathExist f
-            if exists then info $ "exists: " ++ f else warn $ "skipping: " ++ f
-
+  where
+    action f = do
+        exists <- doesPathExist f
+        if exists
+            then info $ "exists: " ++ f
+            else warn $ "skipping: " ++ f
         -- action f = do 
         --     exists <- doesPathExist f
         --     if exists then removeDirectoryRecursive f else warn $ "skipping: " ++ f
-
         -- action f = warn $ "skipping: " ++ f
         -- action f = do 
         --     exists <- doesPathExist f

@@ -24,7 +24,8 @@ clean:
 indent:
 	@hindent --indent-size $(INDENT_SIZE) exe/*.hs
 	@hindent --indent-size $(INDENT_SIZE) src/*.hs
-	@hindent --indent-size $(INDENT_SIZE) src/Models/*.hs
+	@hindent --indent-size $(INDENT_SIZE) src/Dependency/*.hs
+	@hindent --indent-size $(INDENT_SIZE) src/Python/*.hs
 
 link:
 	@rm ./buildpy

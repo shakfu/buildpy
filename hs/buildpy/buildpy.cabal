@@ -52,9 +52,12 @@ library
 
     -- Modules included in this library but not exported.
     other-modules:    Log,
-                      Models.Dependency,
-                      Models.Project,
-                      Models.Python,
+                      Dependency.Config,
+                      Dependency.Model,
+                      Project,
+                      Python.Builder,
+                      Python.Config,
+                      Python.Model,
                       Process,
                       Shell,
                       Types,

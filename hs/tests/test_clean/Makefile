@@ -12,6 +12,9 @@ build:
 clean:
 	@rm -rf dist-newstyle
 
+reset:
+	@rm -rf python3.12
+	@unzip python3.12.zip
 
 link:
 	@rm -f ./test-clean

@@ -72,6 +72,7 @@ executable test-clean
                       pathwalk==0.3.1.2,
                       process==1.6.18.0,
                       time==1.12.2,
+                      unix==2.8.5.0,
 
     -- Directories containing source files.
     hs-source-dirs:   app

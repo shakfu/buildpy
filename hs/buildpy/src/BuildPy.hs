@@ -1,5 +1,5 @@
 module BuildPy
-    ( processPython
+    ( run
     ) where
 
-import Python.Builder (processPython)
+import Python.Builder (run)

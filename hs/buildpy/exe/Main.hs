@@ -1,6 +1,6 @@
 module Main where
 
-import qualified BuildPy (processPython)
+import qualified BuildPy (run)
 
 -- import Prelude hiding (log)
 import Control.Monad (when)
@@ -16,19 +16,7 @@ import System.Console.GetOpt
 --   )
 import System.Environment (getArgs, getProgName)
 
--- import Log (info, timeFunction)
--- import Process (cmd, run)
--- demo :: IO ()    
--- demo = do
--- main :: IO ()
--- main = do
---     let _ = cmd "ls" [] Nothing Nothing
---     info "running python"
---    -- run "python3" ["-c", "import sys; print(sys.version)"]
---     run "python3" ["--version"]
---     putStrLn (configName defaultConfig)
---     timeFunction "someFunction" someFunction
---    -- demo
+
 header :: String -> String
 header name = "Usage: " ++ name ++ " [options]"
 
@@ -101,7 +89,7 @@ main = do
     prog <- getProgName
     print args
     case getOpt RequireOrder options args of
-        ([], [], []) -> BuildPy.processPython
+        ([], [], []) -> BuildPy.run "3.12.2" "static_max"
         (flags, [], []) -> processArgs flags
         (_, nonOpts, []) ->
             error $ "unrecognized arguments: " ++ unwords nonOpts

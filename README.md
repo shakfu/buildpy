@@ -1,16 +1,5 @@
 # buildpy - a bunch of python3 builders
 
-## IMPORTANT SECURITY NOTE
-
-It was recently discovered that version 5.6.x of `xz-utils`which provides `liblzma` was **compromised by a bad actor/contributor**. The details of this exploit are now [widely reported](https://arstechnica.com/security/2024/04/what-we-know-about-the-xz-utils-backdoor-that-almost-infected-the-world/) and was initially picked up in this [hacker news post](https://news.ycombinator.com/item?id=39865810).
-
-It is a fact that almost all of the non-python subprojects in `buildpy` used this compromised version as a dependency in building python from source, whereas the prototypical python version used the older v5.2.5 version of `xz-utils` [which is reportedly not affected by this security issue](https://discuss.python.org/t/cpython-pypi-and-many-python-packages-are-not-affected-by-the-backdoor-of-xz/49873).
-
-UPDATE: After requesting [advice on the python dev forums](https://discuss.python.org/t/cpython-pypi-and-many-python-packages-are-not-affected-by-the-backdoor-of-xz/49873/2), all of the subprojects at risk (with the exception of `py/pybuild` and `py/builder` which are really just there for historical reference) were converted to use the [official cpython repo](https://github.com/python/cpython-source-deps) archive of the safe version 5.2.5 version of xz dependency.
-
-While the risk is mostly applicable for those who have built `systemd` using the compromised `lzma` which then backdoors into `sshd`, if you have cloned this repo previously, **do not use earlier code in this project and dispose of any python builds which used the prior compromised version of xz**. Going forward, just use the current 5.2.5 version of xz which is known to be safe.
-
-
 ## Overview
 
 This project provides different language implementations of a commandline tool which programmatically downloads, configures and builds python from source and also includes some additional features such as reducing build size and zipping the standard library.

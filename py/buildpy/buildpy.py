@@ -438,7 +438,7 @@ class Config:
         self.out = ["# -*- makefile -*-"] + self.cfg["header"] + ["\n# core\n"]
         self.log = logging.getLogger(self.__class__.__name__)
         self.patch()
- 
+
     def __repr__(self):
         return f"<{self.__class__.__name__} '{self.version}'>"
 
@@ -502,7 +502,7 @@ class Config:
         with open(to, "w", encoding='utf8') as f:
             self.out.append("# end \n")
             f.write("\n".join(self.out))
-    
+
     def write_json(self, method: str, to: Pathlike):
         self.log.info("write method '%s' to json: %s", method, to)
         getattr(self, method)()
@@ -578,7 +578,7 @@ class PythonConfig311(Config):
         """framework build variant max-size"""
         self.shared_max()
         self.move_static_to_shared(
-            "_bz2", "_lzma", "readline", "_sqlite3", 
+            "_bz2", "_lzma", "readline", "_sqlite3",
             "_scproxy", "zlib", "binascii",
         )
 
@@ -690,7 +690,7 @@ class ShellCmd:
         self,
         url: str,
         branch: Optional[str] = None,
-        directory: Optional[str] = None,
+        directory: Optional[Pathlike] = None,
         recurse: bool = False,
         cwd: Pathlike = ".",
     ):
@@ -890,6 +890,9 @@ class Project(ShellCmd):
         self.downloads = self.build / "downloads"
         self.src = self.build / "src"
         self.install = self.build / "install"
+        self.bin = self.build / "bin"
+        self.lib = self.build / "lib"
+        self.lib_static = self.build / "lib" / "static"
 
     def setup(self):
         """create main project directories"""
@@ -924,68 +927,68 @@ class AbstractBuilder(ShellCmd):
     def __repr__(self):
         return f"<{self.__class__.__name__} '{self.name}-{self.version}'>"
 
-    def __iter__(self):
-        for dependency in self.depends_on:
-            yield dependency
-            yield from iter(dependency)
+    # def __iter__(self):
+    #     for dependency in self.depends_on:
+    #         yield dependency
+    #         yield from iter(dependency)
 
     @property
-    def ver(self):
+    def ver(self) -> str:
         """short python version: 3.11"""
         return ".".join(self.version.split(".")[:2])
 
     @property
-    def ver_major(self):
+    def ver_major(self) -> str:
         """major compoent of semantic version: 3 in 3.11.7"""
         return self.version.split(".")[0]
 
     @property
-    def ver_minor(self):
+    def ver_minor(self) -> str:
         """minor compoent of semantic version: 11 in 3.11.7"""
         return self.version.split(".")[1]
 
     @property
-    def ver_patch(self):
+    def ver_patch(self) -> str:
         """patch compoent of semantic version: 7 in 3.11.7"""
         return self.version.split(".")[2]
 
     @property
-    def ver_nodot(self):
+    def ver_nodot(self) -> str:
         """concat major and minor version components: 311 in 3.11.7"""
         return self.ver.replace(".", "")
 
     @property
-    def name_version(self):
+    def name_version(self) -> str:
         """return name-<fullversion>: e.g. Python-3.11.7"""
         return f"{self.name}-{self.version}"
 
     @property
-    def name_ver(self):
+    def name_ver(self) -> str:
         """return name.lower-<ver>: e.g. python3.11"""
         return f"{self.name.lower()}{self.ver}"
 
     @property
-    def download_url(self):
+    def download_url(self) -> str:
         """return download url with version interpolated"""
         return self.download_url_template.format(ver=self.version)
 
     @property
-    def repo_branch(self):
+    def repo_branch(self) -> str:
         """return repo branch"""
         return self.name.lower()
 
     @property
-    def src_dir(self):
+    def src_dir(self) -> Path:
         """return extracted source folder of build target"""
         return self.project.src / self.name_version
 
     @property
-    def build_dir(self):
+    def build_dir(self) -> Path:
         """return 'build' folder src dir of build target"""
         return self.src_dir / "build"
 
     @property
-    def executable_name(self):
+    def executable_name(self) -> str:
         """executable name of buld target"""
         name = self.name.lower()
         if PLATFORM == "Windows":
@@ -993,17 +996,17 @@ class AbstractBuilder(ShellCmd):
         return name
 
     @property
-    def executable(self):
+    def executable(self) -> Path:
         """executable path of buld target"""
         return self.project.bin / self.executable_name
 
     @property
-    def libname(self):
+    def libname(self) -> str:
         """library name prefix"""
         return f"lib{self.name}"
 
     @property
-    def staticlib_name(self):
+    def staticlib_name(self) -> str:
         """static libname"""
         suffix = ".a"
         if PLATFORM == "Windows":
@@ -1011,7 +1014,7 @@ class AbstractBuilder(ShellCmd):
         return f"{self.libname}{suffix}"
 
     @property
-    def dylib_name(self):
+    def dylib_name(self) -> str:
         """dynamic link libname"""
         if PLATFORM == "Darwin":
             return f"{self.libname}.dylib"
@@ -1022,7 +1025,7 @@ class AbstractBuilder(ShellCmd):
         return self.fail("platform not supported")
 
     @property
-    def dylib_linkname(self):
+    def dylib_linkname(self) -> str:
         """symlink to dylib"""
         if PLATFORM == "Darwin":
             return f"{self.libname}.dylib"
@@ -1031,26 +1034,26 @@ class AbstractBuilder(ShellCmd):
         return self.fail("platform not supported")
 
     @property
-    def dylib(self):
+    def dylib(self) -> Path:
         """dylib path"""
         return self.project.lib / self.dylib_name
 
     @property
-    def dylib_link(self):
+    def dylib_link(self) -> Path:
         """dylib link path"""
         return self.project.lib / self.dylib_linkname
 
     @property
-    def staticlib(self):
+    def staticlib(self) -> Path:
         """staticlib path"""
         return self.project.lib_static / self.staticlib_name
 
     @property
-    def prefix(self):
+    def prefix(self) -> Path:
         """builder prefix path"""
         return self.project.install / self.name.lower()
 
-    def libs_static_exist(self):
+    def libs_static_exist(self) -> bool:
         """check if all built stati libs already exist"""
         return all((self.prefix / "lib" / lib).exists()
                     for lib in self.libs_static)
@@ -1174,9 +1177,9 @@ class XzBuilder(Builder):
                     "/bin/sh",
                     "configure",
                     "--disable-dependency-tracking",
-                    "--disable-xzdec", 
+                    "--disable-xzdec",
                     "--disable-lzmadec",
-                    "--disable-nls", 
+                    "--disable-nls",
                     "--enable-small",
                     "--disable-shared",
                     f"--prefix={self.prefix}",
@@ -1491,7 +1494,7 @@ if __name__ == "__main__":
     opt("-s", "--json", help="serialize config to json file")
 
     args = parser.parse_args()
-    python_builder_class = PythonBuilder
+    python_builder_class: type[PythonBuilder] = PythonBuilder
     if args.debug:
         python_builder_class = PythonDebugBuilder
     builder = python_builder_class(

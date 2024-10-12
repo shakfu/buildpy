@@ -63,7 +63,7 @@ func init() {
 	rootCmd.AddCommand(configCmd)
 	configCmd.Flags().BoolP("skip", "s", false, "skip configuration step")
 	configCmd.Flags().BoolP("yaml", "y", false, "output configuration in yaml")
-	configCmd.Flags().StringP("version", "v", "3.11.7", "python version ")
+	configCmd.Flags().StringP("version", "v", "3.12.7", "python version ")
 	configCmd.Flags().StringP("name", "c", "shared_mid", "name of configuration")
 	configCmd.Flags().StringP("write", "w", "", "write config to path")
 	configCmd.Flags().StringP("read",  "r", "", "read yaml config from path")

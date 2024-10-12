@@ -17,7 +17,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
 
 ## [0.0.1]
 
-- Adde `write_json` options
+- Added support for Python 3.13.0
+
+- Added `write_json` options
 
 - Added `make_relocatable` feature for `framework-*` build variants on macOS to make the installed prefix relocatable
 

@@ -73,7 +73,8 @@ ARCH = platform.machine()
 PY_VER_MINOR = sys.version_info.minor
 if PLATFORM == "Darwin":
     MACOSX_DEPLOYMENT_TARGET = setenv("MACOSX_DEPLOYMENT_TARGET", "12.6")
-DEFAULT_PY_VERSION = "3.12.2"
+DEFAULT_PY_VERSION = "3.12.7"
+# DEFAULT_PY_VERSION = "3.13.0"
 DEBUG = getenv('DEBUG', default=True)
 COLOR = getenv('COLOR', default=True)
 
@@ -177,6 +178,7 @@ BASE_CONFIG = {
         "_codecs_tw": ["cjkcodecs/_codecs_tw.c"],
         "_collections": ["_collectionsmodule.c"],
         "_contextvars": ["_contextvarsmodule.c"],
+        "_crypt":  ["_cryptmodule.c", "-lcrypt"],
         "_csv": ["_csv.c"],
         "_ctypes": [
             "_ctypes/_ctypes.c",
@@ -513,7 +515,7 @@ class Config:
 class PythonConfig311(Config):
     """configuration class to build python 3.11"""
 
-    version: str = "3.11.7"
+    version: str = "3.11.10"
 
     def patch(self) -> None:
         """patch cfg attribute"""
@@ -591,7 +593,7 @@ class PythonConfig311(Config):
 class PythonConfig312(PythonConfig311):
     """configuration class to build python 3.12"""
 
-    version = "3.12.2"
+    version = "3.12.7"
 
     def patch(self):
         """patch cfg attribute"""
@@ -641,6 +643,45 @@ class PythonConfig312(PythonConfig311):
         self.cfg["static"].remove("_sha256")
         self.cfg["static"].remove("_sha512")
         self.cfg["disabled"].append("_xxinterpchannels")
+
+
+class PythonConfig313(PythonConfig312):
+    """configuration class to build python 3.13"""
+
+    version = "3.13.0"
+
+    def patch(self):
+        """patch cfg attribute"""
+
+        super().patch()
+
+        self.cfg["extensions"].update(
+            {
+                "_interpchannels" : ["_interpchannelsmodule.c"],
+                "_interpqueues" : ["_interpqueuesmodule.c"],
+                "_interpreters" : ["_interpretersmodule.c"],
+                "_sysconfig" : ["_sysconfig.c"],
+                "_testexternalinspection" : ["_testexternalinspection.c"],
+            })
+
+        del self.cfg["extensions"]["_crypt"]
+        del self.cfg["extensions"]["ossaudiodev"]
+        del self.cfg["extensions"]["spwd"]
+
+        self.cfg["static"].append("_interpchannels")
+        self.cfg["static"].append("_interpqueues")
+        self.cfg["static"].append("_interpreters")
+        self.cfg["static"].append("_sysconfig")
+
+        self.cfg["disabled"].remove("_crypt")
+        self.cfg["disabled"].remove("_xxsubinterpreters")
+        self.cfg["disabled"].remove("audioop")
+        self.cfg["disabled"].remove("nis")
+        self.cfg["disabled"].remove("ossaudiodev")
+        self.cfg["disabled"].remove("spwd")
+
+        self.cfg["disabled"].append("_testexternalinspection")
+
 
 
 # ----------------------------------------------------------------------------
@@ -1278,6 +1319,7 @@ class PythonBuilder(Builder):
         return {
             "3.11": PythonConfig311,
             "3.12": PythonConfig312,
+            "3.13": PythonConfig313,
         }[self.ver](BASE_CONFIG)
 
     @property

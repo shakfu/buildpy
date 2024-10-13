@@ -874,7 +874,7 @@ public:
 
 #endif
 
-        if (this->ver() == "3.11") {
+        if (this->version().minor() >= 11) {
             if (this->config() == "static_max") {
                 Debug("config_setup_local: 3.11 -> static_max");
 #if __linux__
@@ -905,7 +905,10 @@ public:
                 static_to_disabled({ "_decimal", "_ssl", "_hashlib" });
             }
 
-        } else if (this->ver() == "3.12") {
+        } 
+
+        if (this->version().minor() >= 12)  {
+
             EXTS["_md5"] = {
                 "md5module.c",
                 "-I$(srcdir)/Modules/_hacl/include",
@@ -948,31 +951,59 @@ public:
             remove_from(STATIC, "_sha256");
             remove_from(STATIC, "_sha512");
 
-            if (this->config() == "static_max") {
-                Debug("config_setup_local: 3.12 -> static_max");
-#if __linux__
-                Debug("config_setup_local: 3.12 > static_max > linux");
-                static_to_disabled("_decimal");
-#endif
-            } else if (this->config() == "static_mid") {
-                Debug("config_setup_local: 3.12 -> static_mid");
-                static_to_disabled("_decimal");
+//             if (this->config() == "static_max") {
+//                 Debug("config_setup_local: 3.12 -> static_max");
+// #if __linux__
+//                 Debug("config_setup_local: 3.12 > static_max > linux");
+//                 static_to_disabled("_decimal");
+// #endif
+//             } else if (this->config() == "static_mid") {
+//                 Debug("config_setup_local: 3.12 -> static_mid");
+//                 static_to_disabled("_decimal");
 
-            } else if (this->config() == "static_min") {
-                Debug("config_setup_local: 3.12 > static_min");
-                static_to_disabled({ "_bz2", "_decimal", "_csv", "_json",
-                    "_lzma", "_scproxy", "_sqlite3", "_ssl",
-                    "pyexpat", "readline" });
+//             } else if (this->config() == "static_min") {
+//                 Debug("config_setup_local: 3.12 > static_min");
+//                 static_to_disabled({ "_bz2", "_decimal", "_csv", "_json",
+//                     "_lzma", "_scproxy", "_sqlite3", "_ssl",
+//                     "pyexpat", "readline" });
 
-            } else if (this->config() == "shared_max") {
-                Debug("config_setup_local: 3.12 -> shared_max");
-                disabled_to_shared("_ctypes");
-                static_to_shared({ "_decimal", "_ssl", "_hashlib" });
+//             } else if (this->config() == "shared_max") {
+//                 Debug("config_setup_local: 3.12 -> shared_max");
+//                 disabled_to_shared("_ctypes");
+//                 static_to_shared({ "_decimal", "_ssl", "_hashlib" });
 
-            } else if (this->config() == "shared_mid") {
-                Debug("config_setup_local: 3.12 -> shared_max");
-                static_to_disabled({ "_decimal", "_ssl", "_hashlib" });
-            }
+//             } else if (this->config() == "shared_mid") {
+//                 Debug("config_setup_local: 3.12 -> shared_max");
+//                 static_to_disabled({ "_decimal", "_ssl", "_hashlib" });
+//             }
+        }
+
+        if (this->version().minor() >= 13)  {
+
+            EXTS["_interpchannels"] = {"_interpchannelsmodule.c"};
+            EXTS["_interpqueues"] = {"_interpqueuesmodule.c"};
+            EXTS["_interpreters"] = {"_interpretersmodule.c"};
+            EXTS["_sysconfig"] = {"_sysconfig.c"};
+            EXTS["_testexternalinspection"] = {"_testexternalinspection.c"};
+
+            EXTS.erase("_crypt");
+            EXTS.erase("ossaudiodev");
+            EXTS.erase("spwd");
+
+            STATIC.push_back("_interpchannels");
+            STATIC.push_back("_interpqueues");
+            STATIC.push_back("_interpreters");
+            STATIC.push_back("_sysconfig");
+
+            remove_from(DISABLED, "_crypt");
+            remove_from(DISABLED, "_xxsubinterpreters");
+            remove_from(DISABLED, "audioop");
+            remove_from(DISABLED, "nis");
+            remove_from(DISABLED, "ossaudiodev");
+            remove_from(DISABLED, "spwd");
+
+            DISABLED.push_back("_testexternalinspection");
+
         }
     }
 

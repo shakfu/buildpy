@@ -12,6 +12,7 @@ class structure:
 Config
     PythonConfig311
     PythonConfig312
+    PythonConfig313
 
 ShellCmd
     Project

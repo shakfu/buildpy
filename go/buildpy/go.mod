@@ -4,6 +4,7 @@ go 1.22.0
 
 require (
 	github.com/charmbracelet/log v0.3.1
+	github.com/Masterminds/semver/v3 v3.3.0
 	github.com/spf13/cobra v1.8.0
 	gopkg.in/yaml.v3 v3.0.1
 )

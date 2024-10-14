@@ -10,6 +10,7 @@ import (
 	"text/template"
 
 	"github.com/charmbracelet/log"
+	"github.com/Masterminds/semver/v3"
 	"gopkg.in/yaml.v3"
 )
 
@@ -18,7 +19,7 @@ const PLATFORM = runtime.GOOS
 
 type Config struct {
 	Name     string
-	Version  string
+	Version  *semver.Version
 	Headers  []string
 	Exts     map[string][]string
 	Core     []string
@@ -29,7 +30,7 @@ type Config struct {
 
 type ConfigFile struct {
 	Name     string
-	Version  string
+	Version  *semver.Version
 	Headers  []string
 	Exts     map[string][]string
 	Core     []string
@@ -38,7 +39,11 @@ type ConfigFile struct {
 	Disabled []string
 }
 
-func NewConfig(name string, version string) *Config {
+func NewConfig(name string, ver string) *Config {
+	version, err := semver.NewVersion(ver)
+	if err != nil {
+		log.Fatal("Error parsing version: %s", err)
+	}	
 	return &Config{
 		Name:    name,
 		Version: version,
@@ -334,7 +339,7 @@ func NewConfig(name string, version string) *Config {
 }
 
 func (c *Config) Ver() string {
-	return strings.Join(strings.Split(c.Version, ".")[:2], ".")
+	return strings.Join(strings.Split(c.Version.String(), ".")[:2], ".")
 }
 
 func (c *Config) StaticToShared(names ...string) {
@@ -389,7 +394,7 @@ func (c *Config) DisabledToShared(names ...string) {
 
 func (c *Config) Configure() {
 
-	log.Debug("config.Configure: starting", "plat", PLATFORM, "cfg", c.Name, "ver", c.Version)
+	log.Debug("config.Configure: starting", "plat", PLATFORM, "cfg", c.Name, "ver", c.Version.String())
 
 	if PLATFORM == "darwin" {
 		log.Debug("config.Configure: common > darwin")
@@ -415,7 +420,7 @@ func (c *Config) Configure() {
 		}
 	}
 
-	if c.Ver() == "3.11" {
+	if c.Version.Minor() >= 11 {
 
 		if c.Name == "static_max" {
 			log.Debug("config.Configure: 3.11 -> static_max")
@@ -448,7 +453,9 @@ func (c *Config) Configure() {
 
 		}
 
-	} else if c.Ver() == "3.12" {
+	}
+
+	if c.Version.Minor() >= 12 {
 
 		c.Exts["_md5"] = []string{
 			"md5module.c",
@@ -496,26 +503,63 @@ func (c *Config) Configure() {
 			log.Debug("config.Configure: 3.12 -> static_max")
 			if PLATFORM == "linux" {
 				log.Debug("config.Configure: 3.12 > static_max > linux")
-				c.StaticToDisabled("_decimal")
 			}
 		} else if c.Name == "static_mid" {
 			log.Debug("config.Configure: 3.12 -> static_mid")
-			c.StaticToDisabled("_decimal")
 
 		} else if c.Name == "static_min" {
 			log.Debug("config.Configure: 3.12 > static_min")
-			c.StaticToDisabled("_bz2", "_decimal", "_csv", "_json",
-				"_lzma", "_scproxy", "_sqlite3", "_ssl", "pyexpat",
-				"readline")
 
 		} else if c.Name == "shared_max" {
 			log.Debug("config.Configure: 3.12 -> shared_max")
-			c.DisabledToShared("_ctypes")
-			c.StaticToShared("_decimal", "_ssl", "_hashlib")
 
 		} else if c.Name == "shared_mid" {
 			log.Debug("config.Configure: 3.12 -> shared_max")
-			c.StaticToDisabled("_decimal", "_ssl", "_hashlib")
+		}
+	}
+
+	if c.Version.Minor() >= 13 {
+
+        c.Exts["_interpchannels"] =  []string{"_interpchannelsmodule.c"}
+        c.Exts["_interpqueues"] =  []string{"_interpqueuesmodule.c"}
+        c.Exts["_interpreters"] =  []string{"_interpretersmodule.c"}
+        c.Exts["_sysconfig"] =  []string{"_sysconfig.c"}
+        c.Exts["_testexternalinspection"] =  []string{"_testexternalinspection.c"}
+
+		delete(c.Exts, "_crypt")
+		delete(c.Exts, "ossaudiodev")
+		delete(c.Exts, "spwd")
+
+		c.Static["_interpchannels"] = true
+		c.Static["_interpqueues"] = true
+		c.Static["_interpreters"] = true
+		c.Static["_sysconfig"] = true
+
+		delete(c.Disabled, "_crypt")
+		delete(c.Disabled, "_xxsubinterpreters")
+		delete(c.Disabled, "audioop")
+		delete(c.Disabled, "nis")
+		delete(c.Disabled, "ossaudiodev")
+		delete(c.Disabled, "spwd")
+
+		c.Disabled["_testexternalinspection"] = true
+
+		if c.Name == "static_max" {
+			log.Debug("config.Configure: 3.13 -> static_max")
+			if PLATFORM == "linux" {
+				log.Debug("config.Configure: 3.13 > static_max > linux")
+			}
+		} else if c.Name == "static_mid" {
+			log.Debug("config.Configure: 3.13 -> static_mid")
+
+		} else if c.Name == "static_min" {
+			log.Debug("config.Configure: 3.13 > static_min")
+
+		} else if c.Name == "shared_max" {
+			log.Debug("config.Configure: 3.13 -> shared_max")
+
+		} else if c.Name == "shared_mid" {
+			log.Debug("config.Configure: 3.13 -> shared_max")
 		}
 	}
 }

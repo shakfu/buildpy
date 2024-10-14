@@ -11,6 +11,7 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/shakfu/buildpy/internal/config"
 	"github.com/shakfu/buildpy/internal/shell"
+	"github.com/Masterminds/semver/v3"
 )
 
 const PLATFORM = runtime.GOOS
@@ -33,7 +34,7 @@ type Builder interface {
 
 type PythonBuilder struct {
 	Name           string
-	Version        string
+	Version        *semver.Version
 	Config         string
 	DownloadUrl    string
 	RepoUrl        string
@@ -47,9 +48,13 @@ type PythonBuilder struct {
 }
 
 func NewPythonBuilder(version string, config string) *PythonBuilder {
+	v, err := semver.NewVersion(version)
+	if err != nil {
+		log.Fatal("Error parsing version: %s", err)
+	}
 	return &PythonBuilder{
 		Name:          "Python",
-		Version:       version,
+		Version:       v,
 		Config:        config,
 		DownloadUrl:   "https://www.python.org/ftp/python/%s/Python-%s.tar.xz",
 		RepoUrl:       "https://github.com/python/cpython.git",
@@ -124,20 +129,20 @@ func (b *PythonBuilder) BuildDir() string {
 }
 
 func (b *PythonBuilder) Ver() string {
-	return strings.Join(strings.Split(b.Version, ".")[:2], ".")
+	return strings.Join(strings.Split(b.Version.String(), ".")[:2], ".")
 }
 
-func (b *PythonBuilder) VerMajor() string {
-	return strings.Split(b.Version, ".")[0]
-}
+// func (b *PythonBuilder) VerMajor() uint64 {
+// 	return b.Version.Major()
+// }
 
-func (b *PythonBuilder) VerMinor() string {
-	return strings.Split(b.Version, ".")[1]
-}
+// func (b *PythonBuilder) VerMinor() uint64 {
+// 	return b.Version.Minor()
+// }
 
-func (b *PythonBuilder) VerPatch() string {
-	return strings.Split(b.Version, ".")[2]
-}
+// func (b *PythonBuilder) VerPatch() uint64 {
+// 	return b.Version.Patch()
+// }
 
 func (b *PythonBuilder) VerNoDot() string {
 	return strings.ReplaceAll(b.Ver(), ".", "")
@@ -232,7 +237,7 @@ func (b *PythonBuilder) Configure() {
 	args = append(args, b.ConfigOptions...)
 	var setupLocal = filepath.Join(b.SrcDir(), "Modules", "Setup.local")
 	log.Info("PythonBuilder.Configure", "write", setupLocal)
-	cfg := config.NewConfig(b.Config, b.Version)
+	cfg := config.NewConfig(b.Config, b.Version.String())
 	cfg.Configure()
 	cfg.WriteSetupLocal(setupLocal)
 	log.Info("PythonBuilder.Configure", "opts", args)

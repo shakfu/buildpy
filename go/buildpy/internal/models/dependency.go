@@ -114,8 +114,8 @@ func InstallBzip2Async(wg *sync.WaitGroup) {
 func InstallXz() {
 	xz := Dependency{
 		Name:        "xz",
-		Version:     "5.2.5",
-		DownloadUrl: "https://github.com/tukaani-project/xz/releases/download/v5.2.5/xz-5.2.5.tar.gz",
+		Version:     "5.6.3",
+		DownloadUrl: "https://github.com/tukaani-project/xz/releases/download/v5.6.3/xz-5.6.3.tar.gz",
 		RepoUrl:     "https://github.com/python/cpython-source-deps.git",
 		RepoBranch:  "xz",
 		StaticLibs:  []string{"liblzma.a"},
@@ -125,6 +125,8 @@ func InstallXz() {
 	if !xz.StaticLibsExist() {
 		xz.Project.Setup()
 		xz.GitClone()
+		os.Chmod(filepath.Join(xz.SrcDir(), "configure"), 0755)
+		os.Chmod(filepath.Join(xz.SrcDir(), "build-aux/install-sh"), 0755)
 		prefixOpt := fmt.Sprintf("--prefix=%s", xz.Prefix())
 		shell.ShellCmd(xz.SrcDir(), "./configure", 
             "--disable-dependency-tracking",

@@ -1189,7 +1189,7 @@ class XzBuilder(Builder):
     """lzma builder class"""
 
     name = "xz"
-    version = "5.4.6"
+    version = "5.6.3"
     repo_url = "https://github.com/python/cpython-source-deps.git"
     download_url_template = "http://tukaani.org/xz/xz-{ver}.tar.gz" # not used
     depends_on = []

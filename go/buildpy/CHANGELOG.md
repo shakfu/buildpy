@@ -17,6 +17,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
 
 ## [0.0.1]
 
+- Added support for 3.13
+
+- Changed version selection: it's no includes all changes from the initial version up to the specified version. This reflects how changes accrete. Changes are more efficiently stored as diffs.
+
+- Added semver type
+
 - Added additional validation checks during configuration
 
 - Added yaml serialization / deserialization of `config.Config` types

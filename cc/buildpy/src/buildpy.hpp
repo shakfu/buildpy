@@ -951,31 +951,23 @@ public:
             remove_from(STATIC, "_sha256");
             remove_from(STATIC, "_sha512");
 
-//             if (this->config() == "static_max") {
-//                 Debug("config_setup_local: 3.12 -> static_max");
-// #if __linux__
-//                 Debug("config_setup_local: 3.12 > static_max > linux");
-//                 static_to_disabled("_decimal");
-// #endif
-//             } else if (this->config() == "static_mid") {
-//                 Debug("config_setup_local: 3.12 -> static_mid");
-//                 static_to_disabled("_decimal");
+            if (this->config() == "static_max") {
+                Debug("config_setup_local: 3.12 -> static_max");
+#if __linux__
+                Debug("config_setup_local: 3.12 > static_max > linux");
+#endif
+            } else if (this->config() == "static_mid") {
+                Debug("config_setup_local: 3.12 -> static_mid");
 
-//             } else if (this->config() == "static_min") {
-//                 Debug("config_setup_local: 3.12 > static_min");
-//                 static_to_disabled({ "_bz2", "_decimal", "_csv", "_json",
-//                     "_lzma", "_scproxy", "_sqlite3", "_ssl",
-//                     "pyexpat", "readline" });
+            } else if (this->config() == "static_min") {
+                Debug("config_setup_local: 3.12 > static_min");
 
-//             } else if (this->config() == "shared_max") {
-//                 Debug("config_setup_local: 3.12 -> shared_max");
-//                 disabled_to_shared("_ctypes");
-//                 static_to_shared({ "_decimal", "_ssl", "_hashlib" });
+            } else if (this->config() == "shared_max") {
+                Debug("config_setup_local: 3.12 -> shared_max");
 
-//             } else if (this->config() == "shared_mid") {
-//                 Debug("config_setup_local: 3.12 -> shared_max");
-//                 static_to_disabled({ "_decimal", "_ssl", "_hashlib" });
-//             }
+            } else if (this->config() == "shared_mid") {
+                Debug("config_setup_local: 3.12 -> shared_max");
+            }
         }
 
         if (this->version().minor() >= 13)  {
@@ -1003,6 +995,24 @@ public:
             remove_from(DISABLED, "spwd");
 
             DISABLED.push_back("_testexternalinspection");
+
+            if (this->config() == "static_max") {
+                Debug("config_setup_local: 3.13 -> static_max");
+#if __linux__
+                Debug("config_setup_local: 3.13 > static_max > linux");
+#endif
+            } else if (this->config() == "static_mid") {
+                Debug("config_setup_local: 3.13 -> static_mid");
+
+            } else if (this->config() == "static_min") {
+                Debug("config_setup_local: 3.13 > static_min");
+
+            } else if (this->config() == "shared_max") {
+                Debug("config_setup_local: 3.13 -> shared_max");
+
+            } else if (this->config() == "shared_mid") {
+                Debug("config_setup_local: 3.13 -> shared_max");
+            }
 
         }
     }

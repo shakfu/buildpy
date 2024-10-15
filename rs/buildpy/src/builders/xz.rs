@@ -5,7 +5,7 @@ use crate::config::Project;
 use crate::ops;
 use crate::ops::log;
 use crate::ops::process;
-
+use crate::ops::shell;
 
 // use crate::builders::api::Builder;
 
@@ -84,6 +84,10 @@ impl XzBuilder {
         self.project.setup();
         self.download();
         self.install_dependencies();
+        let src_dir = self.src_dir();
+        let cwd = src_dir.to_str().unwrap();
+        shell::chmod("configure", 755, cwd);
+        shell::chmod("build-aux/install-sh", 755, cwd);
     }
 
     fn configure(&self) {

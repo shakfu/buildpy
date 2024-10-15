@@ -4,6 +4,7 @@ use std::collections::HashMap;
 use std::env;
 
 use serde::{Deserialize, Serialize};
+use semver::Version;
 
 use crate::config::macros::{hashmaps, vecs};
 use crate::ops::log;
@@ -14,19 +15,27 @@ const PLATFORM: &str = env::consts::OS;
 pub struct Config {
     pub name: String,
     pub version: String,
+    pub major: u64,
+    pub minor: u64,
+    pub patch: u64,
     pub headers: Vec<String>,
     pub exts: HashMap<String, Vec<String>>,
     pub core: Vec<String>,
     pub statik: Vec<String>,
     pub shared: Vec<String>,
     pub disabled: Vec<String>,
+
 }
 
 impl Config {
     pub fn new(name: String, version: String) -> Self {
+        let smver = Version::parse(&version).unwrap();
         Self {
             name: name.clone(),
             version: version.clone(),
+            major: smver.major,
+            minor: smver.minor,
+            patch: smver.patch,
             headers: vecs![
                 "DESTLIB=$(LIBDEST)",
                 "MACHDESTLIB=$(BINLIBDEST)",
@@ -416,7 +425,7 @@ impl Config {
             );
         }
 
-        if self.ver() == "3.11" {
+        if self.minor >= 11 {
             if self.name == "static_max" {
                 log::debug!("config: 3.11 -> static_max");
                 if PLATFORM == "linux" {
@@ -443,7 +452,9 @@ impl Config {
                 log::debug!("config: 3.11 -> shared_mid");
                 self.static_to_disabled(vecs!["_decimal", "_ssl", "_hashlib"]);
             }
-        } else if self.ver() == "3.12" {
+        }
+        
+        if self.minor >= 12 {
             self.exts.insert(
                 "_md5".to_string(),
                 vecs![
@@ -506,25 +517,62 @@ impl Config {
                 log::debug!("config: 3.12 -> static_max");
                 if PLATFORM == "linux" {
                     log::debug!("config: 3.12 > static_max > linux");
-                    self.static_to_disabled(vecs!["_decimal"]);
+                    // self.static_to_disabled(vecs!["_decimal"]);
                 }
             } else if self.name == "static_mid" {
                 log::debug!("config: 3.12 -> static_mid");
-                self.static_to_disabled(vecs!["_decimal"]);
+                // self.static_to_disabled(vecs!["_decimal"]);
             } else if self.name == "static_min" {
                 log::debug!("config: 3.12 > static_min");
-                self.static_to_disabled(vecs![
-                    "_bz2", "_decimal", "_csv", "_json", "_lzma", "_scproxy", "_sqlite3", "_ssl",
-                    "pyexpat", "readline"
-                ]);
+                // self.static_to_disabled(vecs![
+                //     "_bz2", "_decimal", "_csv", "_json", "_lzma", "_scproxy", "_sqlite3", "_ssl",
+                //     "pyexpat", "readline"
+                // ]);
             } else if self.name == "shared_max" {
                 log::debug!("config: 3.12 -> shared_max");
-                self.disabled_to_shared(vecs!["_ctypes"]);
-                self.static_to_shared(vecs!["_decimal", "_ssl", "_hashlib"]);
+                // self.disabled_to_shared(vecs!["_ctypes"]);
+                // self.static_to_shared(vecs!["_decimal", "_ssl", "_hashlib"]);
             } else if self.name == "shared_mid" {
                 log::debug!("config: 3.12 -> shared_max");
-                self.static_to_disabled(vecs!["_decimal", "_ssl", "_hashlib"]);
+                // self.static_to_disabled(vecs!["_decimal", "_ssl", "_hashlib"]);
             }
         }
+
+        if self.minor >= 13 {
+
+            log::debug!("config: 3.13");
+
+            self.exts.insert("_interpchannels".to_string(), vecs!["_interpchannelsmodule.c"]);
+            self.exts.insert("_interpqueues".to_string(), vecs!["_interpqueuesmodule.c"]);
+            self.exts.insert("_interpreters".to_string(), vecs!["_interpretersmodule.c"]);
+            self.exts.insert("_sysconfig".to_string(), vecs!["_sysconfig.c"]);
+            self.exts.insert("_testexternalinspection".to_string(), vecs!["_testexternalinspection.c"]);
+           
+            self.exts.remove("_crypt");
+            self.exts.remove("ossaudiodev");
+            self.exts.remove("spwd");
+
+            self.statik.push("_interpchannels".to_string());
+            self.statik.push("_interpqueues".to_string());
+            self.statik.push("_interpreters".to_string());
+            self.statik.push("_sysconfig".to_string());
+
+            self.disabled.retain(|x| *x != "_crypt");
+            self.disabled.retain(|x| *x != "_xxsubinterpreters");
+            self.disabled.retain(|x| *x != "audioop");
+            self.disabled.retain(|x| *x != "nis");
+            self.disabled.retain(|x| *x != "ossaudiodev");
+            self.disabled.retain(|x| *x != "spwd");
+
+            // self.disabled.remove("_crypt");
+            // self.disabled.remove("_xxsubinterpreters");
+            // self.disabled.remove("audioop");
+            // self.disabled.remove("nis");
+            // self.disabled.remove("ossaudiodev");
+            // self.disabled.remove("spwd");
+
+            self.disabled.push("_testexternalinspection".to_string());
+        }
+
     }
 }

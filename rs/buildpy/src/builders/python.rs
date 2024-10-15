@@ -183,7 +183,8 @@ impl PythonBuilder {
             opts.push(opt.as_str());
         }
 
-        let mut cfg = config::Config::new(self.config.clone(), self.ver());
+        // let mut cfg = config::Config::new(self.config.clone(), self.ver());
+        let mut cfg = config::Config::new(self.config.clone(), self.version.clone());
         cfg.configure();
         cfg.write(self.setup_local());
 

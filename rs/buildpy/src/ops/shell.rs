@@ -95,3 +95,10 @@ pub fn zipfile(zip_path: &str, libpath: &str) {
     let args = vec!["-r", zip_path, "."];
     process::cmd("zip", args, libpath);
 }
+
+pub fn chmod(target: &str, mode: u32, cwd: &str) {
+    let perms = mode.to_string();
+    let args = vec![perms.as_str(), target];
+    process::cmd("chmod", args, cwd)
+
+}

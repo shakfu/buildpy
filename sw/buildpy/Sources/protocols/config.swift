@@ -13,4 +13,17 @@ protocol Config {
 
     // initializer
     init(name: String, version: String)
+
+    // methods
+    func move_entries(src: String, dst: String, names: String...)
+    func enable_static(names: String...)
+    func enable_shared(names: String...)
+    func disable_static(names: String...)
+    func disable_shared(names: String...)
+    func move_static_to_shared(names: String...)
+    func move_shared_to_static(names: String...)
+    func write(method: String, to: String)
+    func write_json(method: String, to: String)
 }
+
+

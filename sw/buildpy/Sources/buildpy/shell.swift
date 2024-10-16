@@ -1,6 +1,9 @@
 import Foundation
 import Logging
 
+import CLib
+
+
 class Shell {
 
     let fm: FileManager
@@ -19,6 +22,10 @@ class Shell {
     // var cwd: String {
     //     return self.fm.currentDirectoryPath
     // }
+
+    func add(x: Int32, y: Int32) -> Int32 {
+        return CLib.add(x, y)
+    }
 
     func cwd() -> String {
         let _cwd = self.fm.currentDirectoryPath

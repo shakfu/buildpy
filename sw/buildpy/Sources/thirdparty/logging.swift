@@ -90,7 +90,10 @@ public struct Handler: LogHandler {
         level: Logger.Level,
         message: Logger.Message,
         metadata: Logger.Metadata?,
-        file: String, function: String, line: UInt
+        source: String,
+        file: String,
+        function: String, 
+        line: UInt
     ) {
         let prettyMetadata =
             metadata?.isEmpty ?? true

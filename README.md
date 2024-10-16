@@ -6,9 +6,17 @@ This project provides different language implementations of a commandline tool w
 
 Such customized builds can be useful for integration or embedding in other compiled projects.
 
-The implementations so far are: python, golang, rust, c++, haskell (wip), and swift (wip).
+The implementations so far are: python, golang, rust, c++, haskell (wip), and swift (wip):
 
-The design for the tool, called `buildpy`, was initially conceived,prototyped and implemented in python3 as an improvement on some earlier incarnations (see Background section below) which are also included in this project. It provides for the following general steps to build python from source:
+| python version    | python | c++    | golang | rust   | swift  | haskell |
+| :---------------: | :----: | :----: | :----: | :----: | :----: | :----:  |
+| 3.10              |    1   |    1   |    1   |    1   |    0   |    0    |
+| 3.11              |    1   |    1   |    1   |    1   |    0   |    0    |
+| 3.12              |    1   |    1   |    1   |    1   |    0   |    0    |
+| 3.13              |    1   |    1   |    1   |    1   |    0   |    0    |
+
+
+The design for the tool, called `buildpy`, was initially conceived, prototyped and implemented in python3 as an improvement on some earlier incarnations (see Background section below) which are also included in this project. It provides for the following general steps to build python from source:
 
 1. Create local build environment / project which consists of the following folder structure
 

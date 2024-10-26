@@ -1,6 +1,9 @@
+#include <iostream>
+
 #include "buildpy.hpp"
 
 const char* VERSION = "1.0.1";
+
 
 int main(int argc, char* argv[])
 {

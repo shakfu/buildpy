@@ -1,3 +1,6 @@
+//! Python builder
+
+
 use std::path::PathBuf;
 
 use crate::builders;
@@ -11,6 +14,14 @@ use crate::ops::shell;
 
 use logging_timer::time;
 
+/// Python builder
+/// 
+/// # Examples
+/// 
+/// ```
+/// use crate::builders::python;
+/// let builder = python::PythonBuilder::new("3.12.0");
+/// ```
 pub struct PythonBuilder {
     pub name: String,
     pub config: String,
@@ -29,6 +40,7 @@ pub struct PythonBuilder {
     pub project: config::Project,
 }
 
+/// Create a new python builder
 impl PythonBuilder {
     pub fn new(cfg: &str, version: &str) -> Self {
         Self {
@@ -77,6 +89,7 @@ impl PythonBuilder {
         }
     }
 
+    /// Get the version of the python builder
     fn ver(&self) -> String {
         let xs: Vec<String> = self.version.split('.').map(|s| s.to_string()).collect();
         format!("{}.{}", xs[0], xs[1])
@@ -87,36 +100,44 @@ impl PythonBuilder {
         format!("{}{}", xs[0], xs[1])
     }
 
+    /// Get the name and version of the python builder
     fn name_ver(&self) -> String {
         format!("{}{}", self.name.to_lowercase(), self.ver())
     }
 
+    /// Get the setup local path
     fn setup_local(&self) -> PathBuf {
         self.src_dir().join("Modules").join("Setup.local")
     }
 
+    /// Get the build type of the python builder
     fn build_type(&self) -> String {
         let parts: Vec<String> = self.version.split('_').map(|s| s.to_string()).collect();
         parts[0].clone()
     }
 
+    /// Get the size type of the python builder
     fn size_type(&self) -> String {
         let parts: Vec<String> = self.version.split('_').map(|s| s.to_string()).collect();
         parts[1].clone()
     }
 
+    /// Get the prefix of the python builder
     fn prefix(&self) -> PathBuf {
         self.project.install.join(self.name.to_lowercase())
     }
 
+    /// Get the source directory of the python builder
     fn src_dir(&self) -> PathBuf {
         self.project.src.join(self.name.to_lowercase())
     }
 
+    /// Get the build directory of the python builder
     fn build_dir(&self) -> PathBuf {
         self.project.src.join("build")
     }
 
+    /// Git clone the python repository
     fn git_clone(&self) {
         let mut args = vec![
             "clone",
@@ -132,12 +153,14 @@ impl PythonBuilder {
         };
     }
 
+    /// Install the dependencies of the python builder
     fn install_dependencies(&self) {
         builders::Bzip2Builder::new("1.0.8").process();
         builders::OpensslBuilder::new("1.1.1w").process();
         builders::XzBuilder::new("5.4.6").process();
     }
 
+    /// Download the python source code
     fn download(&self) {
         if self.use_git {
             self.git_clone();
@@ -148,12 +171,14 @@ impl PythonBuilder {
         }
     }
 
+    /// Setup the python builder
     fn setup(&self) {
         self.project.setup();
         self.download();
         self.install_dependencies();
     }
 
+    /// Configure the python builder
     fn configure(&mut self) {
         log::info!("configuring {}-{} ...", self.name, self.version);
 
@@ -191,6 +216,7 @@ impl PythonBuilder {
         process::cmd("bash", opts, self.src_dir());
     }
 
+    /// Build the python builder
     #[time("info")]
     fn build(&self) {
         log::info!("building...{}-{}", self.name, self.version);
@@ -198,11 +224,13 @@ impl PythonBuilder {
         process::cmd("make", vec![&jobs], self.src_dir());
     }
 
+    /// Install the python builder
     fn install(&self) {
         log::info!("installing...{}-{}", self.name, self.version);
         process::cmd("make", vec!["install"], self.src_dir());
     }
 
+    /// Clean the python builder
     fn clean(&self) {
         let target = self.prefix().join("lib").join(self.name_ver());
         log::info!("cleaning {}", target.display());
@@ -212,6 +240,7 @@ impl PythonBuilder {
         );
     }
 
+    /// Zip the python builder
     fn ziplib(&self) {
         let tmp_libdynload = self.project.build.join("lib-dynload");
         let tmp_os_py = self.project.build.join("os.py");
@@ -251,6 +280,7 @@ impl PythonBuilder {
         shell::mv(tmp_os_py, os_py);
     }
 
+    /// Process the python builder
     pub fn process(&mut self) {
         self.setup();
         self.install_dependencies();
@@ -261,6 +291,7 @@ impl PythonBuilder {
         self.ziplib()
     }
 
+    /// Check if the python builder is built
     fn is_built(&self) -> bool {
         self.prefix().join("bin").join("python3").exists()
     }

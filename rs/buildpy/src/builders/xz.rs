@@ -9,6 +9,14 @@ use crate::ops::shell;
 
 // use crate::builders::api::Builder;
 
+/// Xz builder
+/// 
+/// # Examples
+/// 
+/// ```
+/// use crate::builders::xz;
+/// let builder = xz::XzBuilder::new("5.4.5");
+/// ```
 pub struct XzBuilder {
     pub name: String,
     pub version: String,
@@ -23,6 +31,7 @@ pub struct XzBuilder {
     pub project: Project,
 }
 
+/// Create a new xz builder
 impl XzBuilder {
     pub fn new(version: &str) -> Self {
         Self {
@@ -42,20 +51,25 @@ impl XzBuilder {
         }
     }
 
+    /// Get the prefix of the xz library
     fn prefix(&self) -> PathBuf {
         self.project.install.join(self.name.to_lowercase())
     }
 
+    /// Get the source directory of the xz library
     fn src_dir(&self) -> PathBuf {
         self.project.src.join(self.name.to_lowercase())
     }
 
+    /// Get the build directory of the xz library
     fn build_dir(&self) -> PathBuf {
         self.src_dir().join("build")
     }
 
+    /// Install the dependencies of the xz library
     fn install_dependencies(&self) {}
 
+    /// Git clone the xz repository
     fn git_clone(&self) {
         let mut args = vec![
             "clone",
@@ -70,6 +84,7 @@ impl XzBuilder {
         }
     }
 
+    /// Download the xz library
     fn download(&self) {
         if self.use_git {
             self.git_clone();
@@ -80,6 +95,7 @@ impl XzBuilder {
         }
     }
 
+    /// Setup the xz library
     fn setup(&self) {
         self.project.setup();
         self.download();
@@ -90,6 +106,7 @@ impl XzBuilder {
         shell::chmod("build-aux/install-sh", 755, cwd);
     }
 
+    /// Configure the xz library
     fn configure(&self) {
         println!("configuring...{} {}", self.name, self.version);
         let prefixopt = format!("--prefix={}", self.prefix().display());
@@ -106,11 +123,13 @@ impl XzBuilder {
         process::cmd("/bin/sh", opts, self.src_dir());
     }
 
+    /// Build the xz library
     fn build(&self) {
         println!("building...{} {}", self.name, self.version);
         process::cmd("make", vec!["install"], self.src_dir());
     }
 
+    /// Install the xz builder
     fn install(&self) {}
 
     // fn configure(&self) {
@@ -146,6 +165,7 @@ impl XzBuilder {
     //     }
     // }
 
+    /// Process the xz builder
     pub fn process(&self) {
         if !self.is_built() {
             self.setup();
@@ -159,6 +179,7 @@ impl XzBuilder {
         }
     }
 
+    /// Check if the xz builder is built
     fn is_built(&self) -> bool {
         for lib in &self.staticlibs {
             if !self.prefix().join("lib").join(lib).exists() {

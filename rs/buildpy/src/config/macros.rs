@@ -1,3 +1,4 @@
+/// Create a vector of strings
 macro_rules! vecs {
     ( $( $x:expr ),* ) => {
         {
@@ -11,6 +12,7 @@ macro_rules! vecs {
 }
 pub(crate) use vecs;
 
+/// Create a hashmap of strings to vectors of strings
 macro_rules! hashmaps {
     (@single $($x:tt)*) => (());
     (@count $($rest:expr),*) => (<[()]>::len(&[$(hashmaps!(@single $rest)),*]));

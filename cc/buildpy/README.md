@@ -1,6 +1,26 @@
 # buildpy (c++)
 
-A minimal c++ implementation
+A minimal c++ implementation for building Python from source.
+
+## Overview
+
+This module provides functionality to automate the process of building
+Python from source code. It includes classes and utilities for:
+
+- Downloading and extracting Python source code
+- Configuring build options
+- Compiling Python and its dependencies
+- Installing the built Python distribution
+
+The main class, PythonBuilder, orchestrates the entire build process,
+while supporting classes like OpenSSLBuilder handle specific dependencies.
+
+Key features:
+
+- Supports multiple Python versions (3.11.x to 3.13.x)
+- Configurable build options (static/shared, optimizations)
+- Handles dependency management (OpenSSL, etc.)
+- Cross-platform support (Linux, macOS)
 
 ## Usage
 
@@ -17,7 +37,6 @@ Optional arguments:
   -g, --git        download using git 
   -r, --reset      reset build environment
 ```
-
 
 ## Libraries
 

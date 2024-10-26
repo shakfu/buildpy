@@ -5,6 +5,14 @@ use crate::ops;
 use crate::ops::log;
 use crate::ops::process;
 
+/// Openssl builder
+/// 
+/// # Examples
+/// 
+/// ```
+/// use crate::builders::openssl;
+/// let builder = openssl::OpensslBuilder::new("1.1.1");
+/// ```
 pub struct OpensslBuilder {
     pub name: String,
     pub version: String,
@@ -19,6 +27,7 @@ pub struct OpensslBuilder {
     pub project: Project,
 }
 
+/// Create a new openssl builder
 impl OpensslBuilder {
     pub fn new(version: &str) -> Self {
         Self {
@@ -39,20 +48,25 @@ impl OpensslBuilder {
         }
     }
 
+    /// Get the prefix of the openssl library
     fn prefix(&self) -> PathBuf {
         self.project.install.join(self.name.to_lowercase())
     }
 
+    /// Get the source directory of the openssl library
     fn src_dir(&self) -> PathBuf {
         self.project.src.join(self.name.to_lowercase())
     }
 
+    /// Get the build directory of the openssl library
     fn build_dir(&self) -> PathBuf {
         self.src_dir().join("build")
     }
 
+    /// Install the dependencies of the openssl library
     fn install_dependencies(&self) {}
 
+    /// Git clone the openssl repository
     fn git_clone(&self) {
         let mut args = vec![
             "clone",
@@ -68,6 +82,7 @@ impl OpensslBuilder {
         }
     }
 
+    /// Download the openssl library
     fn download(&self) {
         if self.use_git {
             self.git_clone();
@@ -78,12 +93,14 @@ impl OpensslBuilder {
         }
     }
 
+    /// Setup the openssl library
     fn setup(&self) {
         self.project.setup();
         self.download();
         self.install_dependencies();
     }
 
+    /// Configure the openssl library
     fn configure(&self) {
         println!("building...{} {}", self.name, self.version);
         let prefixopt = format!("--prefix={}", self.prefix().display());
@@ -94,13 +111,16 @@ impl OpensslBuilder {
         );
     }
 
+    /// Build the openssl library
     fn build(&self) {
         println!("building...{} {}", self.name, self.version);
         process::cmd("make", vec!["install_sw"], self.src_dir());
     }
 
+    /// Install the openssl library
     fn install(&self) {}
 
+    /// Process the openssl library
     pub fn process(&self) {
         if !self.is_built() {
             self.setup();
@@ -113,6 +133,7 @@ impl OpensslBuilder {
         }
     }
 
+    /// Check if the openssl library is built
     fn is_built(&self) -> bool {
         for lib in &self.staticlibs {
             if !self.prefix().join("lib").join(lib).exists() {

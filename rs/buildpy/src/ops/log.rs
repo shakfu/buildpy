@@ -1,5 +1,15 @@
+/// Logging operations
+/// 
+/// # Examples
+/// 
+/// ```
+/// use crate::ops::log;
+/// log::init_logging();
+/// ```
+
 pub use simplelog::{debug, error, info, warn};
 
+/// Initialize logging
 pub fn init_logging() {
     simplelog::CombinedLogger::init(vec![
         simplelog::TermLogger::new(

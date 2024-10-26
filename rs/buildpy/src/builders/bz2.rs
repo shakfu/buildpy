@@ -1,3 +1,5 @@
+//! Bzip2 builder
+
 use std::path::PathBuf;
 
 // use crate::builders::api::Builder;
@@ -6,6 +8,14 @@ use crate::ops;
 use crate::ops::log;
 use crate::ops::process;
 
+/// Bzip2 builder
+/// 
+/// # Examples
+/// 
+/// ```
+/// use crate::builders::bz2;
+/// let builder = bz2::Bzip2Builder::new("1.0.8");
+/// ```
 pub struct Bzip2Builder {
     pub name: String,
     pub version: String,
@@ -20,6 +30,7 @@ pub struct Bzip2Builder {
     pub project: config::Project,
 }
 
+/// Create a new bzip2 builder
 impl Bzip2Builder {
     pub fn new(version: &str) -> Self {
         Self {
@@ -38,20 +49,25 @@ impl Bzip2Builder {
         }
     }
 
+    /// Get the prefix of the bzip2 library
     fn prefix(&self) -> PathBuf {
         self.project.install.join(self.name.to_lowercase())
     }
 
+    /// Get the source directory of the bzip2 library
     fn src_dir(&self) -> PathBuf {
         self.project.src.join(self.name.to_lowercase())
     }
 
+    /// Get the build directory of the bzip2 library
     fn build_dir(&self) -> PathBuf {
         self.src_dir().join("build")
     }
 
+    /// Install the dependencies of the bzip2 library
     fn install_dependencies(&self) {}
 
+    /// Git clone the bzip2 repository
     fn git_clone(&self) {
         let mut args = vec![
             "clone",
@@ -67,6 +83,7 @@ impl Bzip2Builder {
         }
     }
 
+    /// Download the bzip2 library
     fn download(&self) {
         if self.use_git {
             self.git_clone();
@@ -77,14 +94,17 @@ impl Bzip2Builder {
         }
     }
 
+    /// Setup the bzip2 library
     fn setup(&self) {
         self.project.setup();
         self.download();
         self.install_dependencies();
     }
 
+    /// Configure the bzip2 library
     fn configure(&self) {}
 
+    /// Build the bzip2 library
     fn build(&self) {
         println!("building...{} {}", self.name, self.version);
         let prefixopt = format!("PREFIX={}", self.prefix().display());
@@ -95,8 +115,10 @@ impl Bzip2Builder {
         );
     }
 
+    /// Install the bzip2 library
     fn install(&self) {}
 
+    /// Process the bzip2 library
     pub fn process(&self) {
         if !self.is_built() {
             self.setup();
@@ -108,6 +130,7 @@ impl Bzip2Builder {
         }
     }
 
+    /// Check if the bzip2 library is built
     fn is_built(&self) -> bool {
         for lib in &self.staticlibs {
             if !self.prefix().join("lib").join(lib).exists() {

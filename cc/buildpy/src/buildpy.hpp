@@ -1,15 +1,23 @@
-/* buildpy - build python3 from source
-
-ShellCmd
-    Project
-    Builder
-        OpenSSLBuilder
-        Bzip2Builder
-        XzBuilder
-        PythonBuilder
-*/
-
 #pragma once
+
+// buildpy - A C++ module for building Python from source
+//
+// This module provides functionality to automate the process of building
+// Python from source code. It includes classes and utilities for:
+//
+// - Downloading and extracting Python source code
+// - Configuring build options
+// - Compiling Python and its dependencies
+// - Installing the built Python distribution
+//
+// The main class, PythonBuilder, orchestrates the entire build process,
+// while supporting classes like OpenSSLBuilder handle specific dependencies.
+// 
+// Key features:
+// - Supports multiple Python versions
+// - Configurable build options (static/shared, optimizations)
+// - Handles dependency management (OpenSSL, etc.)
+// - Cross-platform support (Linux, macOS)
 
 #include <argparse/argparse.hpp>
 #include <fmt/core.h>
@@ -36,7 +44,9 @@ namespace fs = std::filesystem;
 
 class ShellCmd {
     // Utility class to hold common file operations
+
 public:
+    // execute a command
     void cmd_exe(std::string exe, std::vector<std::string> args,
         fs::path dir = ".")
     {
@@ -44,6 +54,7 @@ public:
         this->cmd(args, dir);
     }
 
+    // execute a list of commands
     void cmd(std::vector<std::string> args, fs::path dir = ".")
     {
         fs::path cwd;
@@ -63,6 +74,7 @@ public:
             fs::current_path(cwd);
     }
 
+    // execute a command
     void run(std::string shellcmd, fs::path dir = ".")
     {
         fs::path cwd;
@@ -82,12 +94,14 @@ public:
         }
     }
 
+    // execute a list of commands
     void run_list(std::initializer_list<std::string> args, fs::path dir = ".")
     {
         std::vector<std::string> vargs = std::vector(args);
         this->cmd(vargs, dir);
     }
 
+    // split a string into a list of strings
     std::vector<std::string> split(std::string s, char delimiter)
     {
         std::vector<std::string> output;
@@ -103,6 +117,7 @@ public:
         return output;
     }
 
+    // join a list of strings into a single string
     std::string join(std::vector<std::string> elements,
         const char* const delimiter)
     {
@@ -122,6 +137,7 @@ public:
         return os.str();
     }
 
+    // create a directory if it doesn't exist
     void create_dir(fs::path p)
     {
         if (!fs::exists(p)) {
@@ -129,6 +145,7 @@ public:
         }
     }
 
+    // download a file using wget
     void wget(std::string url, fs::path download_dir, fs::path cwd)
     {
         std::string _cmd = fmt::format("wget -P {} {}", download_dir.string(),
@@ -136,6 +153,7 @@ public:
         this->run(_cmd, cwd.string());
     }
 
+    // download a file using curl
     void curl(std::string url, fs::path download_dir, fs::path cwd)
     {
         std::string _cmd = fmt::format("curl -L --output-dir {} -O {}",
@@ -143,6 +161,7 @@ public:
         this->run(_cmd, cwd.string());
     }
 
+    // extract a tar archive
     void tar(fs::path archive, fs::path srcdir)
     {
         if (!fs::exists(srcdir)) {
@@ -153,6 +172,7 @@ public:
         this->run(_cmd, ".");
     }
 
+    // clone a git repository
     void git_clone(std::string url, std::string branch, fs::path dir,
         bool recurse = false)
     {
@@ -172,6 +192,7 @@ public:
         this->cmd_exe("/usr/bin/git", args);
     }
 
+    // configure a cmake project
     void cmake_configure(fs::path srcdir, fs::path builddir,
         std::string options = "")
     {
@@ -180,6 +201,7 @@ public:
         this->run(_cmd, ".");
     }
 
+    // build a cmake project
     void cmake_build(fs::path builddir, bool release = false)
     {
         std::string release_stmt = release ? "--config Release" : "";
@@ -188,6 +210,7 @@ public:
         this->run(_cmd, ".");
     }
 
+    // install a cmake project
     void cmake_install(fs::path builddir, fs::path prefix)
     {
         std::string _cmd = fmt::format("cmake --install {} --prefix {}",
@@ -195,6 +218,7 @@ public:
         this->run(_cmd, ".");
     }
 
+    // split a string into a list of strings
     std::vector<std::string> split(std::string s, std::string sep)
     {
         std::vector<std::string> res;
@@ -208,6 +232,7 @@ public:
         return res;
     }
 
+    // join a list of strings into a single string
     std::string join(const std::vector<std::string>& lst,
         const std::string& delim)
     {
@@ -220,6 +245,7 @@ public:
         return ret;
     }
 
+    // remove a directory
     void remove(fs::path target)
     {
         if (fs::exists(target)) {
@@ -229,12 +255,14 @@ public:
         }
     }
 
+    // move a directory
     void move(fs::path& src, fs::path& dst)
     {
         Info("move %s to %s", src.c_str(), dst.c_str());
         fs::rename(src, dst);
     }
 
+    // check if a file matches a pattern
     bool globmatch(fs::path name, std::vector<std::string> patterns)
     {
         for (auto& p : patterns) {
@@ -245,6 +273,7 @@ public:
         return false;
     }
 
+    // zip a directory
     void zip(fs::path zip_path, fs::path cwd)
     {
         std::string _cmd = fmt::format("zip -r {} .", zip_path.string());

@@ -11,6 +11,14 @@ use crate::ops::log;
 
 const PLATFORM: &str = env::consts::OS;
 
+/// Model configuration for Python
+/// 
+/// # Examples
+/// 
+/// ```
+/// use crate::config::model;
+/// let config = model::Config::new("python", "3.12.0");
+/// ```
 #[derive(Serialize, Deserialize, Debug, Default)]
 pub struct Config {
     pub name: String,
@@ -27,6 +35,7 @@ pub struct Config {
 
 }
 
+/// Create a new model configuration
 impl Config {
     pub fn new(name: String, version: String) -> Self {
         let smver = Version::parse(&version).unwrap();

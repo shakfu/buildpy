@@ -1,3 +1,5 @@
+//! Builders for the project
+
 pub mod api;
 pub mod bz2;
 pub mod openssl;

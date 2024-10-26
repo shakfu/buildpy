@@ -25,5 +25,3 @@ protocol Config {
     func write(method: String, to: String)
     func write_json(method: String, to: String)
 }
-
-

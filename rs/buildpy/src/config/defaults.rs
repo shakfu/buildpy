@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+/// Default headers
 pub const HEADERS: &[&str; 10] = &[
     "DESTLIB=$(LIBDEST)",
     "MACHDESTLIB=$(BINLIBDEST)",
@@ -13,6 +14,7 @@ pub const HEADERS: &[&str; 10] = &[
     "LZMA=$(srcdir)/../../install/xz",
 ];
 
+/// Default core modules
 pub const CORE: &[&str; 21] = &[
     "_abc",
     "_codecs",
@@ -37,6 +39,7 @@ pub const CORE: &[&str; 21] = &[
     "time",
 ];
 
+/// Default static modules
 pub const STATIC: &[&str; 47] = &[
     "_asyncio",
     "_bisect",
@@ -87,6 +90,7 @@ pub const STATIC: &[&str; 47] = &[
     "zlib",
 ];
 
+/// Default disabled modules
 pub const DISABLED: &[&str; 23] = &[
     "_codecs_cn",
     "_codecs_hk",
@@ -113,6 +117,7 @@ pub const DISABLED: &[&str; 23] = &[
     "xxlimited_35",
 ];
 
+/// Default extensions
 pub fn get_extensions() -> HashMap<&'static str, Vec<&'static str>> {
     HashMap::from([
         ("name", vec!["name", "dest"]),
@@ -347,6 +352,7 @@ pub fn get_extensions() -> HashMap<&'static str, Vec<&'static str>> {
     ])
 }
 
+/// Base configuration
 pub struct BaseConfig<'a> {
     pub name: String,
     pub version: String,
@@ -358,10 +364,12 @@ pub struct BaseConfig<'a> {
     pub disabled: Vec<&'a str>,
 }
 
+/// Convert a slice of strings to a vector of strings   
 fn to_string(xs: &[&str]) -> Vec<String> {
     return Vec::from(xs).iter().map(|v| v.to_string()).collect();
 }
 
+/// Create a new base configuration
 impl BaseConfig<'_> {
     pub fn new(name: String, version: String) -> Self {
         Self {

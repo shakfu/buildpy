@@ -2,12 +2,12 @@ import Foundation
 import Logging
 
 
-class Shell {
+public class Shell {
 
     let fm: FileManager
     let log: Logger
 
-    init() {
+    public init() {
         self.fm = FileManager.default
         self.log = Logger(label: "pybuild.Shell") { _ in
             return Handler(
@@ -17,23 +17,19 @@ class Shell {
         }
     }
 
-    // var cwd: String {
-    //     return self.fm.currentDirectoryPath
-    // }
-
-    func cwd() -> String {
+    public func cwd() -> String {
         let _cwd = self.fm.currentDirectoryPath
         self.log.info("\(_cwd)")
         return _cwd
     }
 
-    func chdir(path: String) {
+    public func chdir(path: String) {
         if !self.fm.changeCurrentDirectoryPath(path) {
             print("Could not change working diectory to \(path)")
         }
     }
 
-    func iterdir(path: String) -> [String] {
+    public func iterdir(path: String) -> [String] {
         self.log.info("iterating over: \(path)")
         do {
             let paths = try self.fm.contentsOfDirectory(atPath: path)
@@ -43,15 +39,15 @@ class Shell {
         }
     }
 
-    func userdir() -> String {
+    public func userdir() -> String {
         return self.fm.homeDirectoryForCurrentUser.absoluteString
     }
 
-    func tempdir() -> String {
+    public func tempdir() -> String {
         return self.fm.temporaryDirectory.absoluteString
     }
 
-    func mkdir(path: String) {
+    public func mkdir(path: String) {
         do {
             try self.fm.createDirectory(
                 atPath: path,
@@ -62,13 +58,13 @@ class Shell {
         }
     }
 
-    func mkfile(path: String, text: String) {
+    public func mkfile(path: String, text: String) {
         if !self.fm.createFile(atPath: path, contents: text.data(using: .utf8), attributes: [:]) {
             print("Could not create file at: \(path)")
         }
     }
 
-    func copy(src: String, dst: String) {
+    public func copy(src: String, dst: String) {
         do {
             try self.fm.copyItem(atPath: src, toPath: dst)
         } catch {
@@ -76,7 +72,7 @@ class Shell {
         }
     }
 
-    func move(src: String, dst: String) {
+    public func move(src: String, dst: String) {
         do {
             try self.fm.moveItem(atPath: src, toPath: dst)
         } catch {
@@ -84,7 +80,7 @@ class Shell {
         }
     }
 
-    func symlink(src: String, dst: String) {
+    public func symlink(src: String, dst: String) {
         do {
             try self.fm.createSymbolicLink(atPath: src, withDestinationPath: dst)
         } catch {
@@ -92,12 +88,38 @@ class Shell {
         }
     }
 
-    func exists(path: String) -> Bool {
+    public func exists(path: String) -> Bool {
         // check if either file or directory exists
         return self.fm.fileExists(atPath: path)
     }
 
-    func remove(path: String) {
+    public func joinPath(path: String, part: String) -> String {
+        let pathURL = URL(fileURLWithPath: path)
+        let partURL = URL(fileURLWithPath: part)
+        return partURL.appendingPathComponent(pathURL.lastPathComponent).path
+    }
+
+    // func isdir(path: String) -> Bool {
+    //     return self.exists(path: path) && self.fm.isDirectory(atPath: path)
+    // }
+
+    // func isfile(path: String) -> Bool {
+    //     return self.fm.fileExists(atPath: path) && !self.fm.isDirectory(atPath: path)
+    // }
+
+    // func islink(path: String) -> Bool {
+    //     return self.fm.fileExists(atPath: path) && self.fm.isSymbolicLink(atPath: path)
+    // }
+
+    public func chmod(path: String, mode: String) {
+        do {
+            try self.fm.setAttributes([.posixPermissions: mode], ofItemAtPath: path)
+        } catch {
+            print("could not chmod \(path) to \(mode)")
+        }
+    }
+
+    public func remove(path: String) {
         do {
             try self.fm.removeItem(atPath: path)
         } catch {
@@ -106,8 +128,16 @@ class Shell {
 
     }
 
+    public func rmtree(path: String) {
+        do {
+            try self.fm.removeItem(atPath: path)
+        } catch {
+            print("could not remove \(path)")
+        }
+    }
+
 #if os(macOS)
-    func trash(path: String) {
+    public func trash(path: String) {
         guard let url = URL(string: path) else {
             print("could not convert \(path) to url")
             return
@@ -120,7 +150,7 @@ class Shell {
     }
 #endif
 
-    func walk(path: String) -> [String] {
+    public func walk(path: String) -> [String] {
         if let paths = self.fm.subpaths(atPath: path) {
             return paths
         } else {
@@ -128,7 +158,7 @@ class Shell {
         }
     }
 
-    func cmd(exe: String, args: String...) -> (out: String, err: String) {
+    public func cmd(exe: String, args: String...) -> (out: String, err: String) {
         let outputPipe = Pipe()
         let errorPipe = Pipe()
 

@@ -132,18 +132,6 @@ func (b *PythonBuilder) Ver() string {
 	return strings.Join(strings.Split(b.Version.String(), ".")[:2], ".")
 }
 
-// func (b *PythonBuilder) VerMajor() uint64 {
-// 	return b.Version.Major()
-// }
-
-// func (b *PythonBuilder) VerMinor() uint64 {
-// 	return b.Version.Minor()
-// }
-
-// func (b *PythonBuilder) VerPatch() uint64 {
-// 	return b.Version.Patch()
-// }
-
 func (b *PythonBuilder) VerNoDot() string {
 	return strings.ReplaceAll(b.Ver(), ".", "")
 }

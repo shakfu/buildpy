@@ -959,9 +959,7 @@ class AbstractBuilder(ShellCmd):
     libs_static: list[str]
     depends_on: list[type["Builder"]]
 
-    def __init__(
-        self, version: Optional[str] = None, project: Optional[Project] = None
-    ):
+    def __init__(self, version: Optional[str] = None, project: Optional[Project] = None):
         self.version = version or self.version
         self.project = project or Project()
         self.log = logging.getLogger(self.__class__.__name__)

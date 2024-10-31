@@ -1,7 +1,7 @@
 
 EXECUTABLE_DIR := $(shell swift build -c release --show-bin-path)
 
-.PHONY: all, build, run, release, clean, format, lint
+.PHONY: all build run release clean format lint test
 
 
 all: build
@@ -25,3 +25,6 @@ fmt:
 
 lint:
 	@swift-format lint --recursive Sources
+
+test:
+	@swift test

@@ -38,4 +38,3 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
 - Added static and shared `simple` and `pybind11` examples.
 
 - Added flexible in-module configuration system.
-

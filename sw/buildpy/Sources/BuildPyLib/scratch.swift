@@ -1,3 +1,4 @@
+import Foundation
 import CLib
 
 struct Message {
@@ -8,3 +9,4 @@ struct Message {
 func add(x: Int32, y: Int32) -> Int32 {
     return CLib.add(x, y)
 }
+

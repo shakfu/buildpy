@@ -1,3 +1,4 @@
+import BuildPyLib
 import ArgumentParser
 
 @main
@@ -36,11 +37,12 @@ struct Buildpy: ParsableCommand {
             """
         )
 
-        let shell = Shell()
+        let shell = BuildPyLib.Shell()
         let res = shell.cmd(exe: "/usr/bin/git", args: "--version")
         let cwd = shell.cwd()
         print(cwd)
         print("output: \(res.out)")
+
         // print("error: \(res.err)")
 
         // for f in shell.iterdir(path: ".") {

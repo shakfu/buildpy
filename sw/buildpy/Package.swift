@@ -21,6 +21,7 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-log.git", from: "1.0.0"),
         .package(url: "https://github.com/onevcat/Rainbow", .upToNextMajor(from: "4.0.0")),
         .package(url: "https://github.com/sersoft-gmbh/semver", from: "5.0.0"),
+        .package(url: "https://github.com/kylef/PathKit", from: "1.0.1"),
     ],
     targets: [
         .target(
@@ -29,6 +30,7 @@ let package = Package(
                 .product(name: "Logging", package: "swift-log"),
                 .product(name: "Rainbow", package: "Rainbow"),
                 .product(name: "SemVer", package: "semver"),
+                .product(name: "PathKit", package: "PathKit"),
                 "CLib"]),
         .testTarget(
             name: "BuildPyLibTests",

@@ -4,10 +4,12 @@ import PathKit
 
 public class Shell {
 
+    let pwd: Path
     let fm: FileManager
     let log: Logger
 
     public init() {
+        self.pwd = Path.current
         self.fm = FileManager.default
         self.log = Logger(label: "pybuild.Shell") { _ in
             return Handler(

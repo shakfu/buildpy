@@ -8,14 +8,14 @@ import XCTest
 @Test
 func test_clib_add() throws {
     let result = add(x: 1, y: 2)
-    XCTAssertEqual(result, 3, "add 1 + 2 = 3")    
+    #expect(result == 3)
 }
 
 @Test
 func test_shell_joinPath() throws {
     let shell = Shell()
     let result = shell.joinPath(path: "Hello", part: "World")
-    XCTAssertEqual(result, "Hello/World", "join Hello and World = Hello/World")
+    #expect(result == "Hello/World")
 }
 
 // class ShellTests: XCTestCase {

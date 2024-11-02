@@ -1,5 +1,6 @@
-import BuildPyLib
+import Foundation
 import ArgumentParser
+import BuildPyLib
 
 @main
 struct Buildpy: ParsableCommand {
@@ -50,5 +51,9 @@ struct Buildpy: ParsableCommand {
         // }
 
         // print("userdir: \(shell.userdir())")
+
+        for _ in Progress(1...3) {
+            sleep(1)
+        }
     }
 }

@@ -11,7 +11,7 @@ int main(int argc, char* argv[])
 
     program.add_argument("-p", "--pyversion")
         .help("python version")
-        .default_value("3.12.7")
+        .default_value("3.12.9")
         .nargs(1);
 
     program.add_argument("-c", "--config")

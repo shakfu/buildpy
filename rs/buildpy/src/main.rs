@@ -62,7 +62,7 @@ pub fn printit(d: &std::fs::DirEntry) {
 
 /// run a demo
 fn run_demo() {
-    let mut cfg = config::Config::new("static_max".to_string(), "3.12.7".to_string());
+    let mut cfg = config::Config::new("static_max".to_string(), "3.12.9".to_string());
     cfg.write("out-noconfig.mk");
     cfg.configure();
     cfg.write("out-config.mk");

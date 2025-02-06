@@ -17,7 +17,7 @@ const PLATFORM: &str = env::consts::OS;
 /// 
 /// ```
 /// use crate::config::model;
-/// let config = model::Config::new("python", "3.12.0");
+/// let config = model::Config::new("python", "3.12.9");
 /// ```
 #[derive(Serialize, Deserialize, Debug, Default)]
 pub struct Config {

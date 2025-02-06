@@ -15,7 +15,7 @@ var buildCmd = &cobra.Command{
 	Long: `A tool to download, configure, build, install, and shrink python from source
 From source. Can be used as follows:
 
-	$ buildpy build -v 3.12.2 -c "static_max" -p "cython,ipython"
+	$ buildpy build -v 3.12.9 -c "static_max" -p "cython,ipython"
 
 	$ buildpy build --opts="--disable-ipv6,--with-lto=thin"
 `,
@@ -62,7 +62,7 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// buildCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-	buildCmd.Flags().StringP("version", "v", "3.12.7", "Build configuration")
+	buildCmd.Flags().StringP("version", "v", "3.12.9", "Build configuration")
 	buildCmd.Flags().StringP("config", "c", "static_max", "Python version")
 	buildCmd.Flags().StringSliceP("opts", "o", []string{}, "Override python config options")
 	buildCmd.Flags().StringSliceP("pkgs", "p", []string{}, "Add python packages")

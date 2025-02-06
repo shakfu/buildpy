@@ -19,7 +19,7 @@ use crate::ops::process;
 #[command(version, about, long_about = None)]
 struct Cli {
     /// Python version
-    #[arg(short, long, default_value = "3.12.7")]
+    #[arg(short, long, default_value = "3.12.9")]
     pyversion: Option<String>,
 
     /// Config name

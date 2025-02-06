@@ -89,7 +89,7 @@ main = do
     prog <- getProgName
     print args
     case getOpt RequireOrder options args of
-        ([], [], []) -> BuildPy.run "3.12.2" "static_max"
+        ([], [], []) -> BuildPy.run "3.12.9" "static_max"
         (flags, [], []) -> processArgs flags
         (_, nonOpts, []) ->
             error $ "unrecognized arguments: " ++ unwords nonOpts

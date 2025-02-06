@@ -5,7 +5,7 @@ import BuildPyLib
 @main
 struct Buildpy: ParsableCommand {
     @Option(help: "python version")
-    var version: String = "3.11.7"
+    var version: String = "3.12.9"
 
     @Option(help: "name of build config")
     var config: String = "static.max"

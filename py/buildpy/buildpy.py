@@ -74,8 +74,8 @@ ARCH = platform.machine()
 PY_VER_MINOR = sys.version_info.minor
 if PLATFORM == "Darwin":
     MACOSX_DEPLOYMENT_TARGET = setenv("MACOSX_DEPLOYMENT_TARGET", "12.6")
-DEFAULT_PY_VERSION = "3.12.7"
-# DEFAULT_PY_VERSION = "3.13.0"
+#DEFAULT_PY_VERSION = "3.12.9"
+DEFAULT_PY_VERSION = "3.13.2"
 DEBUG = getenv('DEBUG', default=True)
 COLOR = getenv('COLOR', default=True)
 

@@ -53,9 +53,11 @@ ActionFn = Callable[[Path], None]
 # ----------------------------------------------------------------------------
 # env helpers
 
+
 def getenv(key: str, default: bool = False) -> bool:
     """convert '0','1' env values to bool {True, False}"""
     return bool(int(os.getenv(key, default)))
+
 
 def setenv(key: str, default: str):
     """get environ variable if it is exists else set default"""
@@ -64,6 +66,7 @@ def setenv(key: str, default: str):
     else:
         os.environ[key] = default
         return default
+
 
 # ----------------------------------------------------------------------------
 # constants
@@ -74,13 +77,14 @@ ARCH = platform.machine()
 PY_VER_MINOR = sys.version_info.minor
 if PLATFORM == "Darwin":
     MACOSX_DEPLOYMENT_TARGET = setenv("MACOSX_DEPLOYMENT_TARGET", "12.6")
-#DEFAULT_PY_VERSION = "3.12.9"
+# DEFAULT_PY_VERSION = "3.12.9"
 DEFAULT_PY_VERSION = "3.13.2"
-DEBUG = getenv('DEBUG', default=True)
-COLOR = getenv('COLOR', default=True)
+DEBUG = getenv("DEBUG", default=True)
+COLOR = getenv("COLOR", default=True)
 
 # ----------------------------------------------------------------------------
 # logging config
+
 
 class CustomFormatter(logging.Formatter):
     """custom logging formatting class"""
@@ -94,10 +98,12 @@ class CustomFormatter(logging.Formatter):
     bold_red = "\x1b[31;1m"
     reset = "\x1b[0m"
     fmt = "%(delta)s - %(levelname)s - %(name)s.%(funcName)s - %(message)s"
-    cfmt = (f"{white}%(delta)s{reset} - "
-            f"{{}}%(levelname)s{{}} - "
-            f"{white}%(name)s.%(funcName)s{reset} - "
-            f"{grey}%(message)s{reset}")
+    cfmt = (
+        f"{white}%(delta)s{reset} - "
+        f"{{}}%(levelname)s{{}} - "
+        f"{white}%(name)s.%(funcName)s{reset} - "
+        f"{grey}%(message)s{reset}"
+    )
 
     FORMATS = {
         logging.DEBUG: cfmt.format(grey, reset),
@@ -121,8 +127,7 @@ class CustomFormatter(logging.Formatter):
                 record.relativeCreated / 1000, datetime.UTC
             )
         else:
-            duration = datetime.datetime.utcfromtimestamp(
-                record.relativeCreated / 1000)
+            duration = datetime.datetime.utcfromtimestamp(record.relativeCreated / 1000)
         record.delta = duration.strftime("%H:%M:%S")
         formatter = logging.Formatter(log_fmt)
         return formatter.format(record)
@@ -179,7 +184,7 @@ BASE_CONFIG = {
         "_codecs_tw": ["cjkcodecs/_codecs_tw.c"],
         "_collections": ["_collectionsmodule.c"],
         "_contextvars": ["_contextvarsmodule.c"],
-        "_crypt":  ["_cryptmodule.c", "-lcrypt"],
+        "_crypt": ["_cryptmodule.c", "-lcrypt"],
         "_csv": ["_csv.c"],
         "_ctypes": [
             "_ctypes/_ctypes.c",
@@ -502,14 +507,14 @@ class Config:
         for section in ["shared", "static", "disabled"]:
             _add_section(section)
 
-        with open(to, "w", encoding='utf8') as f:
+        with open(to, "w", encoding="utf8") as f:
             self.out.append("# end \n")
             f.write("\n".join(self.out))
 
     def write_json(self, method: str, to: Pathlike):
         self.log.info("write method '%s' to json: %s", method, to)
         getattr(self, method)()
-        with open(to, 'w') as f:
+        with open(to, "w") as f:
             json.dump(self.cfg, f, indent=4)
 
 
@@ -581,8 +586,13 @@ class PythonConfig311(Config):
         """framework build variant max-size"""
         self.shared_max()
         self.move_static_to_shared(
-            "_bz2", "_lzma", "readline", "_sqlite3",
-            "_scproxy", "zlib", "binascii",
+            "_bz2",
+            "_lzma",
+            "readline",
+            "_sqlite3",
+            "_scproxy",
+            "zlib",
+            "binascii",
         )
 
     def framework_mid(self):
@@ -658,12 +668,13 @@ class PythonConfig313(PythonConfig312):
 
         self.cfg["extensions"].update(
             {
-                "_interpchannels" : ["_interpchannelsmodule.c"],
-                "_interpqueues" : ["_interpqueuesmodule.c"],
-                "_interpreters" : ["_interpretersmodule.c"],
-                "_sysconfig" : ["_sysconfig.c"],
-                "_testexternalinspection" : ["_testexternalinspection.c"],
-            })
+                "_interpchannels": ["_interpchannelsmodule.c"],
+                "_interpqueues": ["_interpqueuesmodule.c"],
+                "_interpreters": ["_interpretersmodule.c"],
+                "_sysconfig": ["_sysconfig.c"],
+                "_testexternalinspection": ["_testexternalinspection.c"],
+            }
+        )
 
         del self.cfg["extensions"]["_crypt"]
         del self.cfg["extensions"]["ossaudiodev"]
@@ -684,9 +695,9 @@ class PythonConfig313(PythonConfig312):
         self.cfg["disabled"].append("_testexternalinspection")
 
 
-
 # ----------------------------------------------------------------------------
 # utility classes
+
 
 class ShellCmd:
     """Provides platform agnostic file/folder handling."""
@@ -804,7 +815,6 @@ class ShellCmd:
             os.chmod(path, stat.S_IWRITE)
             func(path)
 
-
         path = Path(path)
         if path.is_dir():
             if not silent:
@@ -856,8 +866,7 @@ class ShellCmd:
         def remove(entry: Path):
             self.remove(entry)
 
-        self.walk(root, match_func=match, action_func=remove,
-                  skip_patterns=skip_dirs)
+        self.walk(root, match_func=match, action_func=remove, skip_patterns=skip_dirs)
 
     def pip_install(
         self,
@@ -920,8 +929,10 @@ class ShellCmd:
             _cmds.append(f"--prefix {prefix}")
         self.cmd(" ".join(_cmds))
 
+
 # ----------------------------------------------------------------------------
 # main classes
+
 
 class Project(ShellCmd):
     """Utility class to hold project directory structure"""
@@ -959,7 +970,9 @@ class AbstractBuilder(ShellCmd):
     libs_static: list[str]
     depends_on: list[type["Builder"]]
 
-    def __init__(self, version: Optional[str] = None, project: Optional[Project] = None):
+    def __init__(
+        self, version: Optional[str] = None, project: Optional[Project] = None
+    ):
         self.version = version or self.version
         self.project = project or Project()
         self.log = logging.getLogger(self.__class__.__name__)
@@ -1095,8 +1108,7 @@ class AbstractBuilder(ShellCmd):
 
     def libs_static_exist(self) -> bool:
         """check if all built stati libs already exist"""
-        return all((self.prefix / "lib" / lib).exists()
-                    for lib in self.libs_static)
+        return all((self.prefix / "lib" / lib).exists() for lib in self.libs_static)
 
     def pre_process(self):
         """override by subclass if needed"""
@@ -1149,7 +1161,9 @@ class OpensslBuilder(Builder):
     name = "openssl"
     version = "1.1.1w"
     repo_url = "https://github.com/openssl/openssl.git"
-    download_url_template = "https://www.openssl.org/source/old/1.1.1/openssl-{ver}.tar.gz"
+    download_url_template = (
+        "https://www.openssl.org/source/old/1.1.1/openssl-{ver}.tar.gz"
+    )
     depends_on = []
     libs_static = ["libssl.a", "libcrypto.a"]
 
@@ -1157,8 +1171,7 @@ class OpensslBuilder(Builder):
         """main build method"""
         if not self.libs_static_exist():
             self.cmd(
-                f"./config no-shared no-tests --prefix={self.prefix}",
-                cwd=self.src_dir
+                f"./config no-shared no-tests --prefix={self.prefix}", cwd=self.src_dir
             )
             self.cmd("make install_sw", cwd=self.src_dir)
 
@@ -1189,7 +1202,7 @@ class XzBuilder(Builder):
     name = "xz"
     version = "5.6.3"
     repo_url = "https://github.com/python/cpython-source-deps.git"
-    download_url_template = "http://tukaani.org/xz/xz-{ver}.tar.gz" # not used
+    download_url_template = "http://tukaani.org/xz/xz-{ver}.tar.gz"  # not used
     depends_on = []
     libs_static = ["liblzma.a"]
 
@@ -1213,17 +1226,19 @@ class XzBuilder(Builder):
             for f in [configure, install_sh]:
                 self.chmod(f, 0o755)
             self.cmd(
-                " ".join([
-                    "/bin/sh",
-                    "configure",
-                    "--disable-dependency-tracking",
-                    "--disable-xzdec",
-                    "--disable-lzmadec",
-                    "--disable-nls",
-                    "--enable-small",
-                    "--disable-shared",
-                    f"--prefix={self.prefix}",
-                    ]),
+                " ".join(
+                    [
+                        "/bin/sh",
+                        "configure",
+                        "--disable-dependency-tracking",
+                        "--disable-xzdec",
+                        "--disable-lzmadec",
+                        "--disable-nls",
+                        "--enable-small",
+                        "--disable-shared",
+                        f"--prefix={self.prefix}",
+                    ]
+                ),
                 cwd=self.src_dir,
             )
             self.cmd("make && make install", cwd=self.src_dir)
@@ -1235,7 +1250,9 @@ class PythonBuilder(Builder):
     name = "Python"
     version = DEFAULT_PY_VERSION
     repo_url = "https://github.com/python/cpython.git"
-    download_url_template = "https://www.python.org/ftp/python/{ver}/Python-{ver}.tar.xz"
+    download_url_template = (
+        "https://www.python.org/ftp/python/{ver}/Python-{ver}.tar.xz"
+    )
 
     config_options: list[str] = [
         # "--disable-ipv6",
@@ -1304,7 +1321,6 @@ class PythonBuilder(Builder):
         cfg_opts: Optional[list[str]] = None,
         jobs: int = 1,
     ):
-
         super().__init__(version, project)
         self.config = config
         self.optimize = optimize
@@ -1363,8 +1379,9 @@ class PythonBuilder(Builder):
         prefix = self.prefix
 
         if self.build_type == "shared":
-            self.config_options.extend([
-                "--enable-shared", "--without-static-libpython"])
+            self.config_options.extend(
+                ["--enable-shared", "--without-static-libpython"]
+            )
         elif self.build_type == "framework":
             prefix = self.project.install
             self.config_options.append(f"--enable-framework={prefix}")
@@ -1382,15 +1399,14 @@ class PythonBuilder(Builder):
 
         if self.cfg_opts:
             for cfg_opt in self.cfg_opts:
-                cfg_opt = cfg_opt.replace('_', '-')
-                cfg_opt = '--' + cfg_opt
+                cfg_opt = cfg_opt.replace("_", "-")
+                cfg_opt = "--" + cfg_opt
                 if cfg_opt not in self.config_options:
-                     self.config_options.append(cfg_opt)
+                    self.config_options.append(cfg_opt)
 
         config.write(self.config, to=self.src_dir / "Modules" / "Setup.local")
         config_opts = " ".join(self.config_options)
-        self.cmd(f"./configure --prefix={prefix} {config_opts}",
-                 cwd=self.src_dir)
+        self.cmd(f"./configure --prefix={prefix} {config_opts}", cwd=self.src_dir)
 
     def build(self):
         """main build process"""
@@ -1477,7 +1493,6 @@ class PythonBuilder(Builder):
             self.make_relocatable()
         self.log.info("%s DONE", self.config)
 
-
     def process(self):
         """main builder process"""
         for dependency_class in self.depends_on:
@@ -1523,6 +1538,7 @@ if __name__ == "__main__":
     )
     opt = parser.add_argument
 
+    # fmt: off
     opt("-a", "--cfg-opts", help="add config options", type=str, nargs="+", metavar="CFG")
     opt("-c", "--config", default="shared_mid", help="build configuration (default: %(default)s)", metavar="NAME")
     opt("-d", "--debug", help="build debug python", action="store_true")
@@ -1533,6 +1549,7 @@ if __name__ == "__main__":
     opt("-w", "--write", help="write configuration", action="store_true")
     opt("-j", "--jobs", help="# of build jobs (default: %(default)s)", type=int, default=4)
     opt("-s", "--json", help="serialize config to json file")
+    # fmt: on
 
     args = parser.parse_args()
     python_builder_class: type[PythonBuilder] = PythonBuilder

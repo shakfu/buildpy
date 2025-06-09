@@ -7,14 +7,14 @@ edition = "2021"
 # optional deps: flate2, downloader
 
 [dependencies]
-clap = { version = "4.5.2", features = ["derive"] }
-downloader = "0.2.7"
-flate2 = "1.0.28"
-globset = "=0.4.14"
+clap = { version = "4.5.39", features = ["derive"] }
+downloader = "0.2.8"
+flate2 = "1.1.2"
+globset = "=0.4.16"
 log-panics = "2.1.0"
 logging_timer = "=1.1.1"
-semver = "1.0.23"
+semver = "1.0.26"
 serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0.114"
+serde_json = "1.0.140"
 simplelog = { version = "^0.12.2", features = ["paris"] }
 walkdir = "=2.5.0"

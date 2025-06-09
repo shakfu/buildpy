@@ -19,7 +19,7 @@ use crate::ops::process;
 #[command(version, about, long_about = None)]
 struct Cli {
     /// Python version
-    #[arg(short, long, default_value = "3.12.9")]
+    #[arg(short, long, default_value = "3.12.11")]
     pyversion: Option<String>,
 
     /// Config name
@@ -62,7 +62,7 @@ pub fn printit(d: &std::fs::DirEntry) {
 
 /// run a demo
 fn run_demo() {
-    let mut cfg = config::Config::new("static_max".to_string(), "3.12.9".to_string());
+    let mut cfg = config::Config::new("static_max".to_string(), "3.12.11".to_string());
     cfg.write("out-noconfig.mk");
     cfg.configure();
     cfg.write("out-config.mk");

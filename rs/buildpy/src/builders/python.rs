@@ -20,7 +20,7 @@ use logging_timer::time;
 /// 
 /// ```
 /// use crate::builders::python;
-/// let builder = python::PythonBuilder::new("3.12.9");
+/// let builder = python::PythonBuilder::new("3.12.11");
 /// ```
 pub struct PythonBuilder {
     pub name: String,

@@ -29,17 +29,17 @@ withLogLevel level msg = do
         WARN -> putStrLn $ timestamp ++ " " ++ yellow "WARN " ++ msg
         ERROR -> putStrLn $ timestamp ++ " " ++ magenta "ERROR " ++ msg
 
-info :: String -> IO ()
-info = withLogLevel INFO
+logInfo :: String -> IO ()
+logInfo = withLogLevel INFO
 
-debug :: String -> IO ()
-debug = withLogLevel DEBUG
+logDebug :: String -> IO ()
+logDebug = withLogLevel DEBUG
 
-warn :: String -> IO ()
-warn = withLogLevel WARN
+logWarn :: String -> IO ()
+logWarn = withLogLevel WARN
 
-error :: String -> IO ()
-error = withLogLevel ERROR
+logError :: String -> IO ()
+logError = withLogLevel ERROR
 
 timeFunction :: String -> IO () -> IO ()
 timeFunction desc function = do
@@ -47,4 +47,4 @@ timeFunction desc function = do
     function
     endTime <- getCurrentTime
     let diff = diffUTCTime endTime startTime
-    info $ desc ++ " execution Time: " ++ show diff
+    logInfo $ desc ++ " execution Time: " ++ show diff

@@ -9,7 +9,7 @@ import System.Process
     , waitForProcess
     )
 
-import Log (info)
+import Log (logInfo)
 
 mkproc ::
        String
@@ -39,13 +39,13 @@ mkproc exe args wd envs =
 run :: String -> [String] -> IO ()
 run exe args = do
     (_, _, _, p1) <- createProcess (proc exe args)
-    info (exe ++ " " ++ unwords args ++ " DONE")
+    logInfo (exe ++ " " ++ unwords args ++ " DONE")
     _ <- waitForProcess p1
     return ()
 
 cmd :: String -> [String] -> Maybe FilePath -> Maybe [(String, String)] -> IO ()
 cmd exe args wd envs = do
     (_, _, _, p1) <- createProcess (mkproc exe args wd envs)
-    info (exe ++ " " ++ unwords args ++ " DONE")
+    logInfo (exe ++ " " ++ unwords args ++ " DONE")
     _ <- waitForProcess p1
     return ()

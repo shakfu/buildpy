@@ -9,7 +9,7 @@ import Data.Maybe (fromJust)
 import System.FilePath (joinPath)
 
 import Dependency.Model ( Dependency(depBuildFunc) )
-import Log (info)
+import Log (logInfo)
 import Process (cmd)
 import Project (Project(projectBuild, projectInstall, projectSrc), setupProject)
 import Shell (gitClone, globRemove, makedir, move, remove, zipLib)
@@ -61,7 +61,7 @@ instance Buildable PythonConfig where
         dir = srcDir c
     build :: PythonConfig -> IO ()
     build c = do
-        info ("bui  lding python " ++ show (pythonVersion c))
+        logInfo ("bui  lding python " ++ show (pythonVersion c))
         cmd "make" [] (Just $ srcDir c) Nothing
 
 -- pythonBuildType :: PythonConfig -> String
@@ -124,23 +124,23 @@ setupPython c = do
 
 buildPython :: PythonConfig -> IO ()
 buildPython c = do
-    info ("building python " ++ show (pythonVersion c))
+    logInfo ("building python " ++ show (pythonVersion c))
     cmd "make" [] (Just $ srcDir c) Nothing
 
 installPython :: PythonConfig -> IO ()
 installPython c = do
-    info ("install python " ++ show (pythonVersion c))
+    logInfo ("install python " ++ show (pythonVersion c))
     cmd "make" ["install"] (Just $ srcDir c) Nothing
 
 cleanPython :: PythonConfig -> IO ()
 cleanPython c = do
-    info "cleanPython"
+    logInfo "cleanPython"
     let path = joinPath [prefix c, "lib", nameVer c]
     globRemove (pythonRemovePatterns c) path
 
 zipPythonLib :: PythonConfig -> IO ()
 zipPythonLib c = do
-    info "zipPythonLib"
+    logInfo "zipPythonLib"
     let src = joinPath [prefix c, "lib", nameVer c]
     let src_libdynload = joinPath [src, "lib-dynload"]
     let src_os_py = joinPath [src, "os.py"]

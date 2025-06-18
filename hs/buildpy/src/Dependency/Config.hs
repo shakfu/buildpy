@@ -6,7 +6,7 @@ import Text.Show.Functions ()
 
 
 import Dependency.Model ( Dependency(..) )
-import Log (info)
+import Log (logInfo)
 import Process (cmd)
 import Project ( Project )
 import Shell ( cmakeConfig, cmakeBuild, cmakeInstall )
@@ -37,7 +37,7 @@ sslConfig version proj =
 
 buildSsl :: Dependency -> IO ()
 buildSsl d = do
-    info $ "building " ++ depName d
+    logInfo $ "building " ++ depName d
     download d
     let args =
             ["./config", "no-shared", "no-tests"] ++ ["--prefix=" ++ prefix d]
@@ -68,7 +68,7 @@ xzConfig version proj =
 
 buildXz :: Dependency -> IO ()
 buildXz d = do
-    info $ "building " ++ depName d
+    logInfo $ "building " ++ depName d
     download d
     let args =
             [ "configure"
@@ -92,7 +92,7 @@ buildXz d = do
 -- only to be used with SAFE newer versions of xz
 buildXz' :: Dependency -> IO ()
 buildXz' d = do
-    info $ "building " ++ depName d
+    logInfo $ "building " ++ depName d
     download d
     Shell.cmakeConfig
         (srcDir d)
@@ -125,7 +125,7 @@ bz2Config version proj =
 
 buildBz2 :: Dependency -> IO ()
 buildBz2 d = do
-    info $ "building " ++ depName d
+    logInfo $ "building " ++ depName d
     download d
     let args = ["install", "CFLAGS=-fPIC"] ++ ["PREFIX=" ++ prefix d]
     let srcdir = Just $ srcDir d

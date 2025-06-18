@@ -6,7 +6,7 @@ import System.Directory.PathWalk (pathWalk)
 import System.FilePath (joinPath)
 import System.FilePattern (FilePattern, (?==))
 
-import Log
+import Log (logInfo, logWarn)
 import Process (cmd, run)
 import Types (Name, Url)
 
@@ -76,22 +76,22 @@ globMatch fs f = any (?== f) fs
 --             -- debug $ "searching: " ++ target
 --             when (match file) $ do
 --                 -- let target = joinPath [dir, file]
---                 info $ "found: " ++ target
+--                 logInfo $ "found: " ++ target
 --                 action target
 walk :: (FilePath -> Bool) -> (FilePath -> IO ()) -> FilePath -> IO ()
 walk match action root = do
     pathWalk root $ \dir subdirs _ -> do
         forM_ subdirs $ \subdir -> do
             let current_dir = joinPath [dir, subdir]
-            -- info $ "searching: " ++ current_dir
+            -- logInfo, $ "searching: " ++ current_dir
             when (match current_dir) $ do
-                -- info $ "rm: " ++ current_dir
+                -- logInfo $ "rm: " ++ current_dir
                 action current_dir
             -- debug $ "searching: " ++ target
         -- forM_ files $ \file -> do
         --     let current_file = joinPath [dir, file]
         --     when (match file) $ do
-        --         -- info $ "rm: " ++ current_file
+        --         -- logInfo $ "rm: " ++ current_file
         --         action current_file
 
 globRemove :: [FilePattern] -> FilePath -> IO ()
@@ -101,12 +101,12 @@ globRemove ps = walk (globMatch ps) action
     action f = do
         exists <- doesPathExist f
         if exists
-            then info $ "exists: " ++ f
-            else warn $ "skipping: " ++ f
+            then logInfo $ "exists: " ++ f
+            else logWarn $ "skipping: " ++ f
         -- action f = do 
         --     exists <- doesPathExist f
-        --     if exists then removeDirectoryRecursive f else warn $ "skipping: " ++ f
-        -- action f = warn $ "skipping: " ++ f
+        --     if exists then removeDirectoryRecursive f else logWarn $ "skipping: " ++ f
+        -- action f = logWarn $ "skipping: " ++ f
         -- action f = do 
         --     exists <- doesPathExist f
-        --     if exists then removePathForcibly f else warn $ "skipping: " ++ f
+        --     if exists then removePathForcibly f else logWarn $ "skipping: " ++ f

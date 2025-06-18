@@ -17,7 +17,7 @@ import Types
       BuildType(..),
       Platform,
       Version )
-import Log ( info, debug )
+import Log ( logInfo, logDebug )
 import Process ( cmd )
 
 getDefault :: IO PythonConfig
@@ -28,9 +28,9 @@ getDefault = do
 
 doConfigurePython :: PythonConfig -> IO ()
 doConfigurePython c = do
-    debug $ "buildtype: " ++ show (pythonBuildType c)
-    debug $ "config opts: " ++ show (pythonConfigOptions c)
-    info "writing Setup.local"
+    logDebug $ "buildtype: " ++ show (pythonBuildType c)
+    logDebug $ "config opts: " ++ show (pythonConfigOptions c)
+    logInfo "writing Setup.local"
     let file = pythonSetupLocal c
     writeSetupLocal file $ configSetupLocal c
     cmd "bash" (pythonConfigOptions c) (Just $ srcDir c) Nothing

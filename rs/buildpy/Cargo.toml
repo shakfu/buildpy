@@ -7,7 +7,7 @@ edition = "2021"
 # optional deps: flate2, downloader
 
 [dependencies]
-clap = { version = "4.5.39", features = ["derive"] }
+clap = { version = "4.5.40", features = ["derive"] }
 downloader = "0.2.8"
 flate2 = "1.1.2"
 globset = "=0.4.16"

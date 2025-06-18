@@ -17,10 +17,10 @@ let package = Package(
             targets: ["buildpy"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/apple/swift-argument-parser.git", from: "1.2.0"),
-        .package(url: "https://github.com/apple/swift-log.git", from: "1.0.0"),
-        .package(url: "https://github.com/onevcat/Rainbow", .upToNextMajor(from: "4.0.0")),
-        .package(url: "https://github.com/sersoft-gmbh/semver", from: "5.0.0"),
+        .package(url: "https://github.com/apple/swift-argument-parser.git", from: "1.5.1"),
+        .package(url: "https://github.com/apple/swift-log.git", from: "1.6.3"),
+        .package(url: "https://github.com/onevcat/Rainbow", .upToNextMajor(from: "4.1.0")),
+        .package(url: "https://github.com/sersoft-gmbh/semver", from: "5.3.0"),
         .package(url: "https://github.com/kylef/PathKit", from: "1.0.1"),
     ],
     targets: [

@@ -77,8 +77,8 @@ ARCH = platform.machine()
 PY_VER_MINOR = sys.version_info.minor
 if PLATFORM == "Darwin":
     MACOSX_DEPLOYMENT_TARGET = setenv("MACOSX_DEPLOYMENT_TARGET", "12.6")
-# DEFAULT_PY_VERSION = "3.12.9"
-DEFAULT_PY_VERSION = "3.13.2"
+DEFAULT_PY_VERSION = "3.12.9"
+# DEFAULT_PY_VERSION = "3.13.5"
 DEBUG = getenv("DEBUG", default=True)
 COLOR = getenv("COLOR", default=True)
 
@@ -1461,7 +1461,7 @@ class PythonBuilder(Builder):
 
     def install_pkgs(self):
         """install python packages"""
-        required_pkgs = " ".join(self.required_packages)
+        required_pkgs = " ".join(self.pkgs)
         self.cmd(f"{self.python} -m ensurepip")
         self.cmd(f"{self.pip} install {required_pkgs}")
 
@@ -1527,6 +1527,16 @@ class PythonDebugBuilder(PythonBuilder):
 
     required_packages = []
 
+    @property
+    def dylib_name(self) -> str:
+        """dynamic link libname"""
+        if PLATFORM == "Darwin":
+            return f"{self.libname}d.dylib"
+        if PLATFORM == "Linux":
+            return f"{self.libname}d.so"
+        if PLATFORM == "Windows":
+            return f"{self.libname}d.dll"
+        return self.fail("platform not supported")
 
 if __name__ == "__main__":
     import argparse

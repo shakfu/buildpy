@@ -1,4 +1,3 @@
-
 protocol ShellCmd {
 
     // class properties
@@ -30,11 +29,11 @@ protocol ShellCmd {
     func download(url: String, tofolder: String)
     func extract(archive: String, tofolder: String)
     func fail(msg: String, msgs: String...)
-    func git_clone(url: String, branch: Optional<String>, directory: Optional<String>, recurse: Bool, cwd: String)
+    func git_clone(url: String, branch: String?, directory: String?, recurse: Bool, cwd: String)
     func getenv(key: String, default: Bool) -> Bool
     func chmod(path: String, perm: Int)
-    func get(cwd: String, shell: Bool) -> String    
-    func pip_install(reqs: Optional<String>, upgrade: Bool, pip: Optional<String>, pkgs: String...)
+    func get(cwd: String, shell: Bool) -> String
+    func pip_install(reqs: String?, upgrade: Bool, pip: String?, pkgs: String...)
     func apt_install(update: Bool, pkgs: String...)
     func brew_install(update: Bool, pkgs: String...)
 
@@ -43,4 +42,3 @@ protocol ShellCmd {
     // func cmake_install(build_dir: String, prefix: Optional[String])
 
 }
-

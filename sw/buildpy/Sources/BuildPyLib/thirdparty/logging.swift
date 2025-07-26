@@ -1,4 +1,4 @@
-/// This file is a slightly tweaked variant of 
+/// This file is a slightly tweaked variant of
 /// https://github.com/Adorkable/swift-log-format-and-pipe
 /// Created by Ian Grossberg on 7/26/19
 /// The changes are
@@ -92,7 +92,7 @@ public struct Handler: LogHandler {
         metadata: Logger.Metadata?,
         source: String,
         file: String,
-        function: String, 
+        function: String,
         line: UInt
     ) {
         let prettyMetadata =
@@ -165,7 +165,6 @@ public protocol Formatter {
 
 }
 
-
 func colored(_ level: Logger.Level) -> String {
     switch level {
     case .trace:
@@ -184,7 +183,6 @@ func colored(_ level: Logger.Level) -> String {
         return "CRTL".red
     }
 }
-
 
 extension Formatter {
     public func processComponent(

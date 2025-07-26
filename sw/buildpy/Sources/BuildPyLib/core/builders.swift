@@ -3,8 +3,9 @@ import SemVer
 class PythonBuilder: Builder {
 
     static var name: String = "Python"
-    static var urlTemplate: String = "https://www.python.org/ftp/python/{version}/Python-{version}.tgz"
-    static var staticLibs: [String] = ["libpython3.12.a"]
+    static var urlTemplate: String =
+        "https://www.python.org/ftp/python/{version}/Python-{version}.tgz"
+    static var staticLibs: [String] = []
     static var dependsOn: [Builder] = []
 
     var semver: Version

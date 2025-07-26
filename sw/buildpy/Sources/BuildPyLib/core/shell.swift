@@ -167,20 +167,20 @@ public class Shell {
         }
     }
 
-#if os(macOS)
-    /// Move a file to the trash
-    public func trash(path: String) {
-        guard let url = URL(string: path) else {
-            print("could not convert \(path) to url")
-            return
+    #if os(macOS)
+        /// Move a file to the trash
+        public func trash(path: String) {
+            guard let url = URL(string: path) else {
+                print("could not convert \(path) to url")
+                return
+            }
+            do {
+                try self.fm.trashItem(at: url, resultingItemURL: nil)
+            } catch {
+                print("could not trash \(path)")
+            }
         }
-        do {
-            try self.fm.trashItem(at: url, resultingItemURL: nil)
-        } catch {
-            print("could not trash \(path)")
-        }
-    }
-#endif
+    #endif
 
     /// Walk a directory and return all files and directories
     public func walk(path: String) -> [String] {

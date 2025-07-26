@@ -1,6 +1,6 @@
-import Foundation
 import ArgumentParser
 import BuildPyLib
+import Foundation
 
 @main
 struct Buildpy: ParsableCommand {

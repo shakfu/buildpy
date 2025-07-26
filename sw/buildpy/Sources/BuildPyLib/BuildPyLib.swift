@@ -1,5 +1,4 @@
-
 func hello() {
-	let shell = Shell()
-	print(shell.cwd())
+    let shell = Shell()
+    print(shell.cwd())
 }

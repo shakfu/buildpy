@@ -327,6 +327,12 @@ PythonBuilder* python_builder_new(const char* version, Project* project) {
     python_builder->pkgs = NULL;
     python_builder->pkgs_count = 0;
 
+    // Initialize configuration system
+    python_builder->python_config = config_new("static_max", version);
+    if (python_builder->python_config) {
+        config_configure(python_builder->python_config);
+    }
+
     free(base);
     return python_builder;
 }
@@ -335,6 +341,15 @@ void python_builder_set_config(PythonBuilder* builder, const char* config) {
     if (builder && config) {
         strncpy(builder->config, config, sizeof(builder->config) - 1);
         builder->config[sizeof(builder->config) - 1] = '\0';
+
+        // Update configuration system
+        if (builder->python_config) {
+            config_free(builder->python_config);
+            builder->python_config = config_new(config, builder->base.version);
+            if (builder->python_config) {
+                config_configure(builder->python_config);
+            }
+        }
     }
 }
 
@@ -430,6 +445,17 @@ void python_builder_build(Builder* builder) {
 
     // Configure Python
     log_info("Configuring Python...");
+
+    // Generate Setup.local using configuration system
+    if (py_builder->python_config) {
+        char* setup_local_path = join_path(source_dir, "Modules/Setup.local");
+        if (setup_local_path) {
+            log_info("Generating Setup.local for Python configuration");
+            config_write_setup_local(py_builder->python_config, setup_local_path);
+            free(setup_local_path);
+        }
+    }
+
     char configure_opts[MAX_COMMAND];
     snprintf(configure_opts, sizeof(configure_opts),
         "--prefix=\"%s\" "
@@ -506,6 +532,14 @@ cleanup:
 
 void python_builder_clean(Builder* builder) {
     if (!builder) return;
+
+    PythonBuilder* py_builder = (PythonBuilder*)builder;
+
+    // Clean up configuration
+    if (py_builder->python_config) {
+        config_free(py_builder->python_config);
+        py_builder->python_config = NULL;
+    }
 
     char* source_dir = join_path(builder->project->source_dir, "python");
     if (shell_exists(builder->shell, source_dir)) {

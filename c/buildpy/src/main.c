@@ -16,6 +16,7 @@ void print_usage(const char* program_name) {
     printf("  -j, --jobs=JOBS         Number of build jobs (default: 4)\n");
     printf("  -s, --json=FILE         Serialize config to json file\n");
     printf("      --verbose           Show verbose output\n");
+    printf("      --config-debug      Show configuration debug information\n");
     printf("      --help              Show this help message\n");
 }
 
@@ -26,6 +27,7 @@ void print_version(void) {
 int parse_args(int argc, char* argv[], PythonBuilder* python_builder, int* reset, int* write, char* json_file) {
     int opt;
     int verbose = 0;
+    int config_debug = 0;
 
     static struct option long_options[] = {
         {"cfg-opts",  required_argument, 0, 'a'},
@@ -40,6 +42,7 @@ int parse_args(int argc, char* argv[], PythonBuilder* python_builder, int* reset
         {"json",      required_argument, 0, 's'},
         {"verbose",   no_argument,       0, 1},
         {"help",      no_argument,       0, 2},
+        {"config-debug", no_argument,    0, 3},
         {0, 0, 0, 0}
     };
 
@@ -90,6 +93,9 @@ int parse_args(int argc, char* argv[], PythonBuilder* python_builder, int* reset
             case 2:
                 print_usage(argv[0]);
                 return 1;
+            case 3:
+                config_debug = 1;
+                break;
             case '?':
                 print_usage(argv[0]);
                 return -1;
@@ -102,6 +108,12 @@ int parse_args(int argc, char* argv[], PythonBuilder* python_builder, int* reset
     // Set verbose mode on shell
     if (python_builder && python_builder->base.shell) {
         shell_set_verbose(python_builder->base.shell, verbose);
+    }
+
+    // Show configuration debug info if requested
+    if (config_debug && python_builder && python_builder->python_config) {
+        config_print_summary(python_builder->python_config);
+        config_debug_module_sets(python_builder->python_config);
     }
 
     return 0;

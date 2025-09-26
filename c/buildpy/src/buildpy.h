@@ -11,6 +11,9 @@
 #include <glob.h>
 #include <libgen.h>
 
+// Include configuration system
+#include "config.h"
+
 #define MAX_PATH 4096
 #define MAX_COMMAND 8192
 #define MAX_ARGS 256
@@ -72,6 +75,7 @@ typedef struct {
     int cfg_opts_count;
     char** pkgs;
     int pkgs_count;
+    Config* python_config; // Add configuration system
 } PythonBuilder;
 
 // Shell functions

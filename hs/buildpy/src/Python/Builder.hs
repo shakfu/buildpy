@@ -3,7 +3,7 @@ module Python.Builder where
 import Project ( defaultProject )
 import Python.Config ( doConfigurePython, configurePython )
 import Python.Model
-    ( downloadPython, setupPython, buildPython, installPython )
+    ( downloadPython, setupPython, buildPython, installPython, cleanPython, zipPythonLib )
 import Types
 
 processPython :: Version -> BuildType -> SizeType -> IO ()
@@ -15,8 +15,8 @@ processPython version build_type size_type = do
     doConfigurePython c
     buildPython c
     installPython c
-    -- cleanPython c
-    -- zipPythonLib c
+    cleanPython c
+    zipPythonLib c
 
 
 run :: Version -> Name -> IO ()

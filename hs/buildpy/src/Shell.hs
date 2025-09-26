@@ -80,33 +80,35 @@ globMatch fs f = any (?== f) fs
 --                 action target
 walk :: (FilePath -> Bool) -> (FilePath -> IO ()) -> FilePath -> IO ()
 walk match action root = do
-    pathWalk root $ \dir subdirs _ -> do
+    pathWalk root $ \dir subdirs files -> do
+        -- Process subdirectories
         forM_ subdirs $ \subdir -> do
             let current_dir = joinPath [dir, subdir]
-            -- logInfo, $ "searching: " ++ current_dir
-            when (match current_dir) $ do
-                -- logInfo $ "rm: " ++ current_dir
-                action current_dir
-            -- debug $ "searching: " ++ target
-        -- forM_ files $ \file -> do
-        --     let current_file = joinPath [dir, file]
-        --     when (match file) $ do
-        --         -- logInfo $ "rm: " ++ current_file
-        --         action current_file
+            when (match subdir) $ action current_dir
+        -- Process files
+        forM_ files $ \file -> do
+            let current_file = joinPath [dir, file]
+            when (match file) $ action current_file
 
 globRemove :: [FilePattern] -> FilePath -> IO ()
 globRemove ps = walk (globMatch ps) action
-        -- action = remove
   where
     action f = do
         exists <- doesPathExist f
         if exists
-            then logInfo $ "exists: " ++ f
-            else logWarn $ "skipping: " ++ f
-        -- action f = do 
-        --     exists <- doesPathExist f
-        --     if exists then removeDirectoryRecursive f else logWarn $ "skipping: " ++ f
-        -- action f = logWarn $ "skipping: " ++ f
-        -- action f = do 
-        --     exists <- doesPathExist f
-        --     if exists then removePathForcibly f else logWarn $ "skipping: " ++ f
+            then do
+                logInfo $ "removing: " ++ f
+                removePathForcibly f
+            else logWarn $ "skipping (not found): " ++ f
+
+-- Remove specific files by name
+removeFiles :: [FilePath] -> FilePath -> IO ()
+removeFiles files baseDir = do
+    forM_ files $ \file -> do
+        let filePath = joinPath [baseDir, file]
+        exists <- doesPathExist filePath
+        if exists
+            then do
+                logInfo $ "removing file: " ++ filePath
+                removePathForcibly filePath
+            else logWarn $ "file not found: " ++ filePath

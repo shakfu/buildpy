@@ -12,7 +12,7 @@ import Dependency.Model ( Dependency(depBuildFunc) )
 import Log (logInfo)
 import Process (cmd)
 import Project (Project(projectBuild, projectInstall, projectSrc), setupProject)
-import Shell (gitClone, globRemove, makedir, move, remove, zipLib)
+import Shell (gitClone, globRemove, makedir, move, remove, removeFiles, zipLib)
 import Types
     ( Buildable(..), SizeType, BuildType, Url, Name, Version )
 import Utils (lowercase, wordsWhen)
@@ -134,9 +134,23 @@ installPython c = do
 
 cleanPython :: PythonConfig -> IO ()
 cleanPython c = do
-    logInfo "cleanPython"
-    let path = joinPath [prefix c, "lib", nameVer c]
-    globRemove (pythonRemovePatterns c) path
+    logInfo "cleaning Python build"
+    let libPath = joinPath [prefix c, "lib", nameVer c]
+    let binPath = joinPath [prefix c, "bin"]
+
+    -- Remove files matching patterns
+    globRemove (pythonRemovePatterns c) libPath
+
+    -- Remove unnecessary executables
+    let ver = pythonVer c
+    let bins = [ "2to3"
+               , "idle3"
+               , "idle" ++ ver
+               , "pydoc3"
+               , "pydoc" ++ ver
+               , "2to3-" ++ ver
+               ]
+    removeFiles bins binPath
 
 zipPythonLib :: PythonConfig -> IO ()
 zipPythonLib c = do
@@ -152,7 +166,7 @@ zipPythonLib c = do
     let pkgconfig = joinPath [prefix c, "lib", "pkgconfig"]
     Shell.move src_libdynload tmp_libdynload
     Shell.move src_os_py tmp_os_py
-    Shell.zipLib zip_file src
+    Shell.zipLib src zip_file
     mapM_ Shell.remove [src, pkgconfig]
     mapM_ Shell.makedir [src, site_packages]
     Shell.move tmp_libdynload src_libdynload

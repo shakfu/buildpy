@@ -4,7 +4,7 @@ EXECUTABLE := $(shell cabal list-bin buildpy)
 INDENT_SIZE := 4
 
 
-.PHONY: all build run repl clean indent link release
+.PHONY: all build run repl clean indent link release test
 
 
 all: build
@@ -30,6 +30,9 @@ indent:
 link:
 	@rm ./buildpy
 	@ln -s $(EXECUTABLE) .
+
+test:
+	@cabal test
 
 release: build
 	@mkdir -p ../../bin

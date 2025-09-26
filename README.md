@@ -6,14 +6,14 @@ This project provides different language implementations of a commandline tool w
 
 Such customized builds can be useful for integration or embedding in other compiled projects.
 
-The implementations so far are: python, golang, rust, c++, haskell (wip), swift (wip), and c (wip):
+The implementations so far are: python, golang, rust, c++, haskell (wip), swift, and c:
 
 | python version    | python | c++    | golang | rust   | swift  | haskell |    c    |
 | :---------------: | :----: | :----: | :----: | :----: | :----: | :----:  | :----:  |
-| 3.10              |    1   |    1   |    1   |    1   |    0   |    0    |    0    |
-| 3.11              |    1   |    1   |    1   |    1   |    0   |    0    |    0    |
-| 3.12              |    1   |    1   |    1   |    1   |    0   |    0    |    0    |
-| 3.13              |    1   |    1   |    1   |    1   |    0   |    0    |    0    |
+| 3.10              |    1   |    1   |    1   |    1   |    1   |    0    |    1    |
+| 3.11              |    1   |    1   |    1   |    1   |    1   |    0    |    1    |
+| 3.12              |    1   |    1   |    1   |    1   |    1   |    0    |    1    |
+| 3.13              |    1   |    1   |    1   |    1   |    1   |    0    |    1    |
 
 
 The design for the tool, called `buildpy`, was initially conceived, prototyped and implemented in python3 as an improvement on some earlier incarnations (see Background section below) which are also included in this project. It provides for the following general steps to build python from source:
@@ -55,38 +55,51 @@ To build a specific case, type the same in the root of the subproject.
 
 Feature coverage and notable aspects of `buildpy` variants by language:
 
-| Features                   |  python | golang   | rust     | haskell  | c++      | swift    |
-| :------------------------- | :------:| :------: | :------: | :------: | :------: | :------: |
-| Create Build Env           | x       | x        | x        | x        | x        |          |
-| Build Python Dependencies  | x       | x        | x        | x        | x        |          |
-| Configure Python Build     | x       | x        | x        | x        | x        |          |
-| Build/Install Python       | x       | x        | x        | x        | x        |          |
-| Clean Python Build         | x       | x        | x        |          | x        |          |
-| Zip python library         | x       | x        | x        |          | x        |          |
-| Size of executable (macOS) | 48 Kb   | 5.1 MB   | 2.6 MB   | 24.5 MB  | 535 kb   | 1.6 MB   |
-| Size of executable (linux) | 48 Kb   | 5.1 MB   | 6.3 MB   | 3.0 MB   | 484 Kb   | 3.9 MB   |
-| Tested on Linux            | x       | x        | x        | x        | x        | x        |
-| Tested on macOS            | x       | x        | x        | x        | x        | x        |
-| Tested on Windows          |         |          |          |          |          |          |
+| Features                   |  python | golang   | rust     | haskell  | c++      | swift    | c        |
+| :------------------------- | :------:| :------: | :------: | :------: | :------: | :------: | :------: |
+| Create Build Env           | x       | x        | x        | x        | x        | x        | x        |
+| Build Python Dependencies  | x       | x        | x        | x        | x        | x        | x        |
+| Configure Python Build     | x       | x        | x        | x        | x        | x        | x        |
+| Build/Install Python       | x       | x        | x        | x        | x        | x        | x        |
+| Clean Python Build         | x       | x        | x        |          | x        | x        | x        |
+| Zip python library         | x       | x        | x        |          | x        | x        | x        |
+| Configuration System       | x       | x        | x        |          | x        | x        | x        |
+| Size of executable (macOS) | 48 Kb   | 5.1 MB   | 2.6 MB   | 24.5 MB  | 535 kb   | 2.0 MB   | 54 kb    |
+| Size of executable (linux) | 48 Kb   | 5.1 MB   | 6.3 MB   | 3.0 MB   | 484 Kb   | 3.9 MB   | 54 kb    |
+| Tested on Linux            | x       | x        | x        | x        | x        | x        | x        |
+| Tested on macOS            | x       | x        | x        | x        | x        | x        | x        |
+| Tested on Windows          |         |          |          |          |          |          |          |
 
 
 Use of External executables
 
-| External Executable        |  python | golang   | rust     | haskell  | c++      | swift    |
-| :------------------------- | :------:| :------: | :------: | :------: | :------: | :------: |
-| git                        |         | x        | x        | x        | x        |          |
-| wget                       |         | x        | x        | x        | x        |          |
-| tar                        |         | x        | x        | x        | x        |          |
-| zip                        |         | x        | x        | x        | x        |          |
-| cmake                      |         | x        | x        | x        | x        |          |
-| make                       | x       | x        | x        | x        | x        |          |
-| bash                       | x       | x        | x        | x        | x        |          |
+| External Executable        |  python | golang   | rust     | haskell  | c++      | swift    | c        |
+| :------------------------- | :------:| :------: | :------: | :------: | :------: | :------: | :------: |
+| git                        |         | x        | x        | x        | x        |          | x        |
+| wget                       |         | x        | x        | x        | x        |          | x        |
+| tar                        |         | x        | x        | x        | x        |          | x        |
+| zip                        |         | x        | x        | x        | x        |          | x        |
+| cmake                      |         | x        | x        | x        | x        |          |          |
+| make                       | x       | x        | x        | x        | x        | x        | x        |
+| bash                       | x       | x        | x        | x        | x        | x        | x        |
 
 The python implementation of `buildpy` uses the capabilities of its stdlib to download python and its dependencies, extract the results and uses external executables when calling `./configure` and `make`.
 
 In most cases, if `tar` and `wget` are not available, then `git` suffices to download source code.
 
 Note that it was not a goal to make the non-python versions to be similarly 'self-contained' as the python version, which relies on the python stdlib, and reduce the need for external executables. This may change in the future if it is not too much work.
+
+## C Implementation Features
+
+The C implementation includes several notable enhancements:
+
+- **Advanced Configuration System**: C11+ based configuration system that replicates the Go version functionality with comprehensive Python module management
+- **Version-Specific Logic**: Full support for Python 3.10-3.13 with version-specific module configurations and platform adaptations
+- **Setup.local Generation**: Automated generation of Python's Setup.local configuration file with proper module categorization
+- **Platform Optimization**: Platform-specific optimizations for macOS and Linux builds including static linking strategies
+- **Minimal Dependencies**: Compact 54kb executable with C11 standard compliance and cross-platform portability
+- **Memory Safety**: Comprehensive bounds checking and memory management throughout the codebase
+- **Debug Support**: Extensive debugging capabilities with module set analysis and configuration validation
 
 
 
@@ -127,7 +140,7 @@ This project started from a concrete requirement in one [external project](https
 
 After the python version of `buildpy` was created, it was thought a compiled version of the tool would be useful for bootstrapping purposes.
 
-This led to a straightforward golang implementation, and then a rust implementation as well as haskell, c++ and swift implementations which are currently under development.
+This led to a straightforward golang implementation, and then a rust implementation as well as haskell, c++, swift, and c implementations. The C implementation provides equivalent functionality to the C++ version while maintaining portability and minimal resource usage.
 
 The idea is that all versions should eventually all be able to read, write and use a standard JSON build configuration file,
 

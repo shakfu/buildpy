@@ -5,6 +5,7 @@ define all-projects
 @$(MAKE) -C rs/buildpy $1
 @$(MAKE) -C cc/buildpy $1
 @$(MAKE) -C sw/buildpy $1
+@$(MAKE) -C c/buildpy  $1
 
 endef
 

@@ -25,27 +25,7 @@ protocol Builder {
     var nameVersion: String { get }
     var nameVer: String { get }
     var url: String { get }
-    // var sourceDir: String { get }
-    // var buildDir: String { get }
-    // var executableName: String { get }
-    // var executable: String { get }
-    // var libname: String { get }
-    // var staticlibName: String { get }
-    // var dylibLinkname: String { get }
-    // var dylibName: String { get }
-    // var dylib: String { get }
-    // var dylibLink: String { get }
-    // var staticLib: String { get }
-    // var prefixDir: String { get }
 
-    // // methods
-    // func staticLibsExist() -> Bool
-    // func preProcess()
-    // func setup()
-    // func configure()
-    // func build()
-    // func install()
-    // func clean()
-    // func postProcess()
-    // func process()
+    // methods
+    func build()
 }

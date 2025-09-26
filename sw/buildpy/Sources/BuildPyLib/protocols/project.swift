@@ -1,4 +1,4 @@
-protocol Project {
+public protocol Project {
 
     // instance properties
     var cwd: String { get }

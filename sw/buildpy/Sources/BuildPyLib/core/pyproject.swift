@@ -20,19 +20,45 @@ public class pyProject : Project {
     }
 
     // instance properties
-    var cwd: String { self.fm.currentDirectoryPath }
-    var buildDir: String { "\(self.cwd)/build" }
-    var downloadsDir: String { "\(self.buildDir)/downloads" }
-    var sourceDir: String { "\(self.buildDir)/src" }
-    var installDir: String { "\(self.buildDir)/install" }
-    var binDir: String { "\(self.installDir)/bin" }
-    var libDir: String { "\(self.installDir)/lib" }
-    var libStaticDir: String { "\(self.installDir)/lib" }
+    public var cwd: String { self.fm.currentDirectoryPath }
+    public var buildDir: String { "\(self.cwd)/build" }
+    public var downloadsDir: String { "\(self.buildDir)/downloads" }
+    public var sourceDir: String { "\(self.buildDir)/src" }
+    public var installDir: String { "\(self.buildDir)/install" }
+    public var binDir: String { "\(self.installDir)/bin" }
+    public var libDir: String { "\(self.installDir)/lib" }
+    public var libStaticDir: String { "\(self.installDir)/lib" }
 
     // methods
     public func setup() -> Bool {
-    	return true
+        log.info("Setting up build environment")
+
+        let shell = Shell()
+
+        // Create build directory structure
+        let dirs = [buildDir, downloadsDir, sourceDir, installDir, binDir, libDir]
+
+        for dir in dirs {
+            if !shell.exists(path: dir) {
+                log.info("Creating directory: \(dir)")
+                shell.mkdir(path: dir)
+            }
+        }
+
+        log.info("Build environment setup complete")
+        return true
     }
-    public func clean() {}
+
+    public func clean() {
+        log.info("Cleaning build environment")
+        let shell = Shell()
+
+        if shell.exists(path: buildDir) {
+            log.info("Removing build directory: \(buildDir)")
+            shell.rmtree(path: buildDir)
+        }
+
+        log.info("Build environment cleaned")
+    }
 
 }

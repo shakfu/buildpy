@@ -7,6 +7,9 @@
 bin/
 build/
 
+#c/
+obj/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

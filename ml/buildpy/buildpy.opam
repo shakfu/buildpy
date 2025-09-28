@@ -10,8 +10,14 @@ homepage: "https://github.com/shakfu/buildpy"
 doc: "https://url/to/documentation"
 bug-reports: "https://github.com/shakfu/buildpy/issues"
 depends: [
-  "dune" {>= "3.19"}
   "ocaml"
+  "dune" {>= "3.19"}
+  "cmdliner"
+  "lwt"
+  "cohttp-lwt-unix"
+  "yojson"
+  "unix"
+  "str"
   "odoc" {with-doc}
 ]
 build: [

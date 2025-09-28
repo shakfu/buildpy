@@ -31,5 +31,9 @@ test: $(TARGET)
 	@./$(TARGET) --help
 	@./$(TARGET) --version 3.12.9 --config static_max --verbose
 
+release: all
+	@mkdir -p ../../bin
+	@mv buildpy ../../bin/buildpy-c
+
 .SUFFIXES:
 .SUFFIXES: .c .o

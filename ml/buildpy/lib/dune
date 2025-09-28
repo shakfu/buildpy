@@ -1,2 +1,3 @@
 (library
- (name buildpy))
+ (name buildpy)
+ (libraries unix str))

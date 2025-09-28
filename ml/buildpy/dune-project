@@ -19,7 +19,16 @@
  (name buildpy)
  (synopsis "Buidl relocatable python")
  (description "A longer description")
- (depends ocaml)
+ (depends
+  ocaml
+  dune
+  cmdliner
+  lwt
+  cohttp-lwt-unix
+  yojson
+  unix
+  str
+  )
  (tags
   ("add topics" "to describe" your project)))
 

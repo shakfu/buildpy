@@ -6,7 +6,7 @@ define all-projects
 @$(MAKE) -C cc/buildpy $1
 @$(MAKE) -C sw/buildpy $1
 @$(MAKE) -C c/buildpy  $1
-
+@$(MAKE) -C ml/buildpy $1
 endef
 
 
@@ -23,6 +23,7 @@ release:
 	@echo "make $@ for all projects"
 	$(call all-projects,"$@")
 	@cp py/buildpy/buildpy.py ./bin/
+	@cp ml/buildpy/_build/default/bin/main.exe ./bin/buildpy-ml
 
 clean:
 	@echo "make $@ for all projects"

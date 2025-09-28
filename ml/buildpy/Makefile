@@ -26,7 +26,7 @@ dev: install build
 
 # Clean build artifacts
 clean:
-	dune clean
+	@rm -rf build _build
 
 # Build and run
 run:

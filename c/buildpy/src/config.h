@@ -6,6 +6,10 @@
 #include <string.h>
 #include <stdbool.h>
 
+#ifndef BUILDPY_DEBUG
+#define BUILDPY_DEBUG 0
+#endif
+
 #define MAX_CONFIG_NAME 64
 #define MAX_VERSION_STRING 16
 #define MAX_HEADER_LINES 16
@@ -70,7 +74,6 @@ typedef struct {
     ModuleSet static_modules;
     ModuleSet shared_modules;
     ModuleSet disabled_modules;
-
 } Config;
 
 // Configuration management functions

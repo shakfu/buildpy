@@ -6,13 +6,13 @@ void config_apply_platform_defaults(Config* config) {
     if (!config) return;
 
     if (PLATFORM_DARWIN) {
-        log_info("Applying macOS platform defaults");
+        log_debug("Applying macOS platform defaults");           
         // Enable _scproxy on macOS
         const char* enable_modules[] = {"_scproxy"};
         config_disabled_to_static(config, enable_modules, 1);
 
     } else if (PLATFORM_LINUX) {
-        log_info("Applying Linux platform defaults");
+        log_debug("Applying Linux platform defaults");         
         // Enable ossaudiodev on Linux
         const char* enable_modules[] = {"ossaudiodev"};
         config_disabled_to_static(config, enable_modules, 1);
@@ -56,13 +56,13 @@ void config_apply_version_specific(Config* config) {
     if (!config) return;
 
     if (config->version.minor >= 11) {
-        log_info("Applying Python 3.11+ specific configuration");
+        log_debug("Applying Python 3.11+ specific configuration");
         // No specific changes for base 3.11+ yet
 
     }
 
     if (config->version.minor >= 12) {
-        log_info("Applying Python 3.12+ specific configuration");
+        log_debug("Applying Python 3.12+ specific configuration");
 
         // Update hash modules for HACL* implementation
         Extension* md5_ext = config_find_extension(config, "_md5");
@@ -133,7 +133,7 @@ void config_apply_version_specific(Config* config) {
     }
 
     if (config->version.minor >= 13) {
-        log_info("Applying Python 3.13+ specific configuration");
+        log_debug("Applying Python 3.13+ specific configuration");
 
         // Add new interpreter modules
         config_add_extension(config, "_interpchannels", (const char*[]){"_interpchannelsmodule.c"}, 1);
@@ -166,19 +166,19 @@ void config_apply_configuration_type(Config* config) {
     if (!config) return;
 
     if (strcmp(config->name, "static_max") == 0) {
-        log_info("Applying static_max configuration");
+        log_debug("Applying static_max configuration");
         if (config->version.minor >= 11 && PLATFORM_LINUX) {
             const char* disable_modules[] = {"_decimal"};
             config_static_to_disabled(config, disable_modules, 1);
         }
 
     } else if (strcmp(config->name, "static_mid") == 0) {
-        log_info("Applying static_mid configuration");
+        log_debug("Applying static_mid configuration");
         const char* disable_modules[] = {"_decimal"};
         config_static_to_disabled(config, disable_modules, 1);
 
     } else if (strcmp(config->name, "static_min") == 0) {
-        log_info("Applying static_min configuration");
+        log_debug("Applying static_min configuration");
         const char* disable_modules[] = {
             "_bz2", "_decimal", "_csv", "_json", "_lzma", "_scproxy",
             "_sqlite3", "_ssl", "pyexpat", "readline"
@@ -186,7 +186,7 @@ void config_apply_configuration_type(Config* config) {
         config_static_to_disabled(config, disable_modules, 10);
 
     } else if (strcmp(config->name, "shared_max") == 0) {
-        log_info("Applying shared_max configuration");
+        log_debug("Applying shared_max configuration");
         if (config->version.minor >= 11) {
             if (PLATFORM_LINUX) {
                 const char* disable_modules[] = {"_decimal"};
@@ -201,12 +201,12 @@ void config_apply_configuration_type(Config* config) {
         }
 
     } else if (strcmp(config->name, "shared_mid") == 0) {
-        log_info("Applying shared_mid configuration");
+        log_debug("Applying shared_mid configuration");
         const char* disable_modules[] = {"_decimal", "_ssl", "_hashlib"};
         config_static_to_disabled(config, disable_modules, 3);
 
     } else if (strcmp(config->name, "shared_min") == 0) {
-        log_info("Applying shared_min configuration");
+        log_debug("Applying shared_min configuration");
         // Similar to shared_mid for now
         const char* disable_modules[] = {"_decimal", "_ssl", "_hashlib"};
         config_static_to_disabled(config, disable_modules, 3);
@@ -217,7 +217,7 @@ void config_apply_configuration_type(Config* config) {
 void config_configure(Config* config) {
     if (!config) return;
 
-    log_info("Configuring Python %d.%d.%d with profile: %s",
+    log_debug("Configuring Python %d.%d.%d with profile: %s",
             config->version.major, config->version.minor, config->version.patch,
             config->name);
 
@@ -225,7 +225,7 @@ void config_configure(Config* config) {
     config_apply_version_specific(config);
     config_apply_configuration_type(config);
 
-    log_info("Configuration complete");
+    log_debug("Configuration complete");
 }
 
 // Setup.local generation

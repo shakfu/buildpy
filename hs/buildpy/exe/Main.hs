@@ -3,19 +3,19 @@
 
 module Main where
 
-import qualified BuildPy (run)
+-- import qualified BuildPy (run)
 import qualified Python.Config as Config
 import qualified Python.Model as Model
 import qualified Dependency.Config as DepConfig
-import qualified Dependency.Model as Deps
+-- import qualified Dependency.Model as Deps
 import qualified Project as Project
 import qualified Shell
 
 import Control.Monad (when)
-import Data.Aeson (encode, decode, ToJSON, FromJSON)
-import Data.Yaml (encodeFile, decodeFileEither)
-import qualified Data.ByteString.Lazy.Char8 as L8
-import qualified Data.Text as T
+-- import Data.Aeson (encode, decode, ToJSON, FromJSON)
+-- import Data.Yaml (encodeFile, decodeFileEither)
+-- import qualified Data.ByteString.Lazy.Char8 as L8
+-- import qualified Data.Text as T
 import Options.Applicative
 import System.Exit (exitSuccess)
 import System.Directory (removeDirectoryRecursive, doesDirectoryExist)

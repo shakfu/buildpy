@@ -317,6 +317,17 @@ void log_info(const char* format, ...) {
     va_end(args);
 }
 
+void log_debug(const char* format, ...) {
+    if (BUILDPY_DEBUG) {
+        va_list args;
+        va_start(args, format);
+        printf("[DEBUG] ");
+        vprintf(format, args);
+        printf("\n");
+        va_end(args);
+    }
+}
+
 void log_error(const char* format, ...) {
     va_list args;
     va_start(args, format);

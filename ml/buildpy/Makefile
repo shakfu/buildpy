@@ -43,6 +43,8 @@ build-test: build
 
 # Show help
 help:
+	@echo "First: eval $(opam env)"
+	@echo ""
 	@echo "Available targets:"
 	@echo "  build      - Build the project"
 	@echo "  release    - Build in release mode"

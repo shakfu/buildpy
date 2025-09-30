@@ -144,6 +144,7 @@ char* join_path(const char* path1, const char* path2);
 char* string_replace(const char* str, const char* old, const char* new_str);
 int string_ends_with(const char* str, const char* suffix);
 void log_info(const char* format, ...);
+void log_debug(const char* format, ...);
 void log_error(const char* format, ...);
 
 #endif // BUILDPY_H

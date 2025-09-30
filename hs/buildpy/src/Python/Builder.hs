@@ -6,8 +6,8 @@ import Python.Model
     ( downloadPython, setupPython, buildPython, installPython, cleanPython, zipPythonLib )
 import Types
 
-processPython :: Version -> BuildType -> SizeType -> IO ()
-processPython version build_type size_type = do
+processPythonBuild :: Version -> BuildType -> SizeType -> IO ()
+processPythonBuild version build_type size_type = do
     p <- defaultProject
     let c = configurePython version build_type size_type p
     setupPython c
@@ -21,10 +21,10 @@ processPython version build_type size_type = do
 
 run :: Version -> Name -> IO ()
 run v cfg
-    | cfg == "static_max" = processPython v Static Max
-    | cfg == "static_mid" = processPython v Static Mid
-    | cfg == "static_min" = processPython v Static Min
-    | cfg == "shared_max" = processPython v Shared Max
-    | cfg == "shared_mid" = processPython v Shared Mid
-    | cfg == "shared_min" = processPython v Shared Min
+    | cfg == "static_max" = processPythonBuild v Static Max
+    | cfg == "static_mid" = processPythonBuild v Static Mid
+    | cfg == "static_min" = processPythonBuild v Static Min
+    | cfg == "shared_max" = processPythonBuild v Shared Max
+    | cfg == "shared_mid" = processPythonBuild v Shared Mid
+    | cfg == "shared_min" = processPythonBuild v Shared Min
     | otherwise           = error "config not recognized"

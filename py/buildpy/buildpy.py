@@ -12,9 +12,10 @@ features:
 class structure:
 
 Config
-    PythonConfig311
-    PythonConfig312
-    PythonConfig313
+    PythonConfig
+        PythonConfig311
+        PythonConfig312
+        PythonConfig313
 
 ShellCmd
     Project
@@ -513,6 +514,7 @@ class Config:
         self.cfg = cfg.copy()
         self.out = ["# -*- makefile -*-"] + self.cfg["header"] + ["\n# core\n"]
         self.log = logging.getLogger(self.__class__.__name__)
+        self.install_name_id: Optional[str] = None
         self.patch()
 
     def __repr__(self):
@@ -587,17 +589,21 @@ class Config:
             json.dump(self.cfg, f, indent=4)
 
 
-class PythonConfig311(Config):
-    """configuration class to build python 3.11"""
+class PythonConfig(Config):
+    """Base configuration class for all Python versions"""
 
-    version: str = "3.11.10"
+    version: str
 
-    def patch(self) -> None:
-        """patch cfg attribute"""
-        if PLATFORM == "Darwin":
-            self.enable_static("_scproxy")
-        elif PLATFORM == "Linux":
-            self.enable_static("ossaudiodev")
+    def __init__(self, cfg: dict, build_type: Optional[str] = None):
+        super().__init__(cfg)
+        # Set default install_name_id for framework builds
+        if build_type == "framework":
+            self.install_name_id = f"@rpath/Python.framework/Versions/{self.ver}/Python"
+
+    @property
+    def ver(self) -> str:
+        """short python version: 3.11"""
+        return ".".join(self.version.split(".")[:2])
 
     def static_max(self) -> None:
         """static build variant max-size"""
@@ -620,7 +626,7 @@ class PythonConfig311(Config):
                 "-l:libcrypto.a -Wl,--exclude-libs,libcrypto.a",
             ]
 
-    def static_tiny(self):
+    def static_tiny(self) -> None:
         """static build variant tiny-size"""
         self.disable_static(
             "_bz2",
@@ -635,23 +641,23 @@ class PythonConfig311(Config):
             # "readline", # already disabled by default
         )
 
-    def static_bootstrap(self):
+    def static_bootstrap(self) -> None:
         """static build variant bootstrap-size"""
         for i in self.cfg["static"]:
             self.cfg["disabled"].append(i)
         self.cfg["static"] = self.cfg["core"].copy()
         self.cfg["core"] = []
 
-    def shared_max(self):
+    def shared_max(self) -> None:
         """shared build variant max-size"""
         self.cfg["disabled"].remove("_ctypes")
         self.move_static_to_shared("_decimal", "_ssl", "_hashlib")
 
-    def shared_mid(self):
+    def shared_mid(self) -> None:
         """shared build variant mid-size"""
         self.disable_static("_decimal", "_ssl", "_hashlib")
 
-    def framework_max(self):
+    def framework_max(self) -> None:
         """framework build variant max-size"""
         self.shared_max()
         self.move_static_to_shared(
@@ -664,20 +670,37 @@ class PythonConfig311(Config):
             "binascii",
         )
 
-    def framework_mid(self):
+    def framework_mid(self) -> None:
         """framework build variant mid-size"""
         self.framework_max()
         self.disable_shared("_decimal", "_ssl", "_hashlib")
 
 
-class PythonConfig312(PythonConfig311):
+class PythonConfig311(PythonConfig):
+    """configuration class to build python 3.11"""
+
+    version: str = "3.11.10"
+
+    def patch(self) -> None:
+        """patch cfg attribute"""
+        if PLATFORM == "Darwin":
+            self.enable_static("_scproxy")
+        elif PLATFORM == "Linux":
+            self.enable_static("ossaudiodev")
+
+
+class PythonConfig312(PythonConfig):
     """configuration class to build python 3.12"""
 
     version = "3.12.7"
 
     def patch(self):
         """patch cfg attribute"""
-        super().patch()
+        # Apply 3.11 patches
+        if PLATFORM == "Darwin":
+            self.enable_static("_scproxy")
+        elif PLATFORM == "Linux":
+            self.enable_static("ossaudiodev")
 
         self.cfg["extensions"].update(
             {
@@ -720,7 +743,7 @@ class PythonConfig312(PythonConfig311):
         self.cfg["disabled"].append("_xxinterpchannels")
 
 
-class PythonConfig313(PythonConfig312):
+class PythonConfig313(PythonConfig):
     """configuration class to build python 3.13"""
 
     version = "3.13.0"
@@ -728,7 +751,50 @@ class PythonConfig313(PythonConfig312):
     def patch(self):
         """patch cfg attribute"""
 
-        super().patch()
+        # Apply 3.11 and 3.12 patches
+        if PLATFORM == "Darwin":
+            self.enable_static("_scproxy")
+        elif PLATFORM == "Linux":
+            self.enable_static("ossaudiodev")
+
+        self.cfg["extensions"].update(
+            {
+                "_md5": [
+                    "md5module.c",
+                    "-I$(srcdir)/Modules/_hacl/include",
+                    "_hacl/Hacl_Hash_MD5.c",
+                    "-D_BSD_SOURCE",
+                    "-D_DEFAULT_SOURCE",
+                ],
+                "_sha1": [
+                    "sha1module.c",
+                    "-I$(srcdir)/Modules/_hacl/include",
+                    "_hacl/Hacl_Hash_SHA1.c",
+                    "-D_BSD_SOURCE",
+                    "-D_DEFAULT_SOURCE",
+                ],
+                "_sha2": [
+                    "sha2module.c",
+                    "-I$(srcdir)/Modules/_hacl/include",
+                    "_hacl/Hacl_Hash_SHA2.c",
+                    "-D_BSD_SOURCE",
+                    "-D_DEFAULT_SOURCE",
+                ],
+                "_sha3": [
+                    "sha3module.c",
+                    "-I$(srcdir)/Modules/_hacl/include",
+                    "_hacl/Hacl_Hash_SHA3.c",
+                    "-D_BSD_SOURCE",
+                    "-D_DEFAULT_SOURCE",
+                ],
+            }
+        )
+        del self.cfg["extensions"]["_sha256"]
+        del self.cfg["extensions"]["_sha512"]
+        self.cfg["static"].append("_sha2")
+        self.cfg["static"].remove("_sha256")
+        self.cfg["static"].remove("_sha512")
+        self.cfg["disabled"].append("_xxinterpchannels")
 
         self.cfg["extensions"].update(
             {
@@ -1612,7 +1678,7 @@ class PythonBuilder(Builder):
             "3.11": PythonConfig311,
             "3.12": PythonConfig312,
             "3.13": PythonConfig313,
-        }[self.ver](BASE_CONFIG)
+        }[self.ver](BASE_CONFIG, self.build_type)
 
     @property
     def libname(self):
@@ -1849,10 +1915,16 @@ class PythonBuilder(Builder):
             elif self.build_type == "framework":
                 dylib = self.prefix / self.name
                 self.chmod(dylib)
-                if self.is_package:
+
+                # Use install_name_id from config if set, otherwise use defaults
+                config = self.get_config()
+                if config.install_name_id:
+                    _id = config.install_name_id
+                elif self.is_package:
                     _id = f"@loader_path/../../../../support/Python.framework/Versions/{self.ver}/Python"
                 else:
                     _id = f"@loader_path/../Resources/Python.framework/Versions/{self.ver}/Python"
+
                 self.cmd(f"install_name_tool -id {_id} {dylib}")
                 # changing executable
                 to = "@executable_path/../Python"

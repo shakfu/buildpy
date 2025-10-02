@@ -22,9 +22,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Build caching strategy**: `_is_build_cached()` intelligently skips rebuilds when artifacts exist (CI/CD optimized)
 - **Progress indicators**: User-friendly messages for download, extraction, configuration, and build phases
 - **Type annotations**: Complete type hints added throughout codebase for better IDE support and type checking
+- **Configurable install_name_id**: Added `install_name_id` field to `Config` class for customizing framework install names
+  - Supports custom paths for specialized builds (e.g., Max/MSP integration)
+  - Defaults to `@rpath/Python.framework/Versions/{ver}/Python` for framework builds
+  - Can be overridden per-config for special deployment scenarios
 
 ### Changed
 
+- **Refactored config class hierarchy**: Created intermediate `PythonConfig` class between `Config` and version-specific configs
+  - New hierarchy: `Config` → `PythonConfig` → `PythonConfig311/312/313`
+  - Moved common build variant methods (`static_max`, `framework_max`, etc.) to `PythonConfig` base class
+  - Eliminated code duplication across Python version configs
+  - Added `build_type` parameter to `PythonConfig.__init__()` for framework detection
 - **Refactored ziplib() logic**: Extracted duplicate code from `PythonBuilder` and `WindowsPythonBuilder` into base class with platform-specific hooks
   - `_get_lib_src_dir()` - Platform-specific library directory
   - `_precompile_lib()` - Bytecode compilation
@@ -38,6 +47,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Build milestones remain INFO
   - Errors remain CRITICAL, warnings remain WARNING
 - **Enhanced build caching**: Improved `can_run()` method with dependency checking and complete artifact validation
+- **Generalized make_relocatable()**: Now uses configurable `install_name_id` from config instead of hardcoded Max/MSP path
 
 ### Removed
 

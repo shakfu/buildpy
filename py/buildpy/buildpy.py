@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """buildpy.py - builds python from source
 
+repo: https://github.com/shakfu/buildpy
+
 features:
 
 - Single script which downloads, builds python from source
-- Different build configurations (static, dynamic) possible
+- Different build configurations (static, dynamic, framework) possible
 - Trims python builds and zips site-packages by default.
 
 class structure:
@@ -26,22 +28,26 @@ ShellCmd
 
 """
 
+import argparse
 import datetime
+import hashlib
 import json
 import logging
 import os
 import platform
+import shlex
 import shutil
 import stat
 import subprocess
 import sys
 import tarfile
+import zipfile
 from fnmatch import fnmatch
 from pathlib import Path
 from typing import Callable, Optional, Union
 from urllib.request import urlretrieve
 
-__version__ = "0.0.1"
+__version__ = "0.0.2"
 
 # ----------------------------------------------------------------------------
 # type aliases
@@ -75,12 +81,74 @@ PYTHON = sys.executable
 PLATFORM = platform.system()
 ARCH = platform.machine()
 PY_VER_MINOR = sys.version_info.minor
-if PLATFORM == "Darwin":
-    MACOSX_DEPLOYMENT_TARGET = setenv("MACOSX_DEPLOYMENT_TARGET", "12.6")
-DEFAULT_PY_VERSION = "3.12.9"
-# DEFAULT_PY_VERSION = "3.13.5"
+DEFAULT_PY_VERSION = "3.13.7"
 DEBUG = getenv("DEBUG", default=True)
 COLOR = getenv("COLOR", default=True)
+
+# ----------------------------------------------------------------------------
+# platform detection utilities
+
+class PlatformInfo:
+    """Centralized platform detection and configuration"""
+
+    def __init__(self):
+        self.system = platform.system()
+        self.machine = platform.machine()
+
+    @property
+    def is_darwin(self) -> bool:
+        """Check if running on macOS"""
+        return self.system == "Darwin"
+
+    @property
+    def is_linux(self) -> bool:
+        """Check if running on Linux"""
+        return self.system == "Linux"
+
+    @property
+    def is_windows(self) -> bool:
+        """Check if running on Windows"""
+        return self.system == "Windows"
+
+    @property
+    def is_unix(self) -> bool:
+        """Check if running on Unix-like system"""
+        return self.is_darwin or self.is_linux
+
+    def get_build_types(self) -> list[str]:
+        """Get available build types for current platform"""
+        if self.is_darwin:
+            return [
+                "local",
+                "shared-ext",
+                "static-ext",
+                "framework-ext",
+                "framework-pkg",
+            ]
+        elif self.is_windows:
+            return ["local", "windows-pkg"]
+        elif self.is_linux:
+            return [
+                "local",
+                "shared-ext",
+                "static-ext",
+            ]
+        return ["local"]
+
+    def setup_environment(self):
+        """Setup platform-specific environment variables"""
+        if self.is_darwin:
+            setenv("MACOSX_DEPLOYMENT_TARGET", "12.6")
+
+
+# Global platform info instance
+PLATFORM_INFO = PlatformInfo()
+PLATFORM_INFO.setup_environment()
+
+# Backward compatibility
+BUILD_TYPES = PLATFORM_INFO.get_build_types()
+if PLATFORM_INFO.is_darwin:
+    MACOSX_DEPLOYMENT_TARGET = os.getenv("MACOSX_DEPLOYMENT_TARGET", "12.6")
 
 # ----------------------------------------------------------------------------
 # logging config
@@ -453,41 +521,41 @@ class Config:
     def patch(self) -> None:
         """patch cfg attribute"""
 
-    def move_entries(self, src: str, dst: str, *names):
+    def move_entries(self, src: str, dst: str, *names) -> None:
         """generic entry mover"""
         for name in names:
             self.log.info("%s -> %s: %s", src, dst, name)
             self.cfg[src].remove(name)
             self.cfg[dst].append(name)
 
-    def enable_static(self, *names):
+    def enable_static(self, *names) -> None:
         """move disabled entries to static"""
         self.move_entries("disabled", "static", *names)
 
-    def enable_shared(self, *names):
+    def enable_shared(self, *names) -> None:
         """move disabled entries to shared"""
         self.move_entries("disabled", "shared", *names)
 
-    def disable_static(self, *names):
+    def disable_static(self, *names) -> None:
         """move static entries to disabled"""
         self.move_entries("static", "disabled", *names)
 
-    def disable_shared(self, *names):
+    def disable_shared(self, *names) -> None:
         """move shared entries to disabled"""
         self.move_entries("shared", "disabled", *names)
 
-    def move_static_to_shared(self, *names):
+    def move_static_to_shared(self, *names) -> None:
         """move static entries to shared"""
         self.move_entries("static", "shared", *names)
 
-    def move_shared_to_static(self, *names):
+    def move_shared_to_static(self, *names) -> None:
         """move shared entries to static"""
         self.move_entries("shared", "static", *names)
 
-    def write(self, method: str, to: Pathlike):
+    def write(self, method: str, to: Pathlike) -> None:
         """write configuration method to a file"""
 
-        def _add_section(name):
+        def _add_section(name: str) -> None:
             if self.cfg[name]:
                 self.out.append(f"\n*{name}*\n")
                 for i in sorted(self.cfg[name]):
@@ -511,7 +579,8 @@ class Config:
             self.out.append("# end \n")
             f.write("\n".join(self.out))
 
-    def write_json(self, method: str, to: Pathlike):
+    def write_json(self, method: str, to: Pathlike) -> None:
+        """Write configuration to JSON file"""
         self.log.info("write method '%s' to json: %s", method, to)
         getattr(self, method)()
         with open(to, "w") as f:
@@ -530,10 +599,10 @@ class PythonConfig311(Config):
         elif PLATFORM == "Linux":
             self.enable_static("ossaudiodev")
 
-    def static_max(self):
+    def static_max(self) -> None:
         """static build variant max-size"""
 
-    def static_mid(self):
+    def static_mid(self) -> None:
         """static build variant mid-size"""
         self.disable_static("_decimal")
         if PLATFORM == "Linux":
@@ -563,7 +632,7 @@ class PythonConfig311(Config):
             "_sqlite3",
             "_ssl",
             "pyexpat",
-            "readline",
+            # "readline", # already disabled by default
         )
 
     def static_bootstrap(self):
@@ -588,7 +657,7 @@ class PythonConfig311(Config):
         self.move_static_to_shared(
             "_bz2",
             "_lzma",
-            "readline",
+            # "readline",
             "_sqlite3",
             "_scproxy",
             "zlib",
@@ -608,12 +677,7 @@ class PythonConfig312(PythonConfig311):
 
     def patch(self):
         """patch cfg attribute"""
-
         super().patch()
-        # if PLATFORM == "Darwin":
-        #     self.enable_static("_scproxy")
-        # elif PLATFORM == "Linux":
-        #     self.enable_static("ossaudiodev")
 
         self.cfg["extensions"].update(
             {
@@ -696,6 +760,29 @@ class PythonConfig313(PythonConfig312):
 
 
 # ----------------------------------------------------------------------------
+# custom exceptions
+
+class BuildError(Exception):
+    """Base exception for build errors"""
+    pass
+
+class CommandError(BuildError):
+    """Exception for command execution errors"""
+    pass
+
+class DownloadError(BuildError):
+    """Exception for download errors"""
+    pass
+
+class ExtractionError(BuildError):
+    """Exception for extraction errors"""
+    pass
+
+class ValidationError(BuildError):
+    """Exception for validation errors"""
+    pass
+
+# ----------------------------------------------------------------------------
 # utility classes
 
 
@@ -704,40 +791,170 @@ class ShellCmd:
 
     log: logging.Logger
 
-    def cmd(self, shellcmd: str, cwd: Pathlike = "."):
-        """Run shell command within working directory"""
-        self.log.info(shellcmd)
-        try:
-            subprocess.check_call(shellcmd, shell=True, cwd=str(cwd))
-        except subprocess.CalledProcessError:
-            self.log.critical("", exc_info=True)
-            sys.exit(1)
+    def cmd(self, shellcmd: Union[str, list[str]], cwd: Pathlike = "."):
+        """Run shell command within working directory
 
-    def download(self, url: str, tofolder: Optional[Pathlike] = None) -> Pathlike:
-        """Download a file from a url to an optional folder"""
+        Args:
+            shellcmd: Command as string (will be split safely) or list of args
+            cwd: Working directory for command execution
+
+        Raises:
+            CommandError: If command execution fails
+        """
+        self.log.info(shellcmd if isinstance(shellcmd, str) else " ".join(shellcmd))
+        try:
+            if isinstance(shellcmd, str):
+                # Only use shell=True for commands that genuinely need shell features
+                # like pipes, redirects, etc. Otherwise split safely
+                if any(char in shellcmd for char in ['|', '>', '<', '&', ';', '&&', '||']):
+                    subprocess.check_call(shellcmd, shell=True, cwd=str(cwd))
+                else:
+                    subprocess.check_call(shlex.split(shellcmd), cwd=str(cwd))
+            else:
+                subprocess.check_call(shellcmd, cwd=str(cwd))
+        except subprocess.CalledProcessError as e:
+            self.log.critical("Command failed: %s", e, exc_info=True)
+            raise CommandError(f"Command failed: {shellcmd}") from e
+
+    def download(self, url: str, tofolder: Optional[Pathlike] = None,
+                 checksum: Optional[str] = None, checksum_algo: str = "sha256") -> Pathlike:
+        """Download a file from a url to an optional folder with checksum validation
+
+        Args:
+            url: URL to download from
+            tofolder: Optional destination folder
+            checksum: Optional checksum to validate download
+            checksum_algo: Hash algorithm (sha256, sha512, md5)
+
+        Returns:
+            Path to downloaded file
+
+        Raises:
+            DownloadError: If download or validation fails
+        """
         _path = Path(os.path.basename(url))
         if tofolder:
             _path = Path(tofolder).joinpath(_path)
             if _path.exists():
-                return _path
-        filename, _ = urlretrieve(url, filename=_path)
-        return Path(filename)
+                if checksum:
+                    self.log.info("Validating cached file...")
+                    # Validate existing file
+                    if not self._validate_checksum(_path, checksum, checksum_algo):
+                        self.log.warning("Existing file checksum mismatch, re-downloading")
+                        _path.unlink()
+                    else:
+                        self.log.debug("Using cached file: %s", _path)
+                        return _path
+                else:
+                    self.log.debug("Using cached file: %s", _path)
+                    return _path
+
+        try:
+            self.log.info("Downloading %s...", os.path.basename(url))
+            filename, _ = urlretrieve(url, filename=_path)
+            self.log.info("Download complete: %s", os.path.basename(str(filename)))
+
+            if checksum:
+                self.log.info("Verifying checksum...")
+                if not self._validate_checksum(_path, checksum, checksum_algo):
+                    _path.unlink()
+                    raise DownloadError(f"Checksum validation failed for {url}")
+                self.log.info("Checksum verified")
+
+            return Path(filename)
+        except Exception as e:
+            if _path.exists():
+                _path.unlink()
+            raise DownloadError(f"Failed to download {url}: {e}") from e
+
+    def _validate_checksum(self, filepath: Path, expected: str, algo: str = "sha256") -> bool:
+        """Validate file checksum
+
+        Args:
+            filepath: Path to file
+            expected: Expected checksum value
+            algo: Hash algorithm
+
+        Returns:
+            True if checksum matches, False otherwise
+        """
+        hash_func = getattr(hashlib, algo)()
+        with open(filepath, 'rb') as f:
+            for chunk in iter(lambda: f.read(8192), b''):
+                hash_func.update(chunk)
+        actual = hash_func.hexdigest()
+        return actual.lower() == expected.lower()
 
     def extract(self, archive: Pathlike, tofolder: Pathlike = "."):
-        """extract a tar archive"""
+        """Extract archive with security measures
+
+        Args:
+            archive: Path to archive file
+            tofolder: Destination folder
+
+        Raises:
+            ExtractionError: If extraction fails or file type unsupported
+        """
         if tarfile.is_tarfile(archive):
-            with tarfile.open(archive) as f:
-                f.extractall(tofolder)
-        # elif zipfile.is_zipfile(archive):
-        #     with zipfile.ZipFile(archive) as f:
-        #         f.extractall(tofolder)
+            try:
+                with tarfile.open(archive) as f:
+                    self.log.info("Extracting %s", os.path.basename(str(archive)))
+                    if sys.version_info.minor >= 12:
+                        f.extractall(tofolder, filter="data")
+                    else:
+                        # Backport safe extraction for older Python versions
+                        self._safe_extract_tar(f, tofolder)
+            except Exception as e:
+                raise ExtractionError(f"Failed to extract {archive}: {e}") from e
+        elif zipfile.is_zipfile(archive):
+            try:
+                self.log.info("Extracting %s", os.path.basename(str(archive)))
+                with zipfile.ZipFile(archive) as f:
+                    f.extractall(tofolder)
+            except Exception as e:
+                raise ExtractionError(f"Failed to extract {archive}: {e}") from e
         else:
-            raise TypeError("cannot extract from this file.")
+            raise ExtractionError(f"Unsupported archive type: {archive}")
+
+    def _safe_extract_tar(self, tar: tarfile.TarFile, path: Pathlike):
+        """Safely extract tarfile for Python < 3.12 (CVE-2007-4559 mitigation)
+
+        Args:
+            tar: Open TarFile object
+            path: Destination path
+        """
+        dest_path = Path(path).resolve()
+
+        for member in tar.getmembers():
+            member_path = (dest_path / member.name).resolve()
+
+            # Check for path traversal
+            if not str(member_path).startswith(str(dest_path)):
+                raise ExtractionError(f"Path traversal detected: {member.name}")
+
+            # Check for dangerous file types
+            if member.issym() or member.islnk():
+                link_target = Path(member.linkname).resolve() if member.issym() else Path(member.linkname)
+                if member.issym() and not str(link_target).startswith(str(dest_path)):
+                    self.log.warning("Skipping suspicious symlink: %s -> %s", member.name, member.linkname)
+                    continue
+
+        # If all checks pass, extract
+        tar.extractall(path)
 
     def fail(self, msg, *args):
-        """exits the program with an error msg."""
-        self.log.critical(msg, *args)
-        sys.exit(1)
+        """Raise BuildError with formatted message
+
+        Args:
+            msg: Error message format string
+            *args: Format arguments
+
+        Raises:
+            BuildError: Always raised with formatted message
+        """
+        formatted_msg = msg % args if args else msg
+        self.log.critical(formatted_msg)
+        raise BuildError(formatted_msg)
 
     def git_clone(
         self,
@@ -747,16 +964,32 @@ class ShellCmd:
         recurse: bool = False,
         cwd: Pathlike = ".",
     ):
-        """git clone a repository source tree from a url"""
-        _cmds = ["git clone --depth 1"]
+        """git clone a repository source tree from a url
+
+        Args:
+            url: Git repository URL
+            branch: Optional branch/tag to checkout
+            directory: Optional destination directory
+            recurse: Whether to recurse submodules
+            cwd: Working directory
+
+        Raises:
+            ValidationError: If URL is invalid
+            CommandError: If git clone fails
+        """
+        # Basic URL validation
+        if not url.startswith(('https://', 'http://', 'git://', 'ssh://', 'git@')):
+            raise ValidationError(f"Invalid git URL: {url}")
+
+        _cmds = ["git", "clone", "--depth", "1"]
         if branch:
-            _cmds.append(f"--branch {branch}")
+            _cmds.extend(["--branch", branch])
         if recurse:
-            _cmds.append("--recurse-submodules --shallow-submodules")
+            _cmds.extend(["--recurse-submodules", "--shallow-submodules"])
         _cmds.append(url)
         if directory:
             _cmds.append(str(directory))
-        self.cmd(" ".join(_cmds), cwd=cwd)
+        self.cmd(_cmds, cwd=cwd)
 
     def getenv(self, key: str, default: bool = False) -> bool:
         """convert '0','1' env values to bool {True, False}"""
@@ -783,13 +1016,20 @@ class ShellCmd:
 
     def makedirs(self, path: Pathlike, mode: int = 511, exist_ok: bool = True):
         """Recursive directory creation function"""
-        self.log.info("making directory: %s", path)
+        self.log.debug("Making directory: %s", path)
         os.makedirs(path, mode, exist_ok)
 
     def move(self, src: Pathlike, dst: Pathlike):
         """Move from src path to dst path."""
-        self.log.info("move path %s to %s", src, dst)
+        self.log.debug("Moving %s to %s", src, dst)
         shutil.move(src, dst)
+
+    def glob_move(self, src: Pathlike, patterns: str, dst: Pathlike):
+        """Move with glob patterns"""
+        src_path = Path(src)
+        targets = src_path.glob(patterns)
+        for t in targets:
+            self.move(t, dst)
 
     def copy(self, src: Pathlike, dst: Pathlike):
         """copy file or folders -- tries to be behave like `cp -rf`"""
@@ -818,19 +1058,19 @@ class ShellCmd:
         path = Path(path)
         if path.is_dir():
             if not silent:
-                self.log.info("remove folder: %s", path)
+                self.log.debug("Removing folder: %s", path)
             if PY_VER_MINOR < 11:
                 shutil.rmtree(path, ignore_errors=not DEBUG, onerror=remove_readonly)
             else:
                 shutil.rmtree(path, ignore_errors=not DEBUG, onexc=remove_readonly)
         else:
             if not silent:
-                self.log.info("remove file: %s", path)
+                self.log.debug("Removing file: %s", path)
             try:
                 path.unlink()
             except FileNotFoundError:
                 if not silent:
-                    self.log.warning("file not found: %s", path)
+                    self.log.debug("File not found: %s", path)
 
     def walk(
         self,
@@ -938,8 +1178,9 @@ class Project(ShellCmd):
     """Utility class to hold project directory structure"""
 
     def __init__(self):
-        self.cwd = Path.cwd()
-        self.build = self.cwd / "build"
+        self.root = Path.cwd()
+        self.build = self.root / "build"
+        self.support = self.root / "support"
         self.downloads = self.build / "downloads"
         self.src = self.build / "src"
         self.install = self.build / "install"
@@ -966,8 +1207,9 @@ class AbstractBuilder(ShellCmd):
     name: str
     version: str
     repo_url: str
+    download_archive_template: str
     download_url_template: str
-    libs_static: list[str]
+    lib_products: list[str]
     depends_on: list[type["Builder"]]
 
     def __init__(
@@ -979,11 +1221,6 @@ class AbstractBuilder(ShellCmd):
 
     def __repr__(self):
         return f"<{self.__class__.__name__} '{self.name}-{self.version}'>"
-
-    # def __iter__(self):
-    #     for dependency in self.depends_on:
-    #         yield dependency
-    #         yield from iter(dependency)
 
     @property
     def ver(self) -> str:
@@ -1021,9 +1258,31 @@ class AbstractBuilder(ShellCmd):
         return f"{self.name.lower()}{self.ver}"
 
     @property
+    def name_ver_nodot(self) -> str:
+        """return name.lower-<ver_nodot>: e.g. python311"""
+        return f"{self.name.lower()}{self.ver_nodot}"
+
+    @property
+    def download_archive(self) -> str:
+        """return filename of archive to be downloaded"""
+        return self.download_archive_template.format(ver=self.version)
+
+    @property
     def download_url(self) -> str:
         """return download url with version interpolated"""
-        return self.download_url_template.format(ver=self.version)
+        return self.download_url_template.format(
+            archive=self.download_archive, ver=self.version
+        )
+
+    @property
+    def downloaded_archive(self) -> Path:
+        """return path to downloaded archive"""
+        return self.project.downloads / self.download_archive
+
+    @property
+    def archive_is_downloaded(self) -> bool:
+        """return true if archive is downloaded"""
+        return self.downloaded_archive.exists()
 
     @property
     def repo_branch(self) -> str:
@@ -1089,7 +1348,7 @@ class AbstractBuilder(ShellCmd):
     @property
     def dylib(self) -> Path:
         """dylib path"""
-        return self.project.lib / self.dylib_name
+        return self.prefix / "lib" / self.dylib_name
 
     @property
     def dylib_link(self) -> Path:
@@ -1099,39 +1358,39 @@ class AbstractBuilder(ShellCmd):
     @property
     def staticlib(self) -> Path:
         """staticlib path"""
-        return self.project.lib_static / self.staticlib_name
+        return self.prefix / "lib" / self.staticlib_name
 
     @property
     def prefix(self) -> Path:
         """builder prefix path"""
         return self.project.install / self.name.lower()
 
-    def libs_static_exist(self) -> bool:
-        """check if all built stati libs already exist"""
-        return all((self.prefix / "lib" / lib).exists() for lib in self.libs_static)
+    def lib_products_exist(self) -> bool:
+        """check if all built lib_products already exist"""
+        return all((self.prefix / "lib" / lib).exists() for lib in self.lib_products)
 
-    def pre_process(self):
+    def pre_process(self) -> None:
         """override by subclass if needed"""
 
-    def setup(self):
+    def setup(self) -> None:
         """setup build environment"""
 
-    def configure(self):
+    def configure(self) -> None:
         """configure build"""
 
-    def build(self):
+    def build(self) -> None:
         """build target"""
 
-    def install(self):
+    def install(self) -> None:
         """install target"""
 
-    def clean(self):
+    def clean(self) -> None:
         """clean build"""
 
-    def post_process(self):
+    def post_process(self) -> None:
         """override by subclass if needed"""
 
-    def process(self):
+    def process(self) -> None:
         """main builder process"""
         self.pre_process()
         self.setup()
@@ -1148,11 +1407,17 @@ class Builder(AbstractBuilder):
     def setup(self):
         """setup build environment"""
         self.project.setup()
-        archive = self.download(self.download_url, tofolder=self.project.downloads)
-        self.log.info("downloaded %s", archive)
-        if not self.src_dir.exists():
+        if not self.archive_is_downloaded:
+            archive = self.download(self.download_url, tofolder=self.project.downloads)
+            self.log.info("downloaded %s", archive)
+        else:
+            archive = self.downloaded_archive
+        if not self.lib_products_exist():
+            if self.src_dir.exists():
+                self.remove(self.src_dir)
             self.extract(archive, tofolder=self.project.src)
-            assert self.src_dir.exists(), f"could not extract from {archive}"
+            if not self.src_dir.exists():
+                raise ExtractionError(f"could not extract from {archive}")
 
 
 class OpensslBuilder(Builder):
@@ -1161,19 +1426,21 @@ class OpensslBuilder(Builder):
     name = "openssl"
     version = "1.1.1w"
     repo_url = "https://github.com/openssl/openssl.git"
-    download_url_template = (
-        "https://www.openssl.org/source/old/1.1.1/openssl-{ver}.tar.gz"
-    )
+    download_archive_template = "openssl-{ver}.tar.gz"
+    download_url_template = "https://www.openssl.org/source/old/1.1.1/{archive}"
     depends_on = []
-    libs_static = ["libssl.a", "libcrypto.a"]
+    lib_products = ["libssl.a", "libcrypto.a"]
 
-    def build(self):
+    def build(self) -> None:
         """main build method"""
-        if not self.libs_static_exist():
+        if not self.lib_products_exist():
+            self.log.info("Configuring %s...", self.name)
             self.cmd(
                 f"./config no-shared no-tests --prefix={self.prefix}", cwd=self.src_dir
             )
+            self.log.info("Building %s...", self.name)
             self.cmd("make install_sw", cwd=self.src_dir)
+            self.log.info("%s build complete", self.name)
 
 
 class Bzip2Builder(Builder):
@@ -1182,13 +1449,14 @@ class Bzip2Builder(Builder):
     name = "bzip2"
     version = "1.0.8"
     repo_url = "https://github.com/libarchive/bzip2.git"
-    download_url_template = "https://sourceware.org/pub/bzip2/bzip2-{ver}.tar.gz"
+    download_archive_template = "bzip2-{ver}.tar.gz"
+    download_url_template = "https://sourceware.org/pub/bzip2/{archive}"
     depends_on = []
-    libs_static = ["libbz2.a"]
+    lib_products = ["libbz2.a"]
 
     def build(self):
         """main build method"""
-        if not self.libs_static_exist():
+        if not self.lib_products_exist():
             cflags = "-fPIC"
             self.cmd(
                 f"make install PREFIX={self.prefix} CFLAGS='{cflags}'",
@@ -1202,9 +1470,10 @@ class XzBuilder(Builder):
     name = "xz"
     version = "5.6.3"
     repo_url = "https://github.com/python/cpython-source-deps.git"
-    download_url_template = "http://tukaani.org/xz/xz-{ver}.tar.gz"  # not used
+    download_archive_template = "xz-{ver}.tar.gz"
+    download_url_template = "http://tukaani.org/xz/{archive}"  # not used
     depends_on = []
-    libs_static = ["liblzma.a"]
+    lib_products = ["liblzma.a"]
 
     @property
     def repo_branch(self):
@@ -1214,13 +1483,16 @@ class XzBuilder(Builder):
     def setup(self):
         """setup build environment"""
         self.project.setup()
-        if not self.src_dir.exists():
+        if not self.lib_products_exist():
+            if not self.src_dir.exists():
+                self.remove(self.src_dir)
             self.git_clone(self.repo_url, self.repo_branch, self.src_dir)
-            assert self.src_dir.exists(), f"could not git clone {self.download_url}"
+            if not self.src_dir.exists():
+                raise BuildError(f"could not git clone {self.download_url}")
 
     def build(self):
         """main build method"""
-        if not self.libs_static_exist():
+        if not self.lib_products_exist():
             configure = self.src_dir / "configure"
             install_sh = self.src_dir / "build-aux" / "install-sh"
             for f in [configure, install_sh]:
@@ -1250,9 +1522,8 @@ class PythonBuilder(Builder):
     name = "Python"
     version = DEFAULT_PY_VERSION
     repo_url = "https://github.com/python/cpython.git"
-    download_url_template = (
-        "https://www.python.org/ftp/python/{ver}/Python-{ver}.tar.xz"
-    )
+    download_archive_template = "Python-{ver}.tar.xz"
+    download_url_template = "https://www.python.org/ftp/python/{ver}/{archive}"
 
     config_options: list[str] = [
         # "--disable-ipv6",
@@ -1316,17 +1587,23 @@ class PythonBuilder(Builder):
         version: str = DEFAULT_PY_VERSION,
         project: Optional[Project] = None,
         config: str = "shared_max",
+        precompile: bool = True,
         optimize: bool = False,
+        optimize_bytecode: int = -1,
         pkgs: Optional[list[str]] = None,
         cfg_opts: Optional[list[str]] = None,
         jobs: int = 1,
+        is_package: bool = False,
     ):
         super().__init__(version, project)
         self.config = config
+        self.precompile = precompile
         self.optimize = optimize
+        self.optimize_bytecode = optimize_bytecode
         self.pkgs = pkgs or []
         self.cfg_opts = cfg_opts or []
         self.jobs = jobs
+        self.is_package = is_package
         self.log = logging.getLogger(self.__class__.__name__)
 
     def get_config(self):
@@ -1356,14 +1633,23 @@ class PythonBuilder(Builder):
     def prefix(self):
         """python builder prefix path"""
         if PLATFORM == "Darwin" and self.build_type == "framework":
-            return self.project.install / "Python.framework" / "Versions" / self.ver
+            if self.is_package:
+                install_dir = self.project.support
+            else:
+                install_dir = self.project.install
+            return install_dir / "Python.framework" / "Versions" / self.ver
         name = self.name.lower() + "-" + self.build_type
         return self.project.install / name
 
     @property
-    def python(self):
+    def executable(self) -> Path:
         """path to python3 executable"""
         return self.prefix / "bin" / "python3"
+
+    @property
+    def python(self):
+        """path to python3 executable"""
+        return self.executable
 
     @property
     def pip(self):
@@ -1373,8 +1659,23 @@ class PythonBuilder(Builder):
     def pre_process(self):
         """override by subclass if needed"""
 
-    def configure(self):
+    def setup(self):
+        """setup build environment"""
+        self.project.setup()
+        if not self.archive_is_downloaded:
+            archive = self.download(self.download_url, tofolder=self.project.downloads)
+            self.log.info("downloaded %s", archive)
+        else:
+            archive = self.downloaded_archive
+        if self.src_dir.exists():
+            self.remove(self.src_dir)
+        self.extract(archive, tofolder=self.project.src)
+        if not self.src_dir.exists():
+            raise ExtractionError(f"could not extract from {archive}")
+
+    def configure(self) -> None:
         """configure build"""
+        self.log.info("Configuring Python %s (%s build)...", self.version, self.build_type)
         config = self.get_config()
         prefix = self.prefix
 
@@ -1383,7 +1684,10 @@ class PythonBuilder(Builder):
                 ["--enable-shared", "--without-static-libpython"]
             )
         elif self.build_type == "framework":
-            prefix = self.project.install
+            if self.is_package:
+                prefix = self.project.support
+            else:
+                prefix = self.project.install
             self.config_options.append(f"--enable-framework={prefix}")
         elif self.build_type != "static":
             self.fail(f"{self.build_type} not recognized build type")
@@ -1408,11 +1712,13 @@ class PythonBuilder(Builder):
         config_opts = " ".join(self.config_options)
         self.cmd(f"./configure --prefix={prefix} {config_opts}", cwd=self.src_dir)
 
-    def build(self):
+    def build(self) -> None:
         """main build process"""
+        self.log.info("Building Python %s (using %d jobs)...", self.version, self.jobs)
         self.cmd(f"make -j{self.jobs}", cwd=self.src_dir)
+        self.log.info("Python %s build complete", self.version)
 
-    def install(self):
+    def install(self) -> None:
         """install to prefix"""
         if self.prefix.exists():
             self.remove(self.prefix)
@@ -1437,33 +1743,96 @@ class PythonBuilder(Builder):
         for executable in bins:
             self.remove(self.prefix / "bin" / executable)
 
-    def ziplib(self):
-        """zip python site-packages"""
+    def _get_lib_src_dir(self) -> Path:
+        """Get the library source directory to zip (platform-specific)"""
+        return self.prefix / "lib" / self.name_ver
 
-        src = self.prefix / "lib" / self.name_ver
-
-        self.move(
-            src / "lib-dynload",
-            self.project.build / "lib-dynload",
+    def _precompile_lib(self, src: Path):
+        """Precompile library to bytecode and remove .py files"""
+        self.cmd(
+            f"{self.executable} -m compileall -f -b -o {self.optimize_bytecode} {src}",
+            cwd=src.parent,
         )
-        self.move(src / "os.py", self.project.build / "os.py")
+        self.walk(
+            src,
+            match_func=lambda f: str(f).endswith(".py"),
+            action_func=lambda f: self.remove(f),
+            skip_patterns=[],
+        )
 
-        zip_path = self.prefix / "lib" / f"python{self.ver_nodot}"
-        shutil.make_archive(str(zip_path), "zip", str(src))
-        self.remove(src)
+    def _preserve_os_module(self, src: Path, is_compiled: bool):
+        """Move os module to temp location before zipping"""
+        if is_compiled:
+            self.move(src / "os.pyc", self.project.build / "os.pyc")
+        else:
+            self.move(src / "os.py", self.project.build / "os.py")
 
+    def _restore_os_module(self, src: Path, is_compiled: bool):
+        """Restore os module after zipping"""
+        if is_compiled:
+            self.move(self.project.build / "os.pyc", src / "os.pyc")
+        else:
+            self.move(self.project.build / "os.py", src / "os.py")
+
+    def _handle_lib_dynload(self, src: Path, preserve: bool = True):
+        """Handle lib-dynload directory (Unix-specific)"""
+        if preserve:
+            # Move lib-dynload out before zipping
+            self.move(src / "lib-dynload", self.project.build / "lib-dynload")
+        else:
+            # Restore lib-dynload after zipping
+            self.move(self.project.build / "lib-dynload", src / "lib-dynload")
+
+    def _get_zip_path(self) -> Path:
+        """Get the path for the zip archive (platform-specific)"""
+        return self.prefix / "lib" / f"python{self.ver_nodot}"
+
+    def _cleanup_after_zip(self, src: Path):
+        """Cleanup and recreate directory structure after zipping"""
         site_packages = src / "site-packages"
         self.remove(self.prefix / "lib" / "pkgconfig")
         src.mkdir()
         site_packages.mkdir()
-        self.move(self.project.build / "lib-dynload", src / "lib-dynload")
-        self.move(self.project.build / "os.py", src / "os.py")
+
+    def ziplib(self):
+        """Zip python library with optional precompilation
+
+        Precompiles to bytecode by default to save compilation time, and drops .py
+        source files to save space. Note that only same version interpreter can compile
+        bytecode. Also can specify optimization levels of bytecode precompilation:
+            -1 is system default optimization
+            0 off
+            1 drops asserts and __debug__ blocks
+            2 same as 1 and discards docstrings (saves ~588K of compressed space)
+        """
+        src = self._get_lib_src_dir()
+        should_compile = self.precompile or getenv("PRECOMPILE")
+
+        # Platform-specific lib-dynload handling
+        self._handle_lib_dynload(src, preserve=True)
+
+        # Precompile if requested
+        if should_compile:
+            self._precompile_lib(src)
+            self._preserve_os_module(src, is_compiled=True)
+        else:
+            self._preserve_os_module(src, is_compiled=False)
+
+        # Create zip archive
+        zip_path = self._get_zip_path()
+        shutil.make_archive(str(zip_path), "zip", str(src))
+        self.remove(src)
+
+        # Cleanup and restore structure
+        self._cleanup_after_zip(src)
+        self._handle_lib_dynload(src, preserve=False)
+        self._restore_os_module(src, is_compiled=should_compile)
 
     def install_pkgs(self):
         """install python packages"""
-        required_pkgs = " ".join(self.pkgs)
+        required_pkgs = " ".join(self.required_packages)
         self.cmd(f"{self.python} -m ensurepip")
-        self.cmd(f"{self.pip} install --upgrade {required_pkgs}")
+        self.cmd(f"{self.pip} install {required_pkgs}")
 
     def make_relocatable(self):
         """fix dylib/exe @rpath shared buildtype in macos"""
@@ -1471,30 +1840,138 @@ class PythonBuilder(Builder):
             if self.build_type == "shared":
                 dylib = self.prefix / "lib" / self.dylib_name
                 self.chmod(dylib)
-                self.cmd(f"install_name_tool -id @rpath/{self.dylib_name} {dylib}")
+                self.cmd(
+                    f"install_name_tool -id @loader_path/../Resources/lib/{self.dylib_name} {dylib}"
+                )
                 to = f"@executable_path/../lib/{self.dylib_name}"
                 exe = self.prefix / "bin" / self.name_ver
                 self.cmd(f"install_name_tool -change {dylib} {to} {exe}")
             elif self.build_type == "framework":
                 dylib = self.prefix / self.name
                 self.chmod(dylib)
-                self.cmd(f"install_name_tool -id @rpath/{self.name} {dylib}")
-                to = f"@executable_path/../{self.name}"
+                if self.is_package:
+                    _id = f"@loader_path/../../../../support/Python.framework/Versions/{self.ver}/Python"
+                else:
+                    _id = f"@loader_path/../Resources/Python.framework/Versions/{self.ver}/Python"
+                self.cmd(f"install_name_tool -id {_id} {dylib}")
+                # changing executable
+                to = "@executable_path/../Python"
                 exe = self.prefix / "bin" / self.name_ver
                 self.cmd(f"install_name_tool -change {dylib} {to} {exe}")
+                # changing app
+                to = "@executable_path/../../../../Python"
+                app = (
+                    self.prefix
+                    / "Resources"
+                    / "Python.app"
+                    / "Contents"
+                    / "MacOS"
+                    / "Python"
+                )
+                self.cmd(f"install_name_tool -change {dylib} {to} {app}")
         elif PLATFORM == "Linux":
             if self.build_type == "shared":
                 exe = self.prefix / "bin" / self.name_ver
                 self.cmd(f"patchelf --set-rpath '$ORIGIN'/../lib {exe}")
 
+    def validate_build(self) -> bool:
+        """Validate built Python with smoke tests
+
+        Returns:
+            True if validation passes, False otherwise
+        """
+        if not self.executable.exists():
+            self.log.error("Python executable not found: %s", self.executable)
+            return False
+
+        try:
+            # Test 1: Check version
+            version_output = self.get(f"{self.executable} --version")
+            self.log.info("Python version: %s", version_output)
+
+            # Test 2: Basic import test
+            test_cmd = f"{self.executable} -c 'import sys, os; print(sys.version)'"
+            import_output = self.get(test_cmd)
+            self.log.info("Import test passed: %s", import_output.split()[0])
+
+            # Test 3: Check critical modules
+            critical_modules = ['sys', 'os', 'json', 'pathlib', 'subprocess']
+            modules_str = ', '.join(critical_modules)
+            test_imports = f"{self.executable} -c 'import {modules_str}; print(\"OK\")'"
+            result = self.get(test_imports)
+
+            if result.strip() == "OK":
+                self.log.info("Critical modules validation passed")
+                return True
+            else:
+                self.log.error("Critical modules validation failed")
+                return False
+
+        except Exception as e:
+            self.log.error("Build validation failed: %s", e)
+            return False
+
     def post_process(self):
         """override by subclass if needed"""
         if self.build_type in ["shared", "framework"]:
             self.make_relocatable()
+
+        # Validate the build
+        if not self.validate_build():
+            self.log.warning("Build validation failed, but continuing")
+
         self.log.info("%s DONE", self.config)
+
+    def _get_build_cache_key(self) -> str:
+        """Generate cache key for build artifact"""
+        import hashlib
+
+        # Include version, build type, and config in cache key
+        key_data = f"{self.version}:{self.build_type}:{self.config}"
+        return hashlib.md5(key_data.encode()).hexdigest()[:8]
+
+    def _is_build_cached(self) -> bool:
+        """Check if build artifacts are cached and valid"""
+        # Check if primary artifacts exist
+        if self.build_type == "static":
+            if not self.staticlib.exists():
+                return False
+        else:
+            if not self.dylib.exists():
+                return False
+
+        # Check if executable exists
+        if not self.executable.exists():
+            return False
+
+        # All required artifacts exist
+        self.log.info("Found cached build for Python %s (%s)", self.version, self.build_type)
+        return True
+
+    def can_run(self) -> bool:
+        """check if a run is merited"""
+        # Check if dependencies are built
+        for dep_class in self.depends_on:
+            dep = dep_class()
+            if not dep.lib_products_exist():
+                self.log.debug("Dependency %s not built", dep.name)
+                return True
+
+        # Check if our build is cached
+        if self._is_build_cached():
+            return False
+
+        self.log.debug("Build artifacts not found or incomplete")
+        return True
 
     def process(self):
         """main builder process"""
+        if not self.can_run():
+            self.log.info("everything built: skipping run")
+            return
+
+        self.log.info("found unbuilt dependencies, proceeding with run")
+        # run build process
         for dependency_class in self.depends_on:
             dependency_class().process()
         self.pre_process()
@@ -1519,29 +1996,257 @@ class PythonDebugBuilder(PythonBuilder):
         "--without-static-libpython",
         "--with-pydebug",
         # "--with-trace-refs",
-        # "--with-assertions",
         # "--with-valgrind",
         # "--with-address-sanitizer",
         # "--with-memory-sanitizer",
         # "--with-undefined-behavior-sanitizer",
-        # "--with-thread-sanitizer".
     ]
 
     required_packages = []
 
-    @property
-    def dylib_name(self) -> str:
-        """dynamic link libname"""
-        if PLATFORM == "Darwin":
-            return f"{self.libname}d.dylib"
-        if PLATFORM == "Linux":
-            return f"{self.libname}d.so"
-        if PLATFORM == "Windows":
-            return f"{self.libname}d.dll"
-        return self.fail("platform not supported")
 
-if __name__ == "__main__":
-    import argparse
+class WindowsEmbeddablePythonBuilder(Builder):
+    """Downloads embeddable windows python"""
+
+    name = "Python"
+    version = DEFAULT_PY_VERSION
+    repo_url = "https://github.com/python/cpython.git"
+
+    download_archive_template = "python-{ver}-embed-amd64.zip"
+    download_url_template = "https://www.python.org/ftp/python/{ver}/{archive}"
+    depends_on: list = []
+    lib_products: list[str] = []
+
+    @property
+    def install_dir(self) -> Path:
+        """return folder where binaries are installed"""
+        return self.project.support
+
+    def setup(self):
+        """setup build environment"""
+        if self.project.support.exists():
+            self.remove(self.project.support)
+        self.project.setup()
+        self.makedirs(self.project.support)
+        archive = self.download(self.download_url, tofolder=self.project.downloads)
+        self.extract(archive, tofolder=self.install_dir)
+
+
+class WindowsPythonBuilder(PythonBuilder):
+    """class for building python from source on windows"""
+
+    config_options: list[str] = [
+        # "--disable-gil",
+        # "--no-ctypes",
+        # "--no-ssl",
+        "--no-tkinter",
+    ]
+
+    remove_patterns: list[str] = [
+        "*.pdb",
+        "*.exp",
+        "_test*",
+        "xx*",
+        "py.exe",
+        "pyw.exe",
+        "pythonw.exe",
+        "venvlauncher.exe",
+        "venvwlauncher.exe",
+        "_ctypes_test*",
+        "LICENSE.txt",
+        "*tcl*",
+        "*tdbc*",
+        "*tk*",
+        "__phello__",
+        "__pycache__",
+        "_tk*",
+        "ensurepip",
+        "idlelib",
+        "LICENSE.txt",
+        "pydoc*",
+        "test",
+        "Tk*",
+        "turtle*",
+        "venv",
+    ]
+
+    depends_on = []
+
+    def _get_lib_src_dir(self) -> Path:
+        """Windows uses 'Lib' instead of 'lib/pythonX.Y'"""
+        return self.prefix / "Lib"
+
+    def _precompile_lib(self, src: Path):
+        """Windows-specific precompilation (different path handling)"""
+        self.cmd(
+            f"{self.executable} -m compileall -f -b -o {self.optimize_bytecode} Lib",
+            cwd=self.prefix,
+        )
+        self.walk(
+            src,
+            match_func=lambda f: str(f).endswith(".py"),
+            action_func=lambda f: self.remove(f),
+            skip_patterns=[],
+        )
+
+    def _handle_lib_dynload(self, src: Path, preserve: bool = True):
+        """Windows doesn't have lib-dynload directory"""
+        pass
+
+    def _preserve_os_module(self, src: Path, is_compiled: bool):
+        """Windows doesn't preserve os module separately"""
+        pass
+
+    def _restore_os_module(self, src: Path, is_compiled: bool):
+        """Windows doesn't restore os module"""
+        pass
+
+    def _cleanup_after_zip(self, src: Path):
+        """Windows doesn't need cleanup after zip"""
+        pass
+
+    def _get_zip_path(self) -> Path:
+        """Windows zip path uses different location"""
+        return self.prefix / self.name_ver_nodot
+
+    @property
+    def build_type(self):
+        """build type: 'static', 'shared' or 'framework'"""
+        return self.config.split("_")[0]
+
+    @property
+    def size_type(self):
+        """size qualifier: 'max', 'mid', 'min', etc.."""
+        return self.config.split("_")[1]
+
+    @property
+    def prefix(self):
+        """python builder prefix path"""
+        install_dir = self.project.support
+        # return install_dir / "python"
+        return install_dir
+
+    @property
+    def libname(self):
+        """library name suffix"""
+        return f"{self.name_ver_nodot}"
+
+    @property
+    def dylib(self) -> Path:
+        """dylib path"""
+        return self.prefix / self.dylib_name
+
+    @property
+    def executable(self):
+        """executable path of buld target"""
+        return self.prefix / "python.exe"
+
+    @property
+    def pip(self):
+        """path to pip3 executable"""
+        return self.prefix / "pip.exe"
+
+    @property
+    def pth(self):
+        """syspath modifier"""
+        return f"{self.name_ver_nodot}._pth"
+
+    @property
+    def binary_dir(self):
+        """path to folder in python source where windows binaries are built"""
+        return self.src_dir / "PCbuild" / "amd64"
+
+    @property
+    def pyconfig_h(self):
+        """path to generated pyconfig.h header"""
+        _path = self.binary_dir / "pyconfig.h"
+        if _path.exists():
+            return _path
+        raise IOError("pyconfig.h not found")
+
+    def pre_process(self):
+        """override by subclass if needed"""
+
+    def can_run(self) -> bool:
+        """return true if a build or re-build is merited"""
+        return not self.dylib.exists()
+
+    def setup(self):
+        """setup build environment"""
+        self.project.setup()
+        if not self.archive_is_downloaded:
+            archive = self.download(self.download_url, tofolder=self.project.downloads)
+            self.log.info("downloaded %s", archive)
+        else:
+            archive = self.downloaded_archive
+        if self.src_dir.exists():
+            self.remove(self.src_dir)
+        self.extract(archive, tofolder=self.project.src)
+        if not self.src_dir.exists():
+            raise ExtractionError(f"could not extract from {archive}")
+
+    def configure(self):
+        """configure build"""
+
+    def build(self):
+        """main build process"""
+        self.cmd("PCbuild\\build.bat -e --no-tkinter", cwd=self.src_dir)
+
+    def install(self):
+        """install to prefix"""
+        if not self.binary_dir.exists():
+            raise IOError("Build error")
+        if self.prefix.exists():
+            self.remove(self.prefix)
+        self.copy(self.binary_dir, self.prefix)
+        self.copy(self.src_dir / "Include", self.prefix / "include")
+        self.move(self.prefix / "pyconfig.h", self.prefix / "include")
+        self.copy(self.src_dir / "Lib", self.prefix / "Lib")
+        self.move(self.prefix / "Lib" / "site-packages", self.prefix)
+        self.makedirs(self.prefix / "libs")
+        self.glob_move(self.prefix, "*.lib", self.prefix / "libs")
+        with open(self.prefix / self.pth, "w") as f:
+            print("Lib", file=f)
+            print(f"{self.name_ver_nodot}.zip", file=f)
+            print("site-packages", file=f)
+            print(".", file=f)
+
+    def clean(self):
+        """clean installed build"""
+        self.remove(self.prefix / "pybuilddir.txt")
+        self.glob_remove(
+            self.prefix,
+            self.remove_patterns,
+            skip_dirs=[".git"],
+        )
+
+
+    def install_pkgs(self):
+        """install python packages (disabled for Windows builder)"""
+        pass
+
+    def post_process(self):
+        """override by subclass if needed"""
+        self.log.info("%s DONE", self.config)
+
+    def process(self):
+        """main builder process"""
+        if not self.can_run():
+            self.log.info("everything built: skipping run")
+            return
+
+        self.pre_process()
+        self.setup()
+        self.configure()
+        self.build()
+        self.install()
+        self.clean()
+        self.ziplib()
+        self.post_process()
+
+
+def main():
+    """commandline api entrypoint"""
 
     parser = argparse.ArgumentParser(
         prog="buildpy.py",
@@ -1552,28 +2257,81 @@ if __name__ == "__main__":
 
     # fmt: off
     opt("-a", "--cfg-opts", help="add config options", type=str, nargs="+", metavar="CFG")
+    opt("-b", "--optimize-bytecode", help="set optimization levels -1 .. 2 (default: %(default)s)", type=int, default=-1)
     opt("-c", "--config", default="shared_mid", help="build configuration (default: %(default)s)", metavar="NAME")
     opt("-d", "--debug", help="build debug python", action="store_true")
-    opt("-o", "--optimize", help="optimize build", action="store_true")
-    opt("-p", "--pkgs", help="install pkgs", type=str, nargs="+", metavar="PKG")
+    opt("-e", "--embeddable-pkg", help="install python embeddable package", action="store_true")
+    opt("-i", "--install", help="install python pkgs", type=str, nargs="+", metavar="PKG")
+    opt("-m", "--package", help="package build", action="store_true")
+    opt("-o", "--optimize", help="enable optimization during build",  action="store_true")
+    opt("-p", "--precompile", help="precompile stdlib to bytecode", action="store_true")
     opt("-r", "--reset", help="reset build", action="store_true")
     opt("-v", "--version", default=DEFAULT_PY_VERSION, help="python version (default: %(default)s)")
     opt("-w", "--write", help="write configuration", action="store_true")
     opt("-j", "--jobs", help="# of build jobs (default: %(default)s)", type=int, default=4)
-    opt("-s", "--json", help="serialize config to json file")
+    opt("-s", "--json", help="serialize config to json file", action="store_true")
+    opt("-t", "--type", help="build based on build type")
     # fmt: on
 
     args = parser.parse_args()
-    python_builder_class: type[PythonBuilder] = PythonBuilder
-    if args.debug:
-        python_builder_class = PythonDebugBuilder
+    if PLATFORM == "Darwin":
+        python_builder_class: type[PythonBuilder] = PythonBuilder
+        if args.debug:
+            python_builder_class = PythonDebugBuilder
+
+    elif PLATFORM == "Windows":
+        if args.embeddable_pkg:
+            builder = WindowsEmbeddablePythonBuilder()
+            builder.setup()
+            sys.exit(0)
+        else:
+            python_builder_class = WindowsPythonBuilder
+
+    else:
+        raise NotImplementedError("script only works on MacOS and Windows")
+
+    if args.type and args.type in BUILD_TYPES:
+        if args.type == "local":
+            sys.exit(0)
+        cfg = {
+            "shared-ext": "shared_mid",
+            "static-ext": "static_mid",
+            "framework-ext": "framework_mid",
+            "framework-pkg": "framework_mid",
+            "windows-pkg": "shared_max",
+        }[args.type]
+        is_package = args.type[-3:] == "pkg"
+        builder = python_builder_class(
+            version=args.version,
+            config=cfg,
+            precompile=args.precompile,
+            optimize=args.optimize,
+            optimize_bytecode=args.optimize_bytecode,
+            pkgs=args.install,
+            cfg_opts=args.cfg_opts,
+            jobs=args.jobs,
+            is_package=is_package,
+        )
+        if args.reset:
+            builder.remove("build")
+        builder.process()
+        sys.exit(0)
+
+    if "-" in args.config:
+        _config = args.config.replace("-", "_")
+    else:
+        _config = args.config
+
     builder = python_builder_class(
         version=args.version,
-        config=args.config,
+        config=_config,
+        precompile=args.precompile,
         optimize=args.optimize,
-        pkgs=args.pkgs,
+        optimize_bytecode=args.optimize_bytecode,
+        pkgs=args.install,
         cfg_opts=args.cfg_opts,
         jobs=args.jobs,
+        is_package=args.package,
     )
     if args.write:
         if not args.json:
@@ -1589,3 +2347,7 @@ if __name__ == "__main__":
     if args.reset:
         builder.remove("build")
     builder.process()
+
+
+if __name__ == "__main__":
+    main()

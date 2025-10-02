@@ -1,7 +1,7 @@
 import pytest
 from pathlib import Path
 from unittest.mock import Mock, patch
-from buildpy import Builder, Project
+from buildpy import Builder, Project, ExtractionError
 
 class TestBuilder:
     @pytest.fixture
@@ -10,10 +10,11 @@ class TestBuilder:
         class ConcreteBuilder(Builder):
             name = "test"
             version = "1.0.0"
+            download_archive_template = "test-{ver}.tar.gz"
             download_url_template = "https://example.com/test-{ver}.tar.gz"
             depends_on = []
-            libs_static = []
-            
+            lib_products = []
+
         return ConcreteBuilder()
 
     @pytest.fixture
@@ -97,10 +98,11 @@ class TestBuilder:
             mock_extract.assert_not_called()
 
     def test_setup_raises_on_extract_failure(self, builder, mock_project):
-        """Test setup raises assertion error if extraction fails"""
+        """Test setup raises ExtractionError if extraction fails"""
         builder.project = mock_project
-        
+
         with patch('buildpy.Builder.download'), \
              patch('buildpy.Builder.extract'), \
-             pytest.raises(AssertionError):
+             patch.object(builder, 'lib_products_exist', return_value=False), \
+             pytest.raises(ExtractionError):
             builder.setup()

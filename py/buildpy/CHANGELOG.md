@@ -1,40 +1,128 @@
-# CHANGELOG
+# Changelog
 
-All notable project-wide changes will be documented in this file. Note that each subproject has its own CHANGELOG.
+All notable changes to the buildpy project will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and [Commons Changelog](https://common-changelog.org). This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Types of Changes
+## [Unreleased]
 
-- Added: for new features.
-- Changed: for changes in existing functionality.
-- Deprecated: for soon-to-be removed features.
-- Removed: for now removed features.
-- Fixed: for any bug fixes.
-- Security: in case of vulnerabilities.
+### Security
+
+- **Fixed shell injection vulnerability**: Commands now use `shlex.split()` or list arguments instead of `shell=True`
+- **Added checksum validation**: Downloads support optional SHA256/SHA512/MD5 verification to prevent tampered files
+- **Fixed tarfile path traversal (CVE-2007-4559)**: Safe extraction backported for Python versions < 3.12
+- **Added input validation**: URL validation for git clone operations prevents malicious URLs
+
+### Added
+
+- **Exception hierarchy**: New custom exceptions (`BuildError`, `CommandError`, `DownloadError`, `ExtractionError`, `ValidationError`) replace `sys.exit()` calls
+- **Platform detection utilities**: Centralized `PlatformInfo` class with properties (`is_darwin`, `is_linux`, `is_windows`, `is_unix`)
+- **Build artifact validation**: `validate_build()` method performs smoke tests on built Python (version check, import tests, module validation)
+- **Build caching strategy**: `_is_build_cached()` intelligently skips rebuilds when artifacts exist (CI/CD optimized)
+- **Progress indicators**: User-friendly messages for download, extraction, configuration, and build phases
+- **Type annotations**: Complete type hints added throughout codebase for better IDE support and type checking
+
+### Changed
+
+- **Refactored ziplib() logic**: Extracted duplicate code from `PythonBuilder` and `WindowsPythonBuilder` into base class with platform-specific hooks
+  - `_get_lib_src_dir()` - Platform-specific library directory
+  - `_precompile_lib()` - Bytecode compilation
+  - `_handle_lib_dynload()` - Unix-specific lib-dynload handling
+  - `_preserve_os_module()` / `_restore_os_module()` - Module preservation
+  - `_cleanup_after_zip()` - Post-zip cleanup
+  - `_get_zip_path()` - Platform-specific zip paths
+- **Improved logging levels**: Reduced noise by converting verbose operations to DEBUG level
+  - File operations (move, remove, makedirs) now DEBUG
+  - Download/extraction operations now INFO (user-facing) or DEBUG (internal)
+  - Build milestones remain INFO
+  - Errors remain CRITICAL, warnings remain WARNING
+- **Enhanced build caching**: Improved `can_run()` method with dependency checking and complete artifact validation
+
+### Removed
+
+- **Dead code cleanup**: Removed commented-out code sections
+  - Removed commented dependency iterator in `AbstractBuilder`
+  - Removed obsolete platform checks in `PythonConfig312.patch()`
+  - Removed commented Windows package installation code
+  - Kept documented configuration options as valuable reference
+
+### Fixed
+
+- **Error handling**: All assertions replaced with proper exceptions
+  - `Builder.setup()` now raises `ExtractionError` instead of `AssertionError`
+  - `XzBuilder.setup()` now raises `BuildError` instead of `AssertionError`
+  - `WindowsPythonBuilder.setup()` now raises `ExtractionError` instead of `AssertionError`
+- **Exception chaining**: Proper exception chaining with `raise ... from e` for better debugging
+- **Archive extraction**: Both tarfile and zipfile extraction now wrapped in proper exception handling
+
+### Testing
+
+- All 16 tests passing (100% pass rate)
+- Updated test suite to match new exception types
+- Fixed test expectations for command execution (list vs string arguments)
+- **mypy type checking**: All type errors resolved, passes strict type checking
+
+### Type Safety
+
+- Fixed `glob_move()` to properly convert Pathlike to Path before calling `.glob()`
+- Fixed `downloaded_archive` property return type from `str` to `Path`
+- Added type annotation for `WindowsPythonBuilder.lib_products: list[str]`
+- All mypy errors resolved with zero issues found
+
+## [0.0.2] - Previous Release
+
+### Added
+- Multi-language implementations (Python, Go, Rust, C++, Haskell, Swift)
+- Support for static, shared, and framework builds
+- Python 3.11, 3.12, and 3.13 configurations
+- Custom module configuration via `Setup.local`
+- Library zipping and bytecode precompilation
+- Relocatable builds with @rpath handling (macOS)
+
+### Features
+- Single-file Python implementation (48KB)
+- Cross-platform support (macOS, Linux, Windows)
+- Dependency building (OpenSSL, bzip2, xz)
+- Size optimization options
+- Build type variants (max, mid, tiny, bootstrap)
 
 ---
 
-## [0.0.1]
+## Notes
 
-- Added support for Python 3.13.0
+### Migration Guide
 
-- Added `write_json` options
+If you're upgrading from a previous version:
 
-- Added `make_relocatable` feature for `framework-*` build variants on macOS to make the installed prefix relocatable
+1. **Exception Handling**: Code that caught `SystemExit` should now catch specific exceptions:
+   ```python
+   # Old
+   try:
+       builder.cmd("some command")
+   except SystemExit:
+       handle_error()
 
-- Added `framework` build-type for macOS
+   # New
+   try:
+       builder.cmd("some command")
+   except CommandError:
+       handle_error()
+   ```
 
-- Added `make_relocatable` method for `shared-*` build variants on macOS to make the installed prefix relocatable
+2. **Build Validation**: Builds now automatically validate after completion. Check logs for validation warnings.
 
-- Added cmdline option to add config options `--cfg-opts`
+3. **Logging**: Set `DEBUG=0` environment variable to reduce log verbosity in production.
 
-- Changed `cmd` from `subprocess.call` to `subprocess.check_call` which fails on error
+4. **Caching**: Builds now intelligently skip when artifacts exist. Use `--reset` flag to force rebuild.
 
-- Added Linux support (Python versions 3.11.7 and 3.12.2 tested).
+### Security Advisories
 
-- Added recursive `glob_remove` method for subtractive reduction of the build.
+- **CVE-2007-4559**: Tarfile path traversal vulnerability has been mitigated for all Python versions
+- Users should verify checksums when available by providing the `checksum` parameter to download operations
 
-- Added static and shared `simple` and `pybind11` examples.
+### Performance Improvements
 
-- Added flexible in-module configuration system.
+- Build caching reduces CI/CD build times by skipping unnecessary rebuilds
+- Parallel job support (`-j` flag) maintained and now shows job count in logs
+- Download caching with checksum validation prevents re-downloading unchanged files

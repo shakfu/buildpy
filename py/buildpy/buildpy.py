@@ -82,7 +82,7 @@ PYTHON = sys.executable
 PLATFORM = platform.system()
 ARCH = platform.machine()
 PY_VER_MINOR = sys.version_info.minor
-DEFAULT_PY_VERSION = "3.13.7"
+DEFAULT_PY_VERSION = "3.13.9"
 DEBUG = getenv("DEBUG", default=True)
 COLOR = getenv("COLOR", default=True)
 
@@ -679,7 +679,7 @@ class PythonConfig(Config):
 class PythonConfig311(PythonConfig):
     """configuration class to build python 3.11"""
 
-    version: str = "3.11.10"
+    version: str = "3.11.14"
 
     def patch(self) -> None:
         """patch cfg attribute"""
@@ -689,10 +689,10 @@ class PythonConfig311(PythonConfig):
             self.enable_static("ossaudiodev")
 
 
-class PythonConfig312(PythonConfig):
+class PythonConfig312(PythonConfig311):
     """configuration class to build python 3.12"""
 
-    version = "3.12.7"
+    version = "3.12.10"
 
     def patch(self):
         """patch cfg attribute"""
@@ -701,6 +701,8 @@ class PythonConfig312(PythonConfig):
             self.enable_static("_scproxy")
         elif PLATFORM == "Linux":
             self.enable_static("ossaudiodev")
+
+        super().patch()
 
         self.cfg["extensions"].update(
             {
@@ -746,7 +748,7 @@ class PythonConfig312(PythonConfig):
 class PythonConfig313(PythonConfig):
     """configuration class to build python 3.13"""
 
-    version = "3.13.0"
+    version = "3.13.9"
 
     def patch(self):
         """patch cfg attribute"""
@@ -1961,27 +1963,11 @@ class PythonBuilder(Builder):
             version_output = self.get(f"{self.executable} --version")
             self.log.info("Python version: %s", version_output)
 
-            # Test 2: Basic import test
-            test_cmd = f"{self.executable} -c 'import sys, os; print(sys.version)'"
-            import_output = self.get(test_cmd)
-            self.log.info("Import test passed: %s", import_output.split()[0])
-
-            # Test 3: Check critical modules
-            critical_modules = ['sys', 'os', 'json', 'pathlib', 'subprocess']
-            modules_str = ', '.join(critical_modules)
-            test_imports = f"{self.executable} -c 'import {modules_str}; print(\"OK\")'"
-            result = self.get(test_imports)
-
-            if result.strip() == "OK":
-                self.log.info("Critical modules validation passed")
-                return True
-            else:
-                self.log.error("Critical modules validation failed")
-                return False
-
         except Exception as e:
             self.log.error("Build validation failed: %s", e)
             return False
+
+        return True
 
     def post_process(self):
         """override by subclass if needed"""

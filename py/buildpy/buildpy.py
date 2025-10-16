@@ -8,14 +8,15 @@ features:
 - Single script which downloads, builds python from source
 - Different build configurations (static, dynamic, framework) possible
 - Trims python builds and zips site-packages by default.
+- Each PythonConfigXXX inherits from the prior one and inherits all the patches
 
 class structure:
 
 Config
     PythonConfig
         PythonConfig311
-        PythonConfig312
-        PythonConfig313
+            PythonConfig312
+                PythonConfig313
 
 ShellCmd
     Project
@@ -696,11 +697,6 @@ class PythonConfig312(PythonConfig311):
 
     def patch(self):
         """patch cfg attribute"""
-        # Apply 3.11 patches
-        if PLATFORM == "Darwin":
-            self.enable_static("_scproxy")
-        elif PLATFORM == "Linux":
-            self.enable_static("ossaudiodev")
 
         super().patch()
 
@@ -745,7 +741,7 @@ class PythonConfig312(PythonConfig311):
         self.cfg["disabled"].append("_xxinterpchannels")
 
 
-class PythonConfig313(PythonConfig):
+class PythonConfig313(PythonConfig312):
     """configuration class to build python 3.13"""
 
     version = "3.13.9"
@@ -753,50 +749,7 @@ class PythonConfig313(PythonConfig):
     def patch(self):
         """patch cfg attribute"""
 
-        # Apply 3.11 and 3.12 patches
-        if PLATFORM == "Darwin":
-            self.enable_static("_scproxy")
-        elif PLATFORM == "Linux":
-            self.enable_static("ossaudiodev")
-
-        self.cfg["extensions"].update(
-            {
-                "_md5": [
-                    "md5module.c",
-                    "-I$(srcdir)/Modules/_hacl/include",
-                    "_hacl/Hacl_Hash_MD5.c",
-                    "-D_BSD_SOURCE",
-                    "-D_DEFAULT_SOURCE",
-                ],
-                "_sha1": [
-                    "sha1module.c",
-                    "-I$(srcdir)/Modules/_hacl/include",
-                    "_hacl/Hacl_Hash_SHA1.c",
-                    "-D_BSD_SOURCE",
-                    "-D_DEFAULT_SOURCE",
-                ],
-                "_sha2": [
-                    "sha2module.c",
-                    "-I$(srcdir)/Modules/_hacl/include",
-                    "_hacl/Hacl_Hash_SHA2.c",
-                    "-D_BSD_SOURCE",
-                    "-D_DEFAULT_SOURCE",
-                ],
-                "_sha3": [
-                    "sha3module.c",
-                    "-I$(srcdir)/Modules/_hacl/include",
-                    "_hacl/Hacl_Hash_SHA3.c",
-                    "-D_BSD_SOURCE",
-                    "-D_DEFAULT_SOURCE",
-                ],
-            }
-        )
-        del self.cfg["extensions"]["_sha256"]
-        del self.cfg["extensions"]["_sha512"]
-        self.cfg["static"].append("_sha2")
-        self.cfg["static"].remove("_sha256")
-        self.cfg["static"].remove("_sha512")
-        self.cfg["disabled"].append("_xxinterpchannels")
+        super().patch()
 
         self.cfg["extensions"].update(
             {

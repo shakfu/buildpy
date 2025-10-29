@@ -197,7 +197,7 @@ class CustomFormatter(logging.Formatter):
                 record.relativeCreated / 1000, datetime.UTC
             )
         else:
-            duration = datetime.datetime.utcfromtimestamp(record.relativeCreated / 1000)
+            duration = datetime.datetime.fromtimestamp(record.relativeCreated / 1000)
         record.delta = duration.strftime("%H:%M:%S")
         formatter = logging.Formatter(log_fmt)
         return formatter.format(record)
@@ -1081,7 +1081,7 @@ class ShellCmd:
             if not silent:
                 self.log.debug("Removing folder: %s", path)
             if PY_VER_MINOR < 11:
-                shutil.rmtree(path, ignore_errors=not DEBUG, onerror=remove_readonly)
+                shutil.rmtree(path, ignore_errors=not DEBUG, onerror=remove_readonly) # type: ignore
             else:
                 shutil.rmtree(path, ignore_errors=not DEBUG, onexc=remove_readonly)
         else:

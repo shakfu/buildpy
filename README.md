@@ -14,6 +14,7 @@ The implementations so far are: python, golang, rust, c++, haskell, swift, c, an
 | 3.11              |    1   |    1   |    1   |    1   |    1   |    1    |    1    |    1    |
 | 3.12              |    1   |    1   |    1   |    1   |    1   |    1    |    1    |    1    |
 | 3.13              |    1   |    1   |    1   |    1   |    1   |    1    |    1    |    1    |
+| 3.14              |    1   |    0   |    0   |    0   |    0   |    0    |    0    |    0    |
 
 
 The design for the tool, called `buildpy`, was initially conceived, prototyped and implemented in python3 as an improvement on some earlier incarnations (see Background section below) which are also included in this project. It provides for the following general steps to build python from source:

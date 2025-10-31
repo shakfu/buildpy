@@ -1,10 +1,10 @@
 # buildpy - single-file python builder
 
-Currently supporting only building python 3.11 or 3.12
+Currently supporting only building python 3.11 - 3.14
 
 Lightest-weight single script/module, a 'modern' rewrite with the simplest interface given collective experience of `builder` and `pybuilder`. The future, so to speak.
 
-Only handles python 3.11 - 3.12 and has a builtin configuration system which handles differences between build variants efficiently.
+Only handles python 3.11 - 3.14 and has a builtin configuration system which handles differences between build variants efficiently.
 
 ## Usage
 

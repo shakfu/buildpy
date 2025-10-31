@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Support for Python 3.14.0**
 - **Exception hierarchy**: New custom exceptions (`BuildError`, `CommandError`, `DownloadError`, `ExtractionError`, `ValidationError`) replace `sys.exit()` calls
 - **Platform detection utilities**: Centralized `PlatformInfo` class with properties (`is_darwin`, `is_linux`, `is_windows`, `is_unix`)
 - **Build artifact validation**: `validate_build()` method performs smoke tests on built Python (version check, import tests, module validation)

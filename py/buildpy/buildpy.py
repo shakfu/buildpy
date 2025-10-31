@@ -17,6 +17,7 @@ Config
         PythonConfig311
             PythonConfig312
                 PythonConfig313
+                    PythonConfig314
 
 ShellCmd
     Project
@@ -778,6 +779,61 @@ class PythonConfig313(PythonConfig312):
         self.cfg["disabled"].remove("spwd")
 
         self.cfg["disabled"].append("_testexternalinspection")
+
+
+class PythonConfig314(PythonConfig313):
+    """configuration class to build python 3.14"""
+
+    version = "3.14.0"
+
+    def patch(self):
+        """patch cfg attribute"""
+
+        super().patch()
+
+        # Add new modules in 3.14
+        self.cfg["extensions"].update(
+            {
+                "_types": ["_typesmodule.c"],
+                "_hmac": ["hmacmodule.c"],
+                "_remote_debugging": ["_remote_debugging_module.c"],
+                "_zstd": ["_zstd/_zstdmodule.c", "-lzstd", "-I$(srcdir)/Modules/_zstd"],
+            }
+        )
+
+        # Simplify hash module configurations (no longer use HACL-specific flags)
+        self.cfg["extensions"]["_blake2"] = ["blake2module.c"]
+        self.cfg["extensions"]["_md5"] = ["md5module.c"]
+        self.cfg["extensions"]["_sha1"] = ["sha1module.c"]
+        # Note: _sha2 replaces separate _sha256/_sha512 in some contexts
+        self.cfg["extensions"]["_sha2"] = ["sha2module.c"]
+        self.cfg["extensions"]["_sha3"] = ["sha3module.c"]
+
+        # Remove _contextvars (now built-in to core)
+        if "_contextvars" in self.cfg["extensions"]:
+            del self.cfg["extensions"]["_contextvars"]
+        if "_contextvars" in self.cfg["static"]:
+            self.cfg["static"].remove("_contextvars")
+
+        # Remove _testexternalinspection (no longer in 3.14)
+        if "_testexternalinspection" in self.cfg["extensions"]:
+            del self.cfg["extensions"]["_testexternalinspection"]
+        if "_testexternalinspection" in self.cfg["disabled"]:
+            self.cfg["disabled"].remove("_testexternalinspection")
+
+        # Add new modules to static build by default
+        self.cfg["static"].append("_types")
+        self.cfg["static"].append("_hmac")
+
+        # Disable _remote_debugging and _zstd by default (optional modules)
+        self.cfg["disabled"].append("_remote_debugging")
+        self.cfg["disabled"].append("_zstd")
+
+        # Remove from 'static'
+        self.cfg["static"].remove("_sha1")
+        self.cfg["static"].remove("_sha2")
+        self.cfg["static"].remove("_sha3")
+        self.cfg["static"].remove("_hmac")
 
 
 # ----------------------------------------------------------------------------
@@ -1633,6 +1689,7 @@ class PythonBuilder(Builder):
             "3.11": PythonConfig311,
             "3.12": PythonConfig312,
             "3.13": PythonConfig313,
+            "3.14": PythonConfig314,
         }[self.ver](BASE_CONFIG, self.build_type)
 
     @property

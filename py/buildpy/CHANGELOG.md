@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0]
+
 ### Security
 
 - **Fixed shell injection vulnerability**: Commands now use `shlex.split()` or list arguments instead of `shell=True`
@@ -17,6 +19,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **Support for Python 3.14.0**
+  - New `PythonConfig314` class with updated module configuration
+  - Added modules: `_types`, `_hmac` (static by default)
+  - Optional modules: `_remote_debugging`, `_zstd` (disabled by default)
+  - Removed modules: `_contextvars` (now built-in), `_testexternalinspection` (deprecated)
+  - Simplified hash module configurations (`_blake2`, `_md5`, `_sha1`, `_sha2`, `_sha3`)
+- **Configurable installation directory**: New `install_dir` parameter generalizes deployment flexibility
+  - **API**: `PythonBuilder(install_dir="/path/to/install")` - Direct specification of installation location
+  - **CLI**: `--install-dir DIR` - Command-line option for custom installation directory
+  - **Dynamic loader path computation**: `_compute_loader_path()` automatically derives `@loader_path` from relative position of `install_dir`
+  - **Priority system**: `install_dir` > `is_package` > default (`build/install`) for backwards compatibility
+  - **Framework builds**: Installed to `{install_dir}/Python.framework/Versions/{ver}/`
+  - **Use cases**: Enables flexible deployment patterns (system-wide installs, containerized builds, embedded frameworks)
 - **Exception hierarchy**: New custom exceptions (`BuildError`, `CommandError`, `DownloadError`, `ExtractionError`, `ValidationError`) replace `sys.exit()` calls
 - **Platform detection utilities**: Centralized `PlatformInfo` class with properties (`is_darwin`, `is_linux`, `is_windows`, `is_unix`)
 - **Build artifact validation**: `validate_build()` method performs smoke tests on built Python (version check, import tests, module validation)
@@ -31,10 +45,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - **Refactored config class hierarchy**: Created intermediate `PythonConfig` class between `Config` and version-specific configs
-  - New hierarchy: `Config` → `PythonConfig` → `PythonConfig311/312/313`
+  - New hierarchy: `Config` → `PythonConfig` → `PythonConfig311/312/313/314`
   - Moved common build variant methods (`static_max`, `framework_max`, etc.) to `PythonConfig` base class
   - Eliminated code duplication across Python version configs
   - Added `build_type` parameter to `PythonConfig.__init__()` for framework detection
+- **Generalized install directory handling**: Replaced hardcoded `is_package` conditionals with flexible `install_dir` system
+  - `PythonBuilder.__init__()` now accepts optional `install_dir` parameter
+  - `prefix` property now uses `self._install_dir` instead of conditional logic
+  - `configure()` method simplified to use `self._install_dir` directly
+  - `post_process()` computes `@loader_path` dynamically via `_compute_loader_path()`
+  - `WindowsPythonBuilder.prefix` now respects configurable `install_dir`
+  - Backwards compatible: `is_package` parameter still supported
 - **Refactored ziplib() logic**: Extracted duplicate code from `PythonBuilder` and `WindowsPythonBuilder` into base class with platform-specific hooks
   - `_get_lib_src_dir()` - Platform-specific library directory
   - `_precompile_lib()` - Bytecode compilation
@@ -81,7 +102,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added type annotation for `WindowsPythonBuilder.lib_products: list[str]`
 - All mypy errors resolved with zero issues found
 
-## [0.0.2] - Previous Release
+## [0.0.2]
 
 ### Added
 - Multi-language implementations (Python, Go, Rust, C++, Haskell, Swift)
@@ -121,11 +142,23 @@ If you're upgrading from a previous version:
        handle_error()
    ```
 
-2. **Build Validation**: Builds now automatically validate after completion. Check logs for validation warnings.
+2. **Custom Installation Directories**: Use the new `install_dir` parameter for flexible deployments:
+   ```python
+   # API usage
+   builder = PythonBuilder(version="3.14.0", config="framework_max",
+                          install_dir="/opt/python")
 
-3. **Logging**: Set `DEBUG=0` environment variable to reduce log verbosity in production.
+   # CLI usage
+   python3 buildpy.py -v 3.14.0 -c framework_max --install-dir /opt/python
+   ```
 
-4. **Caching**: Builds now intelligently skip when artifacts exist. Use `--reset` flag to force rebuild.
+3. **Python 3.14 Support**: Update version strings to use 3.14.x for latest Python features.
+
+4. **Build Validation**: Builds now automatically validate after completion. Check logs for validation warnings.
+
+5. **Logging**: Set `DEBUG=0` environment variable to reduce log verbosity in production.
+
+6. **Caching**: Builds now intelligently skip when artifacts exist. Use `--reset` flag to force rebuild.
 
 ### Security Advisories
 

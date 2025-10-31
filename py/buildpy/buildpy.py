@@ -1671,6 +1671,7 @@ class PythonBuilder(Builder):
         cfg_opts: Optional[list[str]] = None,
         jobs: int = 1,
         is_package: bool = False,
+        install_dir: Optional[Pathlike] = None,
     ):
         super().__init__(version, project)
         self.config = config
@@ -1680,7 +1681,16 @@ class PythonBuilder(Builder):
         self.pkgs = pkgs or []
         self.cfg_opts = cfg_opts or []
         self.jobs = jobs
-        self.is_package = is_package
+
+        # Handle install_dir specification
+        # Priority: explicit install_dir > is_package (for backwards compatibility) > default (install)
+        if install_dir is not None:
+            self._install_dir = Path(install_dir)
+        elif is_package:
+            self._install_dir = self.project.support
+        else:
+            self._install_dir = self.project.install
+
         self.log = logging.getLogger(self.__class__.__name__)
 
     def get_config(self):
@@ -1707,15 +1717,50 @@ class PythonBuilder(Builder):
         """size qualifier: 'max', 'mid', 'min', etc.."""
         return self.config.split("_")[1]
 
+    def _compute_loader_path(self, dylib_path: Path) -> str:
+        """Compute @loader_path for install_name_tool based on install_dir
+
+        @loader_path refers to the directory containing the loading binary (the embedding app).
+        We need to compute the path from a typical embedding location to the framework dylib.
+
+        Standard patterns:
+        - install_dir = project.install: embedding app in install/Resources/
+          -> @loader_path/../Python.framework/Versions/{ver}/Python
+        - install_dir = project.support: embedding app in project root (4 levels up from support)
+          -> @loader_path/support/Python.framework/Versions/{ver}/Python
+
+        Args:
+            dylib_path: The path to the dylib whose install_name_id we're setting
+
+        Returns:
+            A string suitable for use with install_name_tool (e.g., "@loader_path/../../...")
+        """
+        try:
+            # Compute relative path from project.root to install_dir
+            rel_from_root = self._install_dir.relative_to(self.project.root)
+
+            if self._install_dir == self.project.install:
+                # Standard install: embedding app assumed to be in install/Resources/
+                # Path: Resources -> .. -> Python.framework/...
+                return f"@loader_path/../Python.framework/Versions/{self.ver}/Python"
+            elif self._install_dir == self.project.support:
+                # Support directory: embedding app assumed to be in project root
+                # Path: root -> support -> Python.framework/...
+                return f"@loader_path/{rel_from_root}/Python.framework/Versions/{self.ver}/Python"
+            else:
+                # Custom install_dir: compute from project root
+                # Assume embedding app is in project root
+                return f"@loader_path/{rel_from_root}/Python.framework/Versions/{self.ver}/Python"
+        except (ValueError, AttributeError) as e:
+            # If we can't compute relative path, fall back to absolute path
+            self.log.warning("Could not compute relative loader_path: %s, using absolute path", e)
+            return str(self._install_dir / "Python.framework" / "Versions" / self.ver / "Python")
+
     @property
     def prefix(self):
         """python builder prefix path"""
         if PLATFORM == "Darwin" and self.build_type == "framework":
-            if self.is_package:
-                install_dir = self.project.support
-            else:
-                install_dir = self.project.install
-            return install_dir / "Python.framework" / "Versions" / self.ver
+            return self._install_dir / "Python.framework" / "Versions" / self.ver
         name = self.name.lower() + "-" + self.build_type
         return self.project.install / name
 
@@ -1762,11 +1807,7 @@ class PythonBuilder(Builder):
                 ["--enable-shared", "--without-static-libpython"]
             )
         elif self.build_type == "framework":
-            if self.is_package:
-                prefix = self.project.support
-            else:
-                prefix = self.project.install
-            self.config_options.append(f"--enable-framework={prefix}")
+            self.config_options.append(f"--enable-framework={self._install_dir}")
         elif self.build_type != "static":
             self.fail(f"{self.build_type} not recognized build type")
 
@@ -1928,14 +1969,13 @@ class PythonBuilder(Builder):
                 dylib = self.prefix / self.name
                 self.chmod(dylib)
 
-                # Use install_name_id from config if set, otherwise use defaults
+                # Use install_name_id from config if set, otherwise compute from install_dir
                 config = self.get_config()
                 if config.install_name_id:
                     _id = config.install_name_id
-                elif self.is_package:
-                    _id = f"@loader_path/../../../../support/Python.framework/Versions/{self.ver}/Python"
                 else:
-                    _id = f"@loader_path/../Resources/Python.framework/Versions/{self.ver}/Python"
+                    # Compute loader_path dynamically based on install_dir
+                    _id = self._compute_loader_path(dylib)
 
                 self.cmd(f"install_name_tool -id {_id} {dylib}")
                 # changing executable
@@ -2190,9 +2230,8 @@ class WindowsPythonBuilder(PythonBuilder):
     @property
     def prefix(self):
         """python builder prefix path"""
-        install_dir = self.project.support
-        # return install_dir / "python"
-        return install_dir
+        # Use the configured install_dir from parent class
+        return self._install_dir
 
     @property
     def libname(self):
@@ -2339,6 +2378,7 @@ def main():
     opt("-j", "--jobs", help="# of build jobs (default: %(default)s)", type=int, default=4)
     opt("-s", "--json", help="serialize config to json file", action="store_true")
     opt("-t", "--type", help="build based on build type")
+    opt("--install-dir", help="custom installation directory (overrides --package)", type=str, metavar="DIR")
     # fmt: on
 
     args = parser.parse_args()
@@ -2379,6 +2419,7 @@ def main():
             cfg_opts=args.cfg_opts,
             jobs=args.jobs,
             is_package=is_package,
+            install_dir=args.install_dir,
         )
         if args.reset:
             builder.remove("build")
@@ -2400,6 +2441,7 @@ def main():
         cfg_opts=args.cfg_opts,
         jobs=args.jobs,
         is_package=args.package,
+        install_dir=args.install_dir,
     )
     if args.write:
         if not args.json:

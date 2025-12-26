@@ -11,7 +11,7 @@ void print_usage(const char* program_name) {
     printf("  -o, --optimize          Optimize build\n");
     printf("  -p, --pkgs=PKGS         Install packages\n");
     printf("  -r, --reset             Reset build\n");
-    printf("  -v, --version=VERSION   Python version (default: 3.12.9)\n");
+    printf("  -v, --version=VERSION   Python version (default: 3.12.12)\n");
     printf("  -w, --write             Write configuration\n");
     printf("  -j, --jobs=JOBS         Number of build jobs (default: 4)\n");
     printf("  -s, --json=FILE         Serialize config to json file\n");
@@ -132,7 +132,7 @@ int main(int argc, char* argv[]) {
     }
 
     // Create Python builder with default settings
-    PythonBuilder* python_builder = python_builder_new("3.12.9", project);
+    PythonBuilder* python_builder = python_builder_new("3.12.12", project);
     if (!python_builder) {
         log_error("Failed to create Python builder");
         project_free(project);

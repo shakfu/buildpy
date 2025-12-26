@@ -129,8 +129,10 @@ void openssl_builder_build(Builder* builder) {
         "cd \"%s\" && "
         "wget -O openssl-%s.tar.gz https://github.com/openssl/openssl/archive/OpenSSL_%s.tar.gz && "
         "tar xzf openssl-%s.tar.gz && "
-        "mv openssl-OpenSSL_%s openssl",
-        builder->project->downloads_dir, builder->version, tag_version, builder->version, tag_version);
+        "rm -rf \"%s\" && "
+        "mv openssl-OpenSSL_%s \"%s\"",
+        builder->project->downloads_dir, builder->version, tag_version, builder->version,
+        source_dir, tag_version, source_dir);
 
     if (shell_run_command(builder->shell, cmd) != 0) {
         log_error("Failed to download OpenSSL");
@@ -200,8 +202,10 @@ void bzip2_builder_build(Builder* builder) {
         "cd \"%s\" && "
         "wget -O bzip2-%s.tar.gz https://sourceware.org/pub/bzip2/bzip2-%s.tar.gz && "
         "tar xzf bzip2-%s.tar.gz && "
-        "mv bzip2-%s bzip2",
-        builder->project->downloads_dir, builder->version, builder->version, builder->version, builder->version);
+        "rm -rf \"%s\" && "
+        "mv bzip2-%s \"%s\"",
+        builder->project->downloads_dir, builder->version, builder->version, builder->version,
+        source_dir, builder->version, source_dir);
 
     if (shell_run_command(builder->shell, cmd) != 0) {
         log_error("Failed to download Bzip2");
@@ -265,10 +269,12 @@ void xz_builder_build(Builder* builder) {
     char cmd[MAX_COMMAND];
     snprintf(cmd, sizeof(cmd),
         "cd \"%s\" && "
-        "wget -O xz-%s.tar.gz https://tukaani.org/xz/xz-%s.tar.gz && "
+        "wget -O xz-%s.tar.gz https://github.com/tukaani-project/xz/releases/download/v%s/xz-%s.tar.gz && "
         "tar xzf xz-%s.tar.gz && "
-        "mv xz-%s xz",
-        builder->project->downloads_dir, builder->version, builder->version, builder->version, builder->version);
+        "rm -rf \"%s\" && "
+        "mv xz-%s \"%s\"",
+        builder->project->downloads_dir, builder->version, builder->version, builder->version, builder->version,
+        source_dir, builder->version, source_dir);
 
     if (shell_run_command(builder->shell, cmd) != 0) {
         log_error("Failed to download XZ");
@@ -419,7 +425,7 @@ void python_builder_build(Builder* builder) {
         free(bzip2);
     }
 
-    XzBuilder* xz = xz_builder_new("5.4.4", builder->project);
+    XzBuilder* xz = xz_builder_new("5.8.2", builder->project);
     if (xz) {
         xz->base.build((Builder*)xz);
         free(xz);
@@ -434,9 +440,10 @@ void python_builder_build(Builder* builder) {
         "cd \"%s\" && "
         "wget -O python-%s.tar.xz https://www.python.org/ftp/python/%s/Python-%s.tar.xz && "
         "tar xJf python-%s.tar.xz && "
-        "mv Python-%s python",
+        "rm -rf \"%s\" && "
+        "mv Python-%s \"%s\"",
         builder->project->downloads_dir, builder->version, builder->version, builder->version,
-        builder->version, builder->version);
+        builder->version, source_dir, builder->version, source_dir);
 
     if (shell_run_command(builder->shell, cmd) != 0) {
         log_error("Failed to download Python");

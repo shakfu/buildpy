@@ -8,7 +8,7 @@ SOURCES = $(wildcard $(SRCDIR)/*.c)
 OBJECTS = $(SOURCES:$(SRCDIR)/%.c=$(OBJDIR)/%.o)
 TARGET = buildpy
 
-.PHONY: all clean install test
+.PHONY: all clean reset install test
 
 all: $(TARGET)
 
@@ -23,6 +23,9 @@ $(OBJDIR):
 
 clean:
 	@rm -rf $(OBJDIR) $(TARGET)
+
+reset:
+	@rm -rf build obj
 
 install: $(TARGET)
 	@cp $(TARGET) /usr/local/bin/

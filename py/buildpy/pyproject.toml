@@ -1,7 +1,7 @@
 [project]
-name = "buildpy.py"
+name = "buildpy-bundler"
 version = "0.1.0"
-description = "Build Python from source with customization options for size reduction and static linking"
+description = "Build a minimal, bespoke CPython runtime from source with size reduction, static linking, and a zipped standard library."
 readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
@@ -56,6 +56,10 @@ buildpy = "buildpy:main"
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+sources = ["src"]
+only-include = ["src/buildpy.py"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

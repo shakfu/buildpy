@@ -1,16 +1,22 @@
 STATICPY := build/install/python-static/bin/python3
 SHAREDPY := build/install/python-shared/bin/python3
 
-.PHONY: all run debug build repl format lint typecheck release \
-		check publish publish-test clean reset
+.PHONY: all sync run debug test build repl format lint typecheck \
+		release check publish publish-test clean reset
 
-all: fullcheck
+all: release
+
+sync:
+	@uv sync
 
 run: clean
 	@COLOR=0 python3 buildpy.py 2>&1 | tee -a log.txt
 
 debug: clean
 	@DEBUG=1 COLOR=1 buildpy.py 2>&1 | tee -a log.txt
+
+test:
+	@uv run pytest
 
 build:
 	@uv build
@@ -27,7 +33,7 @@ lint:
 typecheck:
 	@uv run mypy --strict buildpy.py
 
-release: lint typecheck format build check
+release: sync lint typecheck format build check
 
 check:
 	@uv run twine check dist/*
@@ -39,9 +45,9 @@ publish-test:
 	@uv run twine upload -r testpypi dist/*
 
 clean:
-	@rm -rf build/src log.txt
+	@rm -rf build/src dist log.txt __pycache__
 
 reset: clean
-	@rm -rf build
+	@rm -rf .venv build
 
 

@@ -1,5 +1,5 @@
 [project]
-name = "buildpy"
+name = "buildpy.py"
 version = "0.1.0"
 description = "Build Python from source with customization options for size reduction and static linking"
 readme = "README.md"
@@ -7,7 +7,7 @@ license = "MIT"
 license-files = ["LICENSE"]
 requires-python = ">=3.11"
 authors = [
-    {name = "Shakeeb Alireza", email = "shakeeb.alireza@rezayat.net"}
+    { name = "Shakeeb Alireza", email = "shakfu@users.noreply.github.com" }
 ]
 keywords = [
     "python",

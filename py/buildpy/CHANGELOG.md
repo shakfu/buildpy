@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Renamned to buildpy-bundler**: to avoid pypi name collision.
+
 - **Improved README.md**: Restructured documentation for better readability
   - Added Features, Requirements, and Quick Start sections
   - Reorganized CLI options into scannable table format

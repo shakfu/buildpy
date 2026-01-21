@@ -20,7 +20,7 @@ A lightweight, single-file Python build tool for compiling Python 3.11-3.14 from
 
 ```bash
 # Build with default configuration (shared_mid)
-./buildpy.py build
+buildpy build
 
 # Or use make
 make
@@ -31,7 +31,7 @@ The built Python will be installed to `./build/install/python/`.
 ## Usage
 
 ```
-./buildpy.py [options] build
+buildpy [options] build
 ```
 
 ### Options
@@ -56,16 +56,16 @@ The built Python will be installed to `./build/install/python/`.
 
 ```bash
 # Build Python 3.12 with static linking
-./buildpy.py -v 3.12 -t static build
+buildpy -v 3.12 -t static build
 
 # Build optimized Python with 8 parallel jobs
-./buildpy.py -o -j 8 build
+buildpy -o -j 8 build
 
 # Build and package for distribution
-./buildpy.py -m build
+buildpy -m build
 
 # Build to custom directory
-./buildpy.py --install-dir /opt/python build
+buildpy --install-dir /opt/python build
 ```
 
 ## Configurations

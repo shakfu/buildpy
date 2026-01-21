@@ -1,112 +1,123 @@
-# buildpy - single-file python builder
+# buildpy
 
-Currently supporting only building python 3.11 - 3.14
+A lightweight, single-file Python build tool for compiling Python 3.11-3.14 from source with customizable configurations.
 
-Lightest-weight single script/module, a 'modern' rewrite with the simplest interface given collective experience of `builder` and `pybuilder`. The future, so to speak.
+## Features
 
-Only handles python 3.11 - 3.14 and has a builtin configuration system which handles differences between build variants efficiently.
+- Single-file script with no external dependencies (stdlib only)
+- Multiple build configurations (static, shared, framework)
+- Automatic dependency building (OpenSSL, bzip2, xz)
+- Size optimization options (stdlib zipping, selective module inclusion)
+- Cross-platform support (macOS, Linux, Windows)
+
+## Requirements
+
+- Python 3.10+ (to run the build script)
+- System tools: `git`, `wget`, `tar`, `make`
+- C compiler (gcc/clang)
+
+## Quick Start
+
+```bash
+# Build with default configuration (shared_mid)
+./buildpy.py build
+
+# Or use make
+make
+```
+
+The built Python will be installed to `./build/install/python/`.
 
 ## Usage
 
-```bash
-% python3 buildpy.py --help
-usage: buildpy.py [-h] [--debug] [--version VERSION] [--config NAME] [--reset]
-                  [--optimize] [--pkgs PKG [PKG ...]]
-
-A python builder
-
-options:
-  -h, --help            show this help message and exit
-  --debug, -d           build debug python
-  --version VERSION, -v VERSION
-                        python version
-  --config NAME, -c NAME
-                        build configuration
-  --reset, -r           reset build
-  --optimize, -o        optimize build
-  --pkgs PKG [PKG ...], -p PKG [PKG ...]
+```
+./buildpy.py [options] build
 ```
 
-or just `make` to build the default configuration.
+### Options
 
+| Option | Description |
+|--------|-------------|
+| `-v, --version VERSION` | Python version to build (default: 3.13) |
+| `-c, --config NAME` | Build configuration (default: shared_mid) |
+| `-t, --type TYPE` | Build type: static, shared, or framework |
+| `-j, --jobs N` | Number of parallel build jobs (default: 4) |
+| `-o, --optimize` | Enable PGO/LTO optimization during build |
+| `-d, --debug` | Build debug Python |
+| `-p, --precompile` | Precompile stdlib to bytecode |
+| `-m, --package` | Package the build for distribution |
+| `-r, --reset` | Clean and reset build directory |
+| `--install-dir DIR` | Custom installation directory |
+| `-i, --install PKG [PKG ...]` | Install packages after build |
+| `-w, --write` | Write Setup.local configuration |
+| `-s, --json` | Export configuration to JSON |
 
-## Gotchas
+### Examples
 
-- if `libb2` is installed on your system, `_blake2` will be linked to it creating a local dependency (need test for this)
+```bash
+# Build Python 3.12 with static linking
+./buildpy.py -v 3.12 -t static build
+
+# Build optimized Python with 8 parallel jobs
+./buildpy.py -o -j 8 build
+
+# Build and package for distribution
+./buildpy.py -m build
+
+# Build to custom directory
+./buildpy.py --install-dir /opt/python build
+```
 
 ## Configurations
 
-A configuration has a name with the structure `<build-type>.<size-type>`. For example, a `static.max` configuration means a `static` build-type of the `max` size-type, in other words, a build variant where libpython is statically linked and which tries to include the maximum number of extensions outside of the default configuration.
+Configurations follow the naming pattern `<build-type>_<size-type>`:
 
-The following configuration are implemented:
+| Size Type | Description |
+|-----------|-------------|
+| `max` | Maximum modules included |
+| `mid` | Balanced selection (recommended) |
+| `min` | Minimal footprint |
+| `bootstrap` | Absolute minimum for bootstrapping |
 
-### static
+### Static Builds
 
-```python
-config_options = [
-	"--disable-test-modules",
-	"--without-ensurepip",
-]
+Statically links libpython into the executable.
 
-# where
+| Config | Modules Excluded |
+|--------|------------------|
+| `static_max` | `_ctypes` only |
+| `static_mid` | `_ssl`, `_hashlib` |
+| `static_min` | Most optional modules |
+| `static_bootstrap` | Based on Setup.bootstrap |
 
-static.max 		 # missing ctypes
-static.mid = static.max - ["_ssl", "_hashlib"]
-static.min
-static.bootstrap # absolute minimum based on Setup.bootstrap
-```
+### Shared Builds
 
-### shared
+Uses a shared libpython library.
 
-```python
-config_options = [
-	"--disable-test-modules",
-	"--without-ensurepip",
-	"--without-static-libpython",
-] + ["--enable-shared"]
+| Config | Modules Excluded |
+|--------|------------------|
+| `shared_max` | None |
+| `shared_mid` | `_ctypes`, `_ssl`, `_hashlib`, `_decimal` |
+| `shared_min` | Most optional modules |
 
-# where
+### Framework Builds (macOS only)
 
-shared.max
-shared.mid = shared.max - ["_ctypes", "_ssl", "_hashlib", "_decimal"]
-shared.min
-```
+Creates a macOS framework bundle. Not yet implemented.
 
-### framework
-
-macos only (not yet implemented)
+## Build Output
 
 ```
-framework.max
-framework.mid
-framework.min
+build/
+  downloads/     # Cached source archives
+  src/           # Extracted source trees
+  install/
+    python/      # Final Python installation
 ```
 
+Output naming convention: `py-<type>-<size>-<version>-<platform>-<arch>`
 
-### buildpy (python)
+Example: `py-static-mid-3.13.0-darwin-arm64`
 
+## Known Issues
 
-
-```bash
-% ./buildpy.py --help
-usage: buildpy.py [-h] [-a CFG [CFG ...]] [-c NAME] [-d] [-o]
-                  [-p PKG [PKG ...]] [-r] [-v VERSION] [-w]
-
-A python builder
-
-options:
-  -h, --help            show this help message and exit
-  -a CFG [CFG ...], --cfg-opts CFG [CFG ...]
-                        add config options
-  -c NAME, --config NAME
-                        build configuration (default: shared_mid)
-  -d, --debug           build debug python
-  -o, --optimize        optimize build
-  -p PKG [PKG ...], --pkgs PKG [PKG ...]
-                        install pkgs
-  -r, --reset           reset build
-  -v VERSION, --version VERSION
-                        python version (default: 3.11.7)
-  -w, --write           write configuration
-```
-
+- If `libb2` is installed on your system, the `_blake2` module will link against it, creating a runtime dependency

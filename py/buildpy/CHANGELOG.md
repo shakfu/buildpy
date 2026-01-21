@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Improved README.md**: Restructured documentation for better readability
+  - Added Features, Requirements, and Quick Start sections
+  - Reorganized CLI options into scannable table format
+  - Added practical usage examples
+  - Replaced verbose configuration descriptions with clear tables
+  - Added Build Output section explaining directory structure
+
+### Fixed
+
+- **Complete type annotations**: Fixed all 146 mypy type errors
+  - Added return type annotations to all functions and methods
+  - Fixed `Config.cfg` type from `dict[str, list[str]]` to `dict[str, Any]` for mixed value types
+  - Added proper type annotations for `*args` and `**kwargs` parameters
+  - Fixed `_validate_checksum` to use `hashlib.new()` instead of `getattr()`
+  - Added explicit type annotations for class variables (`depends_on`, `lib_products`)
+  - Fixed `main()` function variable typing to avoid inference issues
+  - Added `log` attribute initialization to `Project` class
+
 ## [0.1.0]
 
 ### Security

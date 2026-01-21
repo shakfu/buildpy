@@ -1,15 +1,21 @@
 STATICPY := build/install/python-static/bin/python3
 SHAREDPY := build/install/python-shared/bin/python3
 
-.PHONY: all build repl format lint typecheck check publish publish-test clean reset
+.PHONY: all run debug build repl format lint typecheck release \
+		check publish publish-test clean reset
 
 
-all: build
+all: fullcheck
 
 
-build: clean
-	@python3 buildpy.py 2>&1 | tee -a log.txt
+run: clean
+	@COLOR=0 python3 buildpy.py 2>&1 | tee -a log.txt
 
+debug: clean
+	@DEBUG=1 COLOR=1 buildpy.py 2>&1 | tee -a log.txt
+
+build:
+	@uv build
 
 repl:
 	@test -f $(STATICPY) && $(STATICPY) || test -f $(SHAREDPY) && $(SHAREDPY)
@@ -25,6 +31,9 @@ lint:
 
 typecheck:
 	@uv run mypy --strict buildpy.py
+
+
+release: lint typecheck format build check
 
 
 check:

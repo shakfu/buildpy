@@ -217,7 +217,12 @@ pub const PythonBuilder = struct {
         defer opts.deinit(self.allocator);
         const a = self.allocator;
 
-        opts.appendSlice(a, "./configure --prefix=") catch return error.OutOfMemory;
+        // Override PKG_CONFIG_PATH so pkg-config can't find system/Homebrew
+        // OpenSSL .pc files. Without this, configure auto-detects Homebrew
+        // OpenSSL and generates MODULE__SSL/MODULE__HASHLIB with dynamic
+        // -lssl/-lcrypto flags that conflict with Setup.local's static
+        // archive references. Setup.local is the sole authority for SSL modules.
+        opts.appendSlice(a, "export PKG_CONFIG_PATH=/dev/null && ./configure --prefix=") catch return error.OutOfMemory;
         opts.appendSlice(a, pfx) catch return error.OutOfMemory;
 
         // Add base options
@@ -249,26 +254,6 @@ pub const PythonBuilder = struct {
         defer self.shell.resetCwd();
 
         try self.shell.shellCmd(opts.items);
-
-        // Post-configure fixup: Python's configure auto-detects system/Homebrew
-        // OpenSSL and sets MODULE__SSL and MODULE__HASHLIB to build as shared
-        // extensions with dynamic -lssl/-lcrypto. This conflicts with our
-        // Setup.local static definitions (which use our custom-built OpenSSL
-        // static archives). The shared .so modules would load at runtime and
-        // fail to find symbols from the system's LibreSSL.
-        // Fix: disable configure's SSL/hashlib module detection so only
-        // Setup.local's static definitions are used.
-        const makefile_path = try std.fs.path.join(a, &.{ src_dir, "Makefile" });
-        defer a.free(makefile_path);
-        const sed_cmd = try std.fmt.allocPrint(a,
-            "sed -i '' " ++
-            "-e 's/^MODULE__SSL_STATE=yes/MODULE__SSL_STATE=disabled/' " ++
-            "-e 's/^MODULE__HASHLIB_STATE=yes/MODULE__HASHLIB_STATE=disabled/' " ++
-            "{s}",
-            .{makefile_path},
-        );
-        defer a.free(sed_cmd);
-        try self.shell.shellCmd(sed_cmd);
     }
 
     /// Build Python

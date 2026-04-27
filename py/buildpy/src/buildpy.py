@@ -677,12 +677,15 @@ class PythonConfig(Config):
         self.move_static_to_shared(
             "_bz2",
             "_lzma",
-            # "readline",
             "_sqlite3",
             "_scproxy",
             "zlib",
             "binascii",
         )
+        # readline isn't on macOS by default and Homebrew's libreadline path
+        # isn't on the framework link search path, so disable it for framework
+        # builds.
+        self.disable_static("readline")
 
     def framework_mid(self) -> None:
         """framework build variant mid-size"""
@@ -1878,7 +1881,14 @@ class PythonBuilder(Builder):
 
         config.write(self.config, to=self.src_dir / "Modules" / "Setup.local")
         config_opts = " ".join(self.config_options)
-        self.cmd(f"./configure --prefix={prefix} {config_opts}", cwd=self.src_dir)
+        # For framework builds, --enable-framework=<DIR> drives prefix internally
+        # (prefix=<DIR>/Python.framework/Versions/X.Y, FRAMEWORKUNIXTOOLSPREFIX=<DIR>).
+        # Passing --prefix as well clobbers FRAMEWORKUNIXTOOLSPREFIX and produces a
+        # self-referential bin/pythonX.Y symlink at install time.
+        if self.build_type == "framework":
+            self.cmd(f"./configure {config_opts}", cwd=self.src_dir)
+        else:
+            self.cmd(f"./configure --prefix={prefix} {config_opts}", cwd=self.src_dir)
 
     def build(self) -> None:
         """main build process"""

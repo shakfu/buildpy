@@ -85,12 +85,12 @@ PYTHON = sys.executable
 PLATFORM = platform.system()
 ARCH = platform.machine()
 PY_VER_MINOR = sys.version_info.minor
-DEFAULT_PY_VERSION = "3.13.11"
+DEFAULT_PY_VERSION = "3.13.13"
 DEFAULT_PY_VERSIONS = {
-    "3.14": "3.14.2",
-    "3.13": "3.13.11",
-    "3.12": "3.12.12",
-    "3.11": "3.11.14",
+    "3.14": "3.14.4",
+    "3.13": "3.13.13",
+    "3.12": "3.12.13",
+    "3.11": "3.11.15",
 }
 
 # ----------------------------------------------------------------------------
@@ -1551,12 +1551,12 @@ class Builder(AbstractBuilder):
 
 class OpensslBuilder(Builder):
     """ssl builder class"""
-
     name = "openssl"
-    version = "1.1.1w"
+    version = "3.0.20"
     repo_url = "https://github.com/openssl/openssl.git"
     download_archive_template = "openssl-{ver}.tar.gz"
-    download_url_template = "https://www.openssl.org/source/old/1.1.1/{archive}"
+    download_url_template = "https://github.com/openssl/openssl/releases/download/openssl-3.0.20/{archive}"
+    # download_url_template = "https://www.openssl.org/source/old/1.1.1/{archive}"
     depends_on = []
     lib_products = ["libssl.a", "libcrypto.a"]
 

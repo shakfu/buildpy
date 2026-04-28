@@ -1871,6 +1871,14 @@ class PythonBuilder(Builder):
             self.remove_patterns.append("ensurepip")
         else:
             self.pkgs.extend(self.required_packages)
+            # When packages are requested, install_pkgs() runs before clean()
+            # so pip (just bootstrapped by `make install`'s ensurepip) is still
+            # available. We then drop pip itself in clean() but keep the rest
+            # of site-packages so the installed pkgs make it into pythonXY.zip.
+            self.remove_patterns = [
+                p for p in self.remove_patterns if p != "site-packages"
+            ]
+            self.remove_patterns.extend(["pip", "pip-*.dist-info", "ensurepip"])
 
         if self.cfg_opts:
             for cfg_opt in self.cfg_opts:
@@ -1917,6 +1925,8 @@ class PythonBuilder(Builder):
             "pydoc3",
             f"pydoc{self.ver}",
             f"2to3-{self.ver}",
+            "pip3",
+            f"pip{self.ver}",
         ]
         for executable in bins:
             self.remove(self.prefix / "bin" / executable)
@@ -1989,6 +1999,16 @@ class PythonBuilder(Builder):
         # Platform-specific lib-dynload handling
         self._handle_lib_dynload(src, preserve=True)
 
+        # site-packages must stay on disk: Python's site machinery adds the
+        # on-disk lib/pythonX.Y/site-packages to sys.path, but does NOT add
+        # pythonXY.zip/site-packages, so anything we install via pip would be
+        # unimportable if it were folded into the zip.
+        site_packages = src / "site-packages"
+        site_packages_stash: Optional[Path] = None
+        if site_packages.exists():
+            site_packages_stash = self.project.build / "site-packages"
+            self.move(site_packages, site_packages_stash)
+
         # Precompile if requested
         if should_compile:
             self._precompile_lib(src)
@@ -2005,12 +2025,24 @@ class PythonBuilder(Builder):
         self._cleanup_after_zip(src)
         self._handle_lib_dynload(src, preserve=False)
         self._restore_os_module(src, is_compiled=should_compile)
+        if site_packages_stash is not None:
+            # _cleanup_after_zip recreated an empty site-packages; replace it
+            # with the stashed (populated) one.
+            self.remove(site_packages)
+            self.move(site_packages_stash, site_packages)
 
     def install_pkgs(self) -> None:
         """install python packages"""
-        required_pkgs = " ".join(self.required_packages)
-        self.cmd(f"{self.python} -m ensurepip")
-        self.cmd(f"{self.pip} install {required_pkgs}")
+        pkgs = " ".join(self.pkgs)
+        if not pkgs:
+            return
+        # pip was already installed by `make install` via `python.exe -m ensurepip
+        # --upgrade`. A second `python -m ensurepip` here would fail because
+        # ziplib() has just packed the stdlib into python3X.zip: ensurepip's
+        # bundled wheel gets extracted via importlib.resources.as_file(), which
+        # prepends a random tmp prefix to the filename ("tmpXXXXpip-...whl") so
+        # pip parses the project name as "tmpXXXXpip" and can't satisfy "pip".
+        self.cmd(f"{self.pip} install {pkgs}")
 
     def make_relocatable(self) -> None:
         """fix dylib/exe @rpath shared buildtype in macos"""
@@ -2148,10 +2180,10 @@ class PythonBuilder(Builder):
         self.configure()
         self.build()
         self.install()
-        self.clean()
-        self.ziplib()
         if self.pkgs:
             self.install_pkgs()
+        self.clean()
+        self.ziplib()
         self.post_process()
 
 
